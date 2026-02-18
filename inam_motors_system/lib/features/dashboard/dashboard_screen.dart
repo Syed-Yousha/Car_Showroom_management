@@ -48,8 +48,7 @@ class DashboardScreen extends StatelessWidget {
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(AppTheme.primary),
                     shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                      RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     padding: WidgetStateProperty.all(
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -83,116 +82,65 @@ class DashboardScreen extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _buildQuickActionFixed(
-                      FluentIcons.add_to, "Add Car", AppTheme.primary),
-                  _buildQuickActionFixed(
-                      FluentIcons.document, "New Sale", AppTheme.success),
-                  _buildQuickActionFixed(
-                      FluentIcons.people_add, "Add Customer", AppTheme.warning),
-                  _buildQuickActionFixed(
-                      FluentIcons.calculator, "Add Expense", AppTheme.error),
+                  _buildQuickActionFixed(FluentIcons.add_to, "Add Car", AppTheme.primary),
+                  _buildQuickActionFixed(FluentIcons.document, "New Sale", AppTheme.success),
+                  _buildQuickActionFixed(FluentIcons.people_add, "Add Customer", AppTheme.warning),
+                  _buildQuickActionFixed(FluentIcons.calculator, "Add Expense", AppTheme.error),
                 ],
               )
             else
               Row(
                 children: [
-                  _buildQuickAction(
-                      icon: FluentIcons.add_to,
-                      label: "Add Car",
-                      color: AppTheme.primary),
+                  _buildQuickAction(icon: FluentIcons.add_to, label: "Add Car", color: AppTheme.primary),
                   const SizedBox(width: 12),
-                  _buildQuickAction(
-                      icon: FluentIcons.document,
-                      label: "New Sale",
-                      color: AppTheme.success),
+                  _buildQuickAction(icon: FluentIcons.document, label: "New Sale", color: AppTheme.success),
                   const SizedBox(width: 12),
-                  _buildQuickAction(
-                      icon: FluentIcons.people_add,
-                      label: "Add Customer",
-                      color: AppTheme.warning),
+                  _buildQuickAction(icon: FluentIcons.people_add, label: "Add Customer", color: AppTheme.warning),
                   const SizedBox(width: 12),
-                  _buildQuickAction(
-                      icon: FluentIcons.calculator,
-                      label: "Add Expense",
-                      color: AppTheme.error),
+                  _buildQuickAction(icon: FluentIcons.calculator, label: "Add Expense", color: AppTheme.error),
                 ],
               ),
 
             const SizedBox(height: 24),
 
-            // STAT CARDS — wrap on narrow
+            // STAT CARDS
             if (isNarrow)
               Column(
                 children: [
                   Row(children: [
-                    _buildStatCard(
-                        title: "Total Cars",
-                        value: "84",
-                        change: "+5 this week",
-                        isPositive: true,
-                        graphColor: AppTheme.primary),
+                    _buildStatCard(title: "Total Cars", value: "84", change: "+5 this week", isPositive: true, graphColor: AppTheme.primary),
                     const SizedBox(width: 12),
-                    _buildStatCard(
-                        title: "Cars Sold",
-                        value: "12",
-                        change: "+3 this month",
-                        isPositive: true,
-                        graphColor: AppTheme.success),
+                    _buildStatCard(title: "Cars Sold", value: "12", change: "+3 this month", isPositive: true, graphColor: AppTheme.success),
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
-                    _buildStatCard(
-                        title: "Total Profit",
-                        value: "Rs 6.5M",
-                        change: "+12% growth",
-                        isPositive: true,
-                        graphColor: AppTheme.warning),
+                    _buildStatCard(title: "Total Revenue", value: "Rs 6.5M", change: "+12% growth", isPositive: true, graphColor: AppTheme.warning),
                     const SizedBox(width: 12),
-                    _buildStatCard(
-                        title: "Investors",
-                        value: "3",
-                        change: "Active partners",
-                        isPositive: true,
-                        graphColor: AppTheme.info),
+                    _buildStatCard(title: "Investors", value: "3", change: "Active partners", isPositive: true, graphColor: AppTheme.info),
                   ]),
                 ],
               )
             else
               Row(
                 children: [
-                  _buildStatCard(
-                      title: "Total Cars",
-                      value: "84",
-                      change: "+5 this week",
-                      isPositive: true,
-                      graphColor: AppTheme.primary),
+                  _buildStatCard(title: "Total Cars", value: "84", change: "+5 this week", isPositive: true, graphColor: AppTheme.primary),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                      title: "Cars Sold",
-                      value: "12",
-                      change: "+3 this month",
-                      isPositive: true,
-                      graphColor: AppTheme.success),
+                  _buildStatCard(title: "Cars Sold", value: "12", change: "+3 this month", isPositive: true, graphColor: AppTheme.success),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                      title: "Total Profit",
-                      value: "Rs 6.5M",
-                      change: "+12% growth",
-                      isPositive: true,
-                      graphColor: AppTheme.warning),
+                  _buildStatCard(title: "Total Revenue", value: "Rs 6.5M", change: "+12% growth", isPositive: true, graphColor: AppTheme.warning),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                      title: "Investors",
-                      value: "3",
-                      change: "Active partners",
-                      isPositive: true,
-                      graphColor: AppTheme.info),
+                  _buildStatCard(title: "Investors", value: "3", change: "Active partners", isPositive: true, graphColor: AppTheme.info),
                 ],
               ),
 
             const SizedBox(height: 24),
 
-            // MIDDLE SECTION — stack on narrow/medium
+            // PAYMENT DUE ALERTS
+            _buildPaymentAlerts(isNarrow),
+
+            const SizedBox(height: 24),
+
+            // MIDDLE SECTION
             if (isMedium)
               Column(
                 children: [
@@ -203,12 +151,7 @@ class DashboardScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Revenue Statistics",
-                                style: TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary)),
+                            Text("Revenue Statistics", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                             Row(children: [
                               _buildLegendDot("Revenue", AppTheme.primary),
                               const SizedBox(width: 16),
@@ -217,36 +160,17 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text("Monthly revenue overview",
-                            style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 12,
-                                color: AppTheme.textMuted)),
+                        Text("Monthly revenue overview", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
                         const SizedBox(height: 24),
                         SizedBox(
                           height: 220,
-                          child: Center(
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                Icon(FluentIcons.chart,
-                                    size: 40,
-                                    color:
-                                        AppTheme.primary.withOpacity(0.3)),
-                                const SizedBox(height: 12),
-                                Text("Revenue Chart",
-                                    style: TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.textPrimary)),
-                                const SizedBox(height: 4),
-                                Text("Add fl_chart package for visualization",
-                                    style: TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                        color: AppTheme.textMuted)),
-                              ])),
+                          child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withOpacity(0.3)),
+                            const SizedBox(height: 12),
+                            Text("Revenue Chart", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text("Add fl_chart package for visualization", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                          ])),
                         ),
                       ],
                     ),
@@ -259,32 +183,19 @@ class DashboardScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Recent Arrivals",
-                                style: TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary)),
+                            Text("Recent Arrivals", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                             HyperlinkButton(
-                                style: ButtonStyle(
-                                    foregroundColor: WidgetStateProperty.all(
-                                        AppTheme.primary)),
-                                onPressed: () {},
-                                child: const Text("View All",
-                                    style: TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12))),
+                              style: ButtonStyle(foregroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                              onPressed: () {},
+                              child: const Text("View All", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildCarRow("Toyota Grande", "2024 \u2022 White",
-                            "Available", "Rs 85L"),
-                        _buildCarRow("Honda Civic", "2023 \u2022 Black",
-                            "Sold", "Rs 72L"),
-                        _buildCarRow("Suzuki Alto", "2025 \u2022 Silver",
-                            "Available", "Rs 32L"),
-                        _buildCarRow("Kia Sportage", "2022 \u2022 Red",
-                            "Booked", "Rs 95L"),
+                        _buildCarRow("Toyota Grande", "2024 \u2022 White", "Available", "Rs 85L"),
+                        _buildCarRow("Honda Civic", "2023 \u2022 Black", "Sold", "Rs 72L"),
+                        _buildCarRow("Suzuki Alto", "2025 \u2022 Silver", "Available", "Rs 32L"),
+                        _buildCarRow("Kia Sportage", "2022 \u2022 Red", "Booked", "Rs 95L"),
                       ],
                     ),
                   ),
@@ -303,12 +214,7 @@ class DashboardScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Revenue Statistics",
-                                  style: TextStyle(
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary)),
+                              Text("Revenue Statistics", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                               Row(children: [
                                 _buildLegendDot("Revenue", AppTheme.primary),
                                 const SizedBox(width: 16),
@@ -317,37 +223,17 @@ class DashboardScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text("Monthly revenue overview",
-                              style: TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 12,
-                                  color: AppTheme.textMuted)),
+                          Text("Monthly revenue overview", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
                           const SizedBox(height: 24),
                           SizedBox(
                             height: 260,
-                            child: Center(
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                  Icon(FluentIcons.chart,
-                                      size: 40,
-                                      color:
-                                          AppTheme.primary.withOpacity(0.3)),
-                                  const SizedBox(height: 12),
-                                  Text("Revenue Chart",
-                                      style: TextStyle(
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.textPrimary)),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                      "Add fl_chart package for visualization",
-                                      style: TextStyle(
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontSize: 12,
-                                          color: AppTheme.textMuted)),
-                                ])),
+                            child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withOpacity(0.3)),
+                              const SizedBox(height: 12),
+                              Text("Revenue Chart", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                              const SizedBox(height: 4),
+                              Text("Add fl_chart package for visualization", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                            ])),
                           ),
                         ],
                       ),
@@ -363,33 +249,19 @@ class DashboardScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text("Recent Arrivals",
-                                  style: TextStyle(
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary)),
+                              Text("Recent Arrivals", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                               HyperlinkButton(
-                                  style: ButtonStyle(
-                                      foregroundColor:
-                                          WidgetStateProperty.all(
-                                              AppTheme.primary)),
-                                  onPressed: () {},
-                                  child: const Text("View All",
-                                      style: TextStyle(
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontSize: 12))),
+                                style: ButtonStyle(foregroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                                onPressed: () {},
+                                child: const Text("View All", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          _buildCarRow("Toyota Grande", "2024 \u2022 White",
-                              "Available", "Rs 85L"),
-                          _buildCarRow("Honda Civic", "2023 \u2022 Black",
-                              "Sold", "Rs 72L"),
-                          _buildCarRow("Suzuki Alto", "2025 \u2022 Silver",
-                              "Available", "Rs 32L"),
-                          _buildCarRow("Kia Sportage", "2022 \u2022 Red",
-                              "Booked", "Rs 95L"),
+                          _buildCarRow("Toyota Grande", "2024 \u2022 White", "Available", "Rs 85L"),
+                          _buildCarRow("Honda Civic", "2023 \u2022 Black", "Sold", "Rs 72L"),
+                          _buildCarRow("Suzuki Alto", "2025 \u2022 Silver", "Available", "Rs 32L"),
+                          _buildCarRow("Kia Sportage", "2022 \u2022 Red", "Booked", "Rs 95L"),
                         ],
                       ),
                     ),
@@ -407,17 +279,8 @@ class DashboardScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Top Selling Brands",
-                          style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary)),
-                      Text("This Month",
-                          style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 12,
-                              color: AppTheme.textMuted)),
+                      Text("Top Selling Brands", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      Text("This Month", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -436,21 +299,13 @@ class DashboardScreen extends StatelessWidget {
                   else
                     Row(
                       children: [
-                        Expanded(
-                            child: _buildBrandProgress(
-                                "Toyota", 0.75, AppTheme.primary)),
+                        Expanded(child: _buildBrandProgress("Toyota", 0.75, AppTheme.primary)),
                         const SizedBox(width: 32),
-                        Expanded(
-                            child: _buildBrandProgress(
-                                "Honda", 0.60, AppTheme.success)),
+                        Expanded(child: _buildBrandProgress("Honda", 0.60, AppTheme.success)),
                         const SizedBox(width: 32),
-                        Expanded(
-                            child: _buildBrandProgress(
-                                "Suzuki", 0.45, AppTheme.warning)),
+                        Expanded(child: _buildBrandProgress("Suzuki", 0.45, AppTheme.warning)),
                         const SizedBox(width: 32),
-                        Expanded(
-                            child: _buildBrandProgress(
-                                "Kia", 0.30, AppTheme.info)),
+                        Expanded(child: _buildBrandProgress("Kia", 0.30, AppTheme.info)),
                       ],
                     ),
                 ],
@@ -461,6 +316,98 @@ class DashboardScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  // ── Payment Due Alerts ──
+  static Widget _buildPaymentAlerts(bool isNarrow) {
+    final alerts = [
+      {'buyer': 'Usman Ali', 'car': 'Kia Sportage 2022', 'amount': 'Rs 5.0L', 'due': 'Feb 10, 2026', 'status': 'Due Today', 'urgency': 'high'},
+      {'buyer': 'Bilal Malik', 'car': 'Suzuki Cultus 2024', 'amount': 'Rs 3.8L', 'due': 'Feb 12, 2026', 'status': 'Due in 2 days', 'urgency': 'medium'},
+      {'buyer': 'Farhan Raza', 'car': 'Hyundai Tucson 2022', 'amount': 'Rs 4.0L', 'due': 'Feb 18, 2026', 'status': 'Upcoming', 'urgency': 'low'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.error.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              child: const Icon(FluentIcons.warning, size: 14, color: AppTheme.error),
+            ),
+            const SizedBox(width: 10),
+            Text("Payment Due Alerts", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: Text("${alerts.length}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.error)),
+            ),
+            const Spacer(),
+            HyperlinkButton(
+              style: ButtonStyle(foregroundColor: WidgetStateProperty.all(AppTheme.primary)),
+              onPressed: () {},
+              child: const Text("View All", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          ...alerts.map((a) {
+            final urgencyColor = a['urgency'] == 'high' ? AppTheme.error : (a['urgency'] == 'medium' ? AppTheme.warning : AppTheme.info);
+            return Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: urgencyColor.withOpacity(0.03),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: urgencyColor.withOpacity(0.12)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 4, height: 40,
+                  decoration: BoxDecoration(color: urgencyColor, borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(a['buyer']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: urgencyColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      child: Text(a['status']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, fontWeight: FontWeight.w700, color: urgencyColor)),
+                    ),
+                  ]),
+                  const SizedBox(height: 3),
+                  Text("${a['car']} \u2022 ${a['amount']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                ])),
+                if (!isNarrow) ...[
+                  const SizedBox(width: 16),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(a['amount']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: urgencyColor)),
+                    Text(a['due']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+                  ]),
+                  const SizedBox(width: 12),
+                  Tooltip(
+                    message: "Send WhatsApp Reminder",
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                      child: const Icon(FluentIcons.chat, size: 14, color: AppTheme.success),
+                    ),
+                  ),
+                ],
+              ]),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -478,11 +425,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   // ── Quick Action chip (expanded) ──
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
+  Widget _buildQuickAction({required IconData icon, required String label, required Color color}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -491,32 +434,17 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppTheme.divider),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          ),
+        ]),
       ),
     );
   }
@@ -530,40 +458,20 @@ class DashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.divider),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, color: color, size: 14),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ],
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+          child: Icon(icon, color: color, size: 14),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+      ]),
     );
   }
 
   // ── Stat Card with mini sparkline ──
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required String change,
-    required bool isPositive,
-    required Color graphColor,
-  }) {
+  Widget _buildStatCard({required String title, required String value, required String change, required bool isPositive, required Color graphColor}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(18),
@@ -572,102 +480,39 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppTheme.divider),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: Text(
-                    value,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ),
-                // Mini sparkline graph
-                SizedBox(
-                  width: 60,
-                  height: 28,
-                  child: CustomPaint(
-                    painter: _SparklinePainter(color: graphColor),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  isPositive ? FluentIcons.up : FluentIcons.down,
-                  size: 10,
-                  color: isPositive ? AppTheme.success : AppTheme.error,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    change,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: isPositive ? AppTheme.success : AppTheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textSecondary)),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(child: Text(value, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 26, fontWeight: FontWeight.w700, color: AppTheme.textPrimary))),
+              SizedBox(width: 60, height: 28, child: CustomPaint(painter: _SparklinePainter(color: graphColor))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(children: [
+            Icon(isPositive ? FluentIcons.up : FluentIcons.down, size: 10, color: isPositive ? AppTheme.success : AppTheme.error),
+            const SizedBox(width: 4),
+            Flexible(child: Text(change, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w500, color: isPositive ? AppTheme.success : AppTheme.error))),
+          ]),
+        ]),
       ),
     );
   }
 
   // ── Legend dot ──
   static Widget _buildLegendDot(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 12,
-            color: AppTheme.textMuted,
-          ),
-        ),
-      ],
-    );
+    return Row(children: [
+      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(width: 6),
+      Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+    ]);
   }
 
   // ── Car Row ──
-  Widget _buildCarRow(
-      String name, String details, String status, String price) {
+  Widget _buildCarRow(String name, String details, String status, String price) {
     Color statusColor = AppTheme.success;
     if (status == 'Sold') statusColor = AppTheme.textMuted;
     if (status == 'Booked') statusColor = AppTheme.warning;
@@ -675,133 +520,50 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
+      decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8)),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(8)),
+          child: Icon(FluentIcons.car, color: AppTheme.textSecondary, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(name, style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimary)),
+          const SizedBox(height: 2),
+          Text(details, style: TextStyle(fontFamily: AppTheme.fontFamily, color: AppTheme.textMuted, fontSize: 11)),
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(price, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.primary)),
+          const SizedBox(height: 4),
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppTheme.divider,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(FluentIcons.car,
-                color: AppTheme.textSecondary, size: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+            child: Text(status, style: TextStyle(fontFamily: AppTheme.fontFamily, color: statusColor, fontSize: 10, fontWeight: FontWeight.w600)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  details,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    color: AppTheme.textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                price,
-                style: const TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                  color: AppTheme.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ]),
+      ]),
     );
   }
 
   // ── Brand Progress ──
   Widget _buildBrandProgress(String brand, double progress, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              brand,
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            Text(
-              "${(progress * 100).toInt()}%",
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(brand, style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w500, fontSize: 13, color: AppTheme.textPrimary)),
+        Text("${(progress * 100).toInt()}%", style: TextStyle(fontFamily: AppTheme.fontFamily, color: color, fontWeight: FontWeight.w600, fontSize: 12)),
+      ]),
+      const SizedBox(height: 8),
+      Container(
+        height: 6,
+        decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(3)),
+        child: FractionallySizedBox(
+          alignment: Alignment.centerLeft,
+          widthFactor: progress,
+          child: Container(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
         ),
-        const SizedBox(height: 8),
-        Container(
-          height: 6,
-          decoration: BoxDecoration(
-            color: AppTheme.divider,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: progress,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+      ),
+    ]);
   }
 }
 
@@ -818,7 +580,6 @@ class _SparklinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Generate a smooth upward trending sparkline
     final points = <Offset>[];
     final random = math.Random(color.value);
     double y = size.height * 0.7;
@@ -828,7 +589,6 @@ class _SparklinePainter extends CustomPainter {
       y = y.clamp(size.height * 0.1, size.height * 0.9);
       points.add(Offset(x, y));
     }
-    // Ensure last point trends upward
     points[points.length - 1] = Offset(size.width, size.height * 0.2);
     points[points.length - 2] = Offset(size.width * 0.82, size.height * 0.35);
 
@@ -842,7 +602,6 @@ class _SparklinePainter extends CustomPainter {
     }
     canvas.drawPath(path, paint);
 
-    // Draw gradient fill below the line
     final fillPath = Path.from(path);
     fillPath.lineTo(size.width, size.height);
     fillPath.lineTo(0, size.height);

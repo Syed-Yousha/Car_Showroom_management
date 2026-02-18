@@ -3,7 +3,9 @@ import '../../core/theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
 import '../sales/sales_screen.dart';
+import '../payments/payments_screen.dart';
 import '../customers/customers_screen.dart';
+import '../salesmen/salesmen_screen.dart';
 import '../investors/investors_screen.dart';
 import '../expenses/expenses_screen.dart';
 import '../settings/settings_screen.dart';
@@ -162,13 +164,23 @@ class _MainLayoutState extends State<MainLayout> {
           ),
           PaneItem(
             icon: const Icon(FluentIcons.document_set),
-            title: const Text("Sales & Docs", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            title: const Text("Sales & Invoicing", style: TextStyle(fontFamily: AppTheme.fontFamily)),
             body: const SalesScreen(),
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.payment_card),
+            title: const Text("Payments", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            body: const PaymentsScreen(),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.people),
             title: const Text("Customers", style: TextStyle(fontFamily: AppTheme.fontFamily)),
             body: const CustomersScreen(),
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.people_repeat),
+            title: const Text("Salesmen & Profit", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            body: const SalesmenScreen(),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.money),

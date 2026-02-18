@@ -13,16 +13,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
   String _selectedFilter = 'All';
 
   final List<Map<String, dynamic>> _customers = [
-    {'name': 'Ali Hassan', 'phone': '0312-1234567', 'cnic': '35202-1234567-1', 'city': 'Lahore', 'totalPurchases': 2, 'totalSpent': 15700000, 'lastPurchase': '2026-02-05', 'type': 'Regular'},
-    {'name': 'Ahmed Khan', 'phone': '0300-9876543', 'cnic': '35201-9876543-2', 'city': 'Islamabad', 'totalPurchases': 1, 'totalSpent': 7200000, 'lastPurchase': '2026-02-03', 'type': 'New'},
-    {'name': 'Usman Ali', 'phone': '0321-5551234', 'cnic': '35203-5551234-3', 'city': 'Karachi', 'totalPurchases': 3, 'totalSpent': 22500000, 'lastPurchase': '2026-02-01', 'type': 'VIP'},
-    {'name': 'Bilal Malik', 'phone': '0333-6667890', 'cnic': '35204-6667890-4', 'city': 'Lahore', 'totalPurchases': 1, 'totalSpent': 3800000, 'lastPurchase': '2026-01-28', 'type': 'New'},
-    {'name': 'Farhan Raza', 'phone': '0345-1112233', 'cnic': '35205-1112233-5', 'city': 'Faisalabad', 'totalPurchases': 2, 'totalSpent': 17800000, 'lastPurchase': '2026-01-25', 'type': 'Regular'},
-    {'name': 'Imran Shah', 'phone': '0301-4445566', 'cnic': '35206-4445566-6', 'city': 'Multan', 'totalPurchases': 0, 'totalSpent': 0, 'lastPurchase': '-', 'type': 'Lead'},
-    {'name': 'Zain ul Abideen', 'phone': '0311-7778899', 'cnic': '35207-7778899-7', 'city': 'Rawalpindi', 'totalPurchases': 4, 'totalSpent': 35000000, 'lastPurchase': '2026-01-15', 'type': 'VIP'},
-    {'name': 'Hamza Tariq', 'phone': '0322-2223344', 'cnic': '35208-2223344-8', 'city': 'Lahore', 'totalPurchases': 1, 'totalSpent': 4600000, 'lastPurchase': '2026-01-10', 'type': 'New'},
-    {'name': 'Saad Qureshi', 'phone': '0334-5556677', 'cnic': '35209-5556677-9', 'city': 'Islamabad', 'totalPurchases': 0, 'totalSpent': 0, 'lastPurchase': '-', 'type': 'Lead'},
-    {'name': 'Waqar Ahmed', 'phone': '0346-8889900', 'cnic': '35210-8889900-0', 'city': 'Peshawar', 'totalPurchases': 1, 'totalSpent': 9500000, 'lastPurchase': '2026-01-05', 'type': 'Regular'},
+    {'name': 'Ali Hassan', 'phone': '0312-1234567', 'cnic': '35202-1234567-1', 'city': 'Lahore', 'address': '123 Model Town, Lahore', 'totalPurchases': 2, 'totalSpent': 15700000, 'lastPurchase': '2026-02-05', 'type': 'Regular'},
+    {'name': 'Ahmed Khan', 'phone': '0300-9876543', 'cnic': '35201-9876543-2', 'city': 'Islamabad', 'address': '45 F-8, Islamabad', 'totalPurchases': 1, 'totalSpent': 7200000, 'lastPurchase': '2026-02-03', 'type': 'New'},
+    {'name': 'Usman Ali', 'phone': '0321-5551234', 'cnic': '35203-5551234-3', 'city': 'Karachi', 'address': '78 Clifton Block 5, Karachi', 'totalPurchases': 3, 'totalSpent': 22500000, 'lastPurchase': '2026-02-01', 'type': 'VIP'},
+    {'name': 'Bilal Malik', 'phone': '0333-6667890', 'cnic': '35204-6667890-4', 'city': 'Lahore', 'address': '12 Johar Town Phase 2, Lahore', 'totalPurchases': 1, 'totalSpent': 3800000, 'lastPurchase': '2026-01-28', 'type': 'New'},
+    {'name': 'Farhan Raza', 'phone': '0345-1112233', 'cnic': '35205-1112233-5', 'city': 'Faisalabad', 'address': '56 D Ground, Faisalabad', 'totalPurchases': 2, 'totalSpent': 17800000, 'lastPurchase': '2026-01-25', 'type': 'Regular'},
+    {'name': 'Imran Shah', 'phone': '0301-4445566', 'cnic': '35206-4445566-6', 'city': 'Multan', 'address': '90 Gulberg Colony, Multan', 'totalPurchases': 0, 'totalSpent': 0, 'lastPurchase': '-', 'type': 'Lead'},
+    {'name': 'Zain ul Abideen', 'phone': '0311-7778899', 'cnic': '35207-7778899-7', 'city': 'Rawalpindi', 'address': '34 Saddar Bazaar, Rawalpindi', 'totalPurchases': 4, 'totalSpent': 35000000, 'lastPurchase': '2026-01-15', 'type': 'VIP'},
+    {'name': 'Hamza Tariq', 'phone': '0322-2223344', 'cnic': '35208-2223344-8', 'city': 'Lahore', 'address': '67 Canal Road, Lahore', 'totalPurchases': 1, 'totalSpent': 4600000, 'lastPurchase': '2026-01-10', 'type': 'New'},
+    {'name': 'Saad Qureshi', 'phone': '0334-5556677', 'cnic': '35209-5556677-9', 'city': 'Islamabad', 'address': '22 G-9 Markaz, Islamabad', 'totalPurchases': 0, 'totalSpent': 0, 'lastPurchase': '-', 'type': 'Lead'},
+    {'name': 'Waqar Ahmed', 'phone': '0346-8889900', 'cnic': '35210-8889900-0', 'city': 'Peshawar', 'address': '15 University Road, Peshawar', 'totalPurchases': 1, 'totalSpent': 9500000, 'lastPurchase': '2026-01-05', 'type': 'Regular'},
   ];
 
   List<Map<String, dynamic>> get _filtered {
@@ -32,6 +32,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
         final q = _searchQuery.toLowerCase();
         return c['name'].toString().toLowerCase().contains(q) ||
             c['phone'].toString().contains(q) ||
+            c['cnic'].toString().contains(q) ||
+            c['address'].toString().toLowerCase().contains(q) ||
             c['city'].toString().toLowerCase().contains(q);
       }
       return true;
@@ -63,7 +65,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text("Customers", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 22 : 28, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
               const SizedBox(height: 4),
-              Text("Manage your customer relationships", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 12 : 14, color: AppTheme.textSecondary)),
+              Text("Customer database with CNIC, address & purchase history", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 12 : 14, color: AppTheme.textSecondary)),
             ])),
             FilledButton(
               style: ButtonStyle(
@@ -168,7 +170,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       height: 38,
       decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.divider)),
       child: TextBox(
-        placeholder: "Search by name, phone, city...",
+        placeholder: "Search by name, phone, CNIC, address...",
         placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
         style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
         prefix: Padding(padding: const EdgeInsets.only(left: 10), child: Icon(FluentIcons.search, size: 14, color: AppTheme.textMuted)),
@@ -232,8 +234,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
       decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8)),
       child: Row(children: [
         Expanded(flex: 2, child: Text("Name", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-        SizedBox(width: 120, child: Text("Phone", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-        SizedBox(width: 90, child: Text("City", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+        SizedBox(width: 130, child: Text("CNIC", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+        SizedBox(width: 110, child: Text("Phone", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 70, child: Text("Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 80, child: Text("Purchases", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 100, child: Text("Total Spent", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
@@ -256,10 +258,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
             child: Center(child: Text(c['name'].toString().substring(0, 1), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.primary))),
           ),
           const SizedBox(width: 10),
-          Flexible(child: Text(c['name'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(c['name'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            Text(c['address'] ?? c['city'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+          ])),
         ])),
-        SizedBox(width: 120, child: Text(c['phone'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary))),
-        SizedBox(width: 90, child: Text(c['city'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary))),
+        SizedBox(width: 130, child: Text(c['cnic'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textPrimary))),
+        SizedBox(width: 110, child: Text(c['phone'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary))),
         SizedBox(width: 70, child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
@@ -300,6 +305,26 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ),
         ]),
         const SizedBox(height: 12),
+        // CNIC + Address row
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(FluentIcons.contact_card, size: 11, color: AppTheme.textMuted),
+              const SizedBox(width: 6),
+              Text("CNIC: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              Text(c['cnic'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              Icon(FluentIcons.home, size: 11, color: AppTheme.textMuted),
+              const SizedBox(width: 6),
+              Flexible(child: Text(c['address'] ?? c['city'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+            ]),
+          ]),
+        ),
+        const SizedBox(height: 10),
         Row(children: [
           _buildCardDetail(FluentIcons.city_next, c['city']),
           const SizedBox(width: 16),
