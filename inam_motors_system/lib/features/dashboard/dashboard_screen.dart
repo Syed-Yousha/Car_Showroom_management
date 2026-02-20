@@ -2,9 +2,14 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'dart:math' as math;
 import '../../core/theme.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -319,8 +324,49 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  // ── WhatsApp Reminder Dialog ──
+  void _showWhatsAppDialog(Map<String, String> a) {
+    final msg = "Assalam o Alaikum ${a['buyer']},\n\nThis is a gentle reminder from Inam Motors regarding your installment for ${a['car']}.\n\nDue Amount: ${a['amount']}\nDue Date: ${a['due']}\n\nKindly make the payment at your earliest convenience.\n\nThank you,\nInam Motors";
+
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: Row(children: [
+          Icon(FluentIcons.chat, size: 18, color: AppTheme.success),
+          const SizedBox(width: 8),
+          const Text("WhatsApp Reminder", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        ]),
+        constraints: const BoxConstraints(maxWidth: 500),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text("To: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted)),
+            Text(a['buyer']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          ]),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.divider)),
+            child: Text(msg, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary, height: 1.5)),
+          ),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.success)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(FluentIcons.chat, size: 14, color: Colors.white),
+              SizedBox(width: 6),
+              Text("Copy & Send", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Payment Due Alerts ──
-  static Widget _buildPaymentAlerts(bool isNarrow) {
+  Widget _buildPaymentAlerts(bool isNarrow) {
     final alerts = [
       {'buyer': 'Usman Ali', 'car': 'Kia Sportage 2022', 'amount': 'Rs 5.0L', 'due': 'Feb 10, 2026', 'status': 'Due Today', 'urgency': 'high'},
       {'buyer': 'Bilal Malik', 'car': 'Suzuki Cultus 2024', 'amount': 'Rs 3.8L', 'due': 'Feb 12, 2026', 'status': 'Due in 2 days', 'urgency': 'medium'},
@@ -396,10 +442,13 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Tooltip(
                     message: "Send WhatsApp Reminder",
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                      child: const Icon(FluentIcons.chat, size: 14, color: AppTheme.success),
+                    child: GestureDetector(
+                      onTap: () => _showWhatsAppDialog(a),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(FluentIcons.chat, size: 14, color: AppTheme.success),
+                      ),
                     ),
                   ),
                 ],

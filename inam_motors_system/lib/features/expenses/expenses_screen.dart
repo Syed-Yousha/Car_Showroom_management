@@ -77,6 +77,148 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   int _categoryTotal(String cat) => _expenses.where((e) => e['category'] == cat).fold(0, (s, e) => s + (e['amount'] as int));
   int _categoryCount(String cat) => _expenses.where((e) => e['category'] == cat).length;
 
+  void _showEditExpenseDialog(Map<String, dynamic> e) {
+    final idx = _expenses.indexOf(e);
+    if (idx == -1) return;
+
+    final titleCtrl = TextEditingController(text: e['title']);
+    final amountCtrl = TextEditingController(text: e['amount'].toString());
+    final paidToCtrl = TextEditingController(text: e['paidTo']);
+    final dateCtrl = TextEditingController(text: e['date']);
+    String selectedCategory = e['category'];
+    String selectedMethod = e['method'];
+    bool isRecurring = e['recurring'] == true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: Text("Edit Expense ${e['id']}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 480),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _expEditField("Title", titleCtrl),
+            Row(children: [
+              Expanded(child: _expEditField("Amount", amountCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _expEditField("Paid To", paidToCtrl)),
+            ]),
+            _expEditField("Date (YYYY-MM-DD)", dateCtrl),
+            Row(children: [
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Category",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedCategory,
+                    isExpanded: true,
+                    items: ['Rent', 'Salaries', 'Maintenance', 'Bills', 'Marketing', 'Tea', 'Miscellaneous'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedCategory = v); },
+                  ),
+                ),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Method",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedMethod,
+                    isExpanded: true,
+                    items: ['Cash', 'Online', 'Bank Transfer', 'Cheque'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedMethod = v); },
+                  ),
+                ),
+              )),
+            ]),
+            Row(children: [
+              Checkbox(
+                checked: isRecurring,
+                onChanged: (v) => setDialogState(() => isRecurring = v ?? false),
+              ),
+              const SizedBox(width: 8),
+              Text("Recurring Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary)),
+            ]),
+          ]),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              setState(() {
+                _expenses[idx] = {
+                  ...e,
+                  'title': titleCtrl.text,
+                  'amount': int.tryParse(amountCtrl.text) ?? e['amount'],
+                  'paidTo': paidToCtrl.text,
+                  'date': dateCtrl.text,
+                  'category': selectedCategory,
+                  'method': selectedMethod,
+                  'recurring': isRecurring,
+                };
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
+
+  Widget _expEditField(String label, TextEditingController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: InfoLabel(
+        label: label,
+        labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+        child: TextBox(
+          controller: ctrl,
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+          decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveExpenseDialog(Map<String, dynamic> e) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("Remove Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Are you sure you want to remove this expense?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            child: Row(children: [
+              Icon(FluentIcons.warning, size: 16, color: AppTheme.error),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(e['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                Text("${_formatPrice(e['amount'])} \u2022 ${e['category']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              ])),
+            ]),
+          ),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () {
+              setState(() => _expenses.remove(e));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _categoryColor(String cat) {
     switch (cat) {
       case 'Rent': return AppTheme.primary;
@@ -440,6 +582,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           Text(_formatPrice(e['amount']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.error)),
           Text(e['date'].toString().substring(5), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
         ]),
+        const SizedBox(width: 4),
+        IconButton(icon: const Icon(FluentIcons.edit, size: 13, color: AppTheme.primary), onPressed: () => _showEditExpenseDialog(e)),
+        IconButton(icon: Icon(FluentIcons.delete, size: 13, color: AppTheme.error.withOpacity(0.7)), onPressed: () => _showRemoveExpenseDialog(e)),
       ]),
     );
   }

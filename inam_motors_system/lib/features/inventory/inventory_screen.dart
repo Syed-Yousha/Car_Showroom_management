@@ -23,7 +23,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2024,
       'color': 'White',
       'price': 8500000,
+      'regNo': 'LEA-7421',
       'status': 'Available',
+      'buyer': '',
       'mileage': '12,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -31,6 +33,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': '2ZR-FE-8924561',
       'investor': 'Muhammad Inam',
       'fileHandedOver': true,
+      'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
       'photos': ['Front', 'Back', 'Interior'],
       'carExpenses': [
@@ -45,7 +48,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2023,
       'color': 'Black',
       'price': 7200000,
+      'regNo': 'LHR-5532',
       'status': 'Sold',
+      'buyer': 'Ahmed Khan',
       'mileage': '25,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -53,6 +58,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': 'R18Z1-7756231',
       'investor': 'Tariq Mehmood',
       'fileHandedOver': true,
+      'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
       'photos': ['Front', 'Back'],
       'carExpenses': [
@@ -66,7 +72,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2022,
       'color': 'Red',
       'price': 9500000,
+      'regNo': 'ISB-3918',
       'status': 'Booked',
+      'buyer': 'Usman Ali',
       'mileage': '18,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -74,6 +82,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': 'G4FJ-2204587',
       'investor': 'Muhammad Inam',
       'fileHandedOver': false,
+      'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
       'photos': ['Front', 'Interior'],
       'carExpenses': [],
@@ -85,7 +94,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2024,
       'color': 'Silver',
       'price': 3800000,
+      'regNo': 'LEA-1105',
       'status': 'Available',
+      'buyer': '',
       'mileage': '5,000 km',
       'fuel': 'Petrol',
       'transmission': 'Manual',
@@ -93,6 +104,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': 'K10B-2401234',
       'investor': 'Kashif Ali',
       'fileHandedOver': true,
+      'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
       'photos': ['Front', 'Back', 'Interior'],
       'carExpenses': [
@@ -106,7 +118,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2022,
       'color': 'Grey',
       'price': 11000000,
+      'regNo': 'LHR-8890',
       'status': 'Available',
+      'buyer': '',
       'mileage': '30,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -114,6 +128,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': 'G4FP-2209871',
       'investor': 'Tariq Mehmood',
       'fileHandedOver': false,
+      'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
       'photos': ['Front'],
       'carExpenses': [
@@ -128,7 +143,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2024,
       'color': 'White',
       'price': 9800000,
+      'regNo': 'LEA-6677',
       'status': 'Sold',
+      'buyer': 'Zain ul Abideen',
       'mileage': '8,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -136,6 +153,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': '15S4G-2406543',
       'investor': 'Muhammad Inam',
       'fileHandedOver': true,
+      'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
       'photos': ['Front', 'Back', 'Interior'],
       'carExpenses': [],
@@ -147,7 +165,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2024,
       'color': 'Blue',
       'price': 4600000,
+      'regNo': 'MUL-2243',
       'status': 'Available',
+      'buyer': '',
       'mileage': '2,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -155,6 +175,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': 'JL473Q5-2403456',
       'investor': 'Kashif Ali',
       'fileHandedOver': true,
+      'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
       'photos': ['Front', 'Back'],
       'carExpenses': [
@@ -168,7 +189,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'year': 2024,
       'color': 'Silver',
       'price': 6800000,
+      'regNo': 'LEA-9034',
       'status': 'Available',
+      'buyer': '',
       'mileage': '15,000 km',
       'fuel': 'Petrol',
       'transmission': 'Automatic',
@@ -176,6 +199,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       'engineNo': '1NZ-FE-2406789',
       'investor': 'Muhammad Inam',
       'fileHandedOver': false,
+      'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
       'photos': ['Front', 'Interior'],
       'carExpenses': [],
@@ -215,6 +239,186 @@ class _InventoryScreenState extends State<InventoryScreen> {
   int get _bookedCount => _cars.where((c) => c['status'] == 'Booked').length;
   int get _totalCarExpenses => _cars.fold(0, (s, c) => s + ((c['carExpenses'] as List).fold(0, (ss, e) => (ss) + ((e as Map)['amount'] as int))));
 
+  void _showAddCarDialog() {
+    final nameCtrl = TextEditingController();
+    final makeCtrl = TextEditingController();
+    final modelCtrl = TextEditingController();
+    final yearCtrl = TextEditingController(text: '2024');
+    final colorCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    final regNoCtrl = TextEditingController();
+    final mileageCtrl = TextEditingController();
+    final chassisCtrl = TextEditingController();
+    final engineCtrl = TextEditingController();
+    final investorCtrl = TextEditingController();
+    String selectedFuel = 'Petrol';
+    String selectedTransmission = 'Automatic';
+    bool fileHanded = false;
+    bool smartCardHanded = false;
+    bool plateHanded = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: const Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 560),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [
+              Expanded(child: _editField("Car Name", nameCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Make", makeCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Model", modelCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Year", yearCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Reg No", regNoCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Color", colorCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Price (Rs)", priceCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Mileage", mileageCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Fuel Type",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedFuel,
+                    isExpanded: true,
+                    items: ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'CNG'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedFuel = v); },
+                  ),
+                ),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Transmission",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedTransmission,
+                    isExpanded: true,
+                    items: ['Automatic', 'Manual'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedTransmission = v); },
+                  ),
+                ),
+              )),
+            ]),
+            _editField("Chassis No", chassisCtrl),
+            _editField("Engine No", engineCtrl),
+            _editField("Investor", investorCtrl),
+            const SizedBox(height: 8),
+            Row(children: [
+              Checkbox(
+                checked: fileHanded,
+                onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
+                content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: smartCardHanded,
+                onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
+                content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: plateHanded,
+                onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
+                content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+            ]),
+          ]),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              if (nameCtrl.text.isEmpty) return;
+              setState(() {
+                _cars.add({
+                  'name': nameCtrl.text,
+                  'make': makeCtrl.text,
+                  'model': modelCtrl.text,
+                  'year': int.tryParse(yearCtrl.text) ?? 2024,
+                  'color': colorCtrl.text,
+                  'price': int.tryParse(priceCtrl.text) ?? 0,
+                  'regNo': regNoCtrl.text,
+                  'status': 'Available',
+                  'buyer': '',
+                  'mileage': mileageCtrl.text,
+                  'fuel': selectedFuel,
+                  'transmission': selectedTransmission,
+                  'chassisNo': chassisCtrl.text,
+                  'engineNo': engineCtrl.text,
+                  'investor': investorCtrl.text,
+                  'fileHandedOver': fileHanded,
+                  'smartCardHandedOver': smartCardHanded,
+                  'numberPlateHandedOver': plateHanded,
+                  'photos': <String>[],
+                  'carExpenses': <Map<String, dynamic>>[],
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Add Car", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
+
+  void _showRemoveCarDialog(Map<String, dynamic> car) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("Remove Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Are you sure you want to remove this car from inventory?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            child: Row(children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(FluentIcons.car, size: 18, color: AppTheme.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text("${car['name']} (${car['year']})", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${_formatPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              ])),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Text("This action cannot be undone.", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () {
+              setState(() => _cars.remove(car));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditCarDialog(Map<String, dynamic> car) {
     final index = _cars.indexOf(car);
     if (index == -1) return;
@@ -229,10 +433,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final chassisCtrl = TextEditingController(text: car['chassisNo']);
     final engineCtrl = TextEditingController(text: car['engineNo']);
     final investorCtrl = TextEditingController(text: car['investor']);
+    final regNoCtrl = TextEditingController(text: car['regNo'] ?? '');
+    final buyerCtrl = TextEditingController(text: car['buyer'] ?? '');
     String selectedStatus = car['status'];
     String selectedFuel = car['fuel'];
     String selectedTransmission = car['transmission'];
     bool fileHanded = car['fileHandedOver'];
+    bool smartCardHanded = car['smartCardHandedOver'] ?? false;
     bool plateHanded = car['numberPlateHandedOver'];
 
     showDialog(
@@ -303,21 +510,35 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
               )),
             ]),
+            Row(children: [
+              Expanded(child: _editField("Reg No", regNoCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Investor", investorCtrl)),
+            ]),
             _editField("Chassis No", chassisCtrl),
             _editField("Engine No", engineCtrl),
-            _editField("Investor", investorCtrl),
+            if (selectedStatus == 'Sold' || selectedStatus == 'Booked')
+              _editField("Buyer Name", buyerCtrl),
+            const SizedBox(height: 8),
+            Text("Document Tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             const SizedBox(height: 8),
             Row(children: [
               Checkbox(
                 checked: fileHanded,
                 onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
-                content: Text("File Handed Over", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+                content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: smartCardHanded,
+                onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
+                content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
               Checkbox(
                 checked: plateHanded,
                 onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
-                content: Text("Number Plate Handed Over", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+                content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
             ]),
           ]),
@@ -343,7 +564,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   'chassisNo': chassisCtrl.text,
                   'engineNo': engineCtrl.text,
                   'investor': investorCtrl.text,
+                  'regNo': regNoCtrl.text,
+                  'buyer': buyerCtrl.text,
                   'fileHandedOver': fileHanded,
+                  'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
                 };
               });
@@ -393,7 +617,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                 padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               ),
-              onPressed: () {},
+              onPressed: () => _showAddCarDialog(),
               child: const Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(FluentIcons.add, size: 14, color: Colors.white),
                 SizedBox(width: 8),
@@ -600,9 +824,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
             // Document Tracking
             Row(children: [
               _buildDocCheckbox("File", car['fileHandedOver']),
-              const SizedBox(width: 12),
-              _buildDocCheckbox("Number Plate", car['numberPlateHandedOver']),
+              const SizedBox(width: 10),
+              _buildDocCheckbox("Smart Card", car['smartCardHandedOver'] ?? false),
+              const SizedBox(width: 10),
+              _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
             ]),
+
+            // Buyer name for Sold cars
+            if (car['status'] == 'Sold' && (car['buyer'] ?? '').toString().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(color: AppTheme.info.withOpacity(0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.info.withOpacity(0.15))),
+                child: Row(children: [
+                  Icon(FluentIcons.contact, size: 12, color: AppTheme.info),
+                  const SizedBox(width: 6),
+                  Text("Buyer: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                  Flexible(child: Text(car['buyer'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.info))),
+                ]),
+              ),
+            ],
 
             const SizedBox(height: 10),
 
@@ -633,7 +875,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   Text("Edit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
                 ]),
               )),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              Expanded(child: Button(
+                style: ButtonStyle(
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 8)),
+                ),
+                onPressed: () => _showRemoveCarDialog(car),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(FluentIcons.delete, size: 12, color: AppTheme.error),
+                  const SizedBox(width: 6),
+                  Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error)),
+                ]),
+              )),
+              const SizedBox(width: 6),
               Expanded(child: FilledButton(
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(AppTheme.error.withOpacity(0.9)),
@@ -691,7 +946,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(height: 4),
               Text("${car['year']} \u2022 ${car['color']} \u2022 ${car['transmission']} \u2022 ${car['mileage']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               const SizedBox(height: 2),
-              Text("Chassis: ${car['chassisNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textSecondary)),
+              Row(children: [
+                Text("Chassis: ${car['chassisNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textSecondary)),
+                if (car['regNo'] != null && car['regNo'].toString().isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Text("Reg: ${car['regNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primary)),
+                ],
+              ]),
+              if (car['status'] == 'Sold' && (car['buyer'] ?? '').toString().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(children: [
+                    Icon(FluentIcons.contact, size: 10, color: AppTheme.info),
+                    const SizedBox(width: 4),
+                    Text("Buyer: ${car['buyer']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.info)),
+                  ]),
+                ),
             ])),
             if (!isNarrow) ...[
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -699,7 +969,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 const SizedBox(height: 4),
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   _buildDocCheckbox("File", car['fileHandedOver']),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
+                  _buildDocCheckbox("Card", car['smartCardHandedOver'] ?? false),
+                  const SizedBox(width: 6),
                   _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
                 ]),
               ]),
@@ -713,6 +985,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
               IconButton(
                 icon: const Icon(FluentIcons.edit, size: 12, color: AppTheme.primary),
                 onPressed: () => _showEditCarDialog(car),
+              ),
+              IconButton(
+                icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withOpacity(0.7)),
+                onPressed: () => _showRemoveCarDialog(car),
               ),
               IconButton(
                 icon: const Icon(FluentIcons.pdf, size: 12, color: AppTheme.error),
@@ -805,9 +1081,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Text("Document Tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
               Row(children: [
-                _buildDocCheck("File Handed Over", car['fileHandedOver']),
-                const SizedBox(width: 24),
-                _buildDocCheck("Number Plate Handed Over", car['numberPlateHandedOver']),
+                _buildDocCheck("File", car['fileHandedOver']),
+                const SizedBox(width: 20),
+                _buildDocCheck("Smart Card", car['smartCardHandedOver'] ?? false),
+                const SizedBox(width: 20),
+                _buildDocCheck("Number Plate", car['numberPlateHandedOver']),
               ]),
             ]),
           ),

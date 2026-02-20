@@ -326,6 +326,42 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     );
   }
 
+  void _showRemovePaymentDialog(Map<String, dynamic> p) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("Remove Payment", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Are you sure you want to remove this payment record?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            child: Row(children: [
+              Icon(FluentIcons.warning, size: 16, color: AppTheme.error),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text("${p['id']} - ${p['car']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                Text("Buyer: ${p['buyer']} \u2022 ${_formatPrice(p['totalAmount'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              ])),
+            ]),
+          ),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () {
+              setState(() => _payments.remove(p));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditPaymentDialog(Map<String, dynamic> p) {
     final paymentIndex = _payments.indexOf(p);
     if (paymentIndex == -1) return;
@@ -550,6 +586,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             ),
           ],
           IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.primary), onPressed: () => _showEditPaymentDialog(p)),
+          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withOpacity(0.7)), onPressed: () => _showRemovePaymentDialog(p)),
           IconButton(icon: Icon(FluentIcons.view, size: 14, color: AppTheme.textSecondary), onPressed: () {}),
         ]),
         const SizedBox(height: 14),
