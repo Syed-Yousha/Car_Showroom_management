@@ -1,14 +1,21 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
 
   @override
-  State<CustomersScreen> createState() => _CustomersScreenState();
+  State<CustomersScreen> createState() => CustomersScreenState();
 }
 
-class _CustomersScreenState extends State<CustomersScreen> {
+class CustomersScreenState extends State<CustomersScreen> {
+  void showAddDialog() => _showAddCustomerDialog();
+
   String _searchQuery = '';
   String _selectedFilter = 'All';
 
@@ -45,13 +52,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
   int get _newCount => _customers.where((c) => c['type'] == 'New').length;
   int get _leadCount => _customers.where((c) => c['type'] == 'Lead').length;
 
-  String _formatPrice(int price) {
-    if (price >= 10000000) return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    if (price >= 100000) return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    if (price == 0) return '-';
-    return 'Rs $price';
-  }
-
   // Dummy sales data linked to customers for the detail card
   final List<Map<String, dynamic>> _salesData = [
     {'buyer': 'Ali Hassan', 'car': 'Toyota Grande 2024', 'salePrice': 8500000, 'purchasePrice': 7500000, 'discount': 0, 'date': '2026-02-05'},
@@ -70,6 +70,75 @@ class _CustomersScreenState extends State<CustomersScreen> {
     {'buyer': 'Hamza Tariq', 'car': 'Changan Alsvin 2024', 'salePrice': 4600000, 'purchasePrice': 3800000, 'discount': 0, 'date': '2026-01-10'},
     {'buyer': 'Waqar Ahmed', 'car': 'Kia Sportage 2022', 'salePrice': 9500000, 'purchasePrice': 8200000, 'discount': 0, 'date': '2026-01-05'},
   ];
+
+  void _showAddCustomerDialog() {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final cnicCtrl = TextEditingController();
+    final cityCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    String selectedType = 'New';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: const Text("Add Customer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 480),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _custEditField("Full Name", nameCtrl),
+            Row(children: [
+              Expanded(child: _custEditField("Phone", phoneCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _custEditField("CNIC", cnicCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _custEditField("City", cityCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Type",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedType,
+                    isExpanded: true,
+                    items: ['VIP', 'Regular', 'New', 'Lead'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedType = v); },
+                  ),
+                ),
+              )),
+            ]),
+            _custEditField("Address", addressCtrl),
+          ]),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              if (nameCtrl.text.trim().isEmpty) return;
+              setState(() {
+                _customers.add({
+                  'name': nameCtrl.text.trim(),
+                  'phone': phoneCtrl.text.trim(),
+                  'cnic': cnicCtrl.text.trim(),
+                  'city': cityCtrl.text.trim(),
+                  'address': addressCtrl.text.trim(),
+                  'totalPurchases': 0,
+                  'totalSpent': 0,
+                  'lastPurchase': '-',
+                  'type': selectedType,
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Add Customer", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
 
   void _showEditCustomerDialog(Map<String, dynamic> c) {
     final idx = _customers.indexOf(c);
@@ -181,6 +250,125 @@ class _CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
+  Future<void> _showCustomerPdf(Map<String, dynamic> c) async {
+    final customerSales = _salesData.where((s) => s['buyer'] == c['name']).toList();
+    int totalSaleValue = 0;
+    int totalProfit = 0;
+    for (final s in customerSales) {
+      totalSaleValue += (s['salePrice'] as int);
+      totalProfit += ((s['salePrice'] as int) - (s['purchasePrice'] as int) - (s['discount'] as int));
+    }
+
+    final pdf = pw.Document();
+    pdf.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(32),
+      build: (pw.Context context) {
+        return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          // Header
+          pw.Center(child: pw.Column(children: [
+            pw.Text("INAM MOTORS", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
+            pw.SizedBox(height: 2),
+            pw.Text("Car Showroom & Dealership", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 2, width: 200, color: PdfColor.fromHex('#6C5DD3')),
+          ])),
+          pw.SizedBox(height: 20),
+
+          pw.Text("Customer Profile", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+
+          // Customer Info Table
+          _pdfDetailRow("Name", c['name']),
+          _pdfDetailRow("Phone", c['phone']),
+          _pdfDetailRow("CNIC", c['cnic']),
+          _pdfDetailRow("City", c['city']),
+          _pdfDetailRow("Address", c['address'] ?? c['city']),
+          _pdfDetailRow("Customer Type", c['type']),
+          _pdfDetailRow("Total Purchases", "${c['totalPurchases']}"),
+          _pdfDetailRow("Total Spent", formatFullPrice(c['totalSpent'] as int)),
+          _pdfDetailRow("Last Purchase", c['lastPurchase']),
+
+          pw.SizedBox(height: 20),
+
+          // Summary Stats
+          pw.Row(children: [
+            _pdfStatBox("Cars Bought", "${customerSales.length}", PdfColor.fromHex('#6C5DD3')),
+            pw.SizedBox(width: 12),
+            _pdfStatBox("Total Sales", formatFullPrice(totalSaleValue), PdfColors.blue),
+            pw.SizedBox(width: 12),
+            _pdfStatBox("Profit Earned", formatFullPrice(totalProfit), PdfColors.green),
+          ]),
+
+          pw.SizedBox(height: 20),
+
+          // Purchase History
+          if (customerSales.isNotEmpty) ...[
+            pw.Text("Purchase History", style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F0EEFF')),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              headers: ['#', 'Car', 'Date', 'Sale Price', 'Purchase Price', 'Profit'],
+              data: customerSales.asMap().entries.map((entry) {
+                final s = entry.value;
+                final profit = (s['salePrice'] as int) - (s['purchasePrice'] as int) - (s['discount'] as int);
+                return [
+                  '${entry.key + 1}',
+                  s['car'],
+                  s['date'],
+                  formatFullPrice(s['salePrice'] as int),
+                  formatFullPrice(s['purchasePrice'] as int),
+                  formatFullPrice(profit),
+                ];
+              }).toList(),
+            ),
+          ],
+
+          pw.Spacer(),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(children: [
+              pw.Container(width: 120, height: 0.5, color: PdfColors.grey400),
+              pw.SizedBox(height: 4),
+              pw.Text("Authorized Signature", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+            ]),
+            pw.Text("Generated by Inam Motors System", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
+          ]),
+        ]);
+      },
+    ));
+
+    final bytes = await pdf.save();
+    await Printing.sharePdf(bytes: bytes, filename: 'Customer_${c['name'].toString().replaceAll(' ', '_')}.pdf');
+  }
+
+  pw.Widget _pdfDetailRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 3),
+      child: pw.Row(children: [
+        pw.SizedBox(width: 120, child: pw.Text(label, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
+        pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 11))),
+      ]),
+    );
+  }
+
+  pw.Widget _pdfStatBox(String label, String value, PdfColor color) {
+    return pw.Expanded(child: pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: color, width: 0.5), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Column(children: [
+        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.SizedBox(height: 2),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+      ]),
+    ));
+  }
+
   void _showCustomerDetailDialog(Map<String, dynamic> c) {
     final customerSales = _salesData.where((s) => s['buyer'] == c['name']).toList();
     int totalSaleValue = 0;
@@ -212,7 +400,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             Row(children: [
               Expanded(child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
                 child: Column(children: [
                   Text("${customerSales.length}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.primary)),
                   Text("Cars Bought", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
@@ -221,18 +409,18 @@ class _CustomersScreenState extends State<CustomersScreen> {
               const SizedBox(width: 10),
               Expanded(child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppTheme.info.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
                 child: Column(children: [
-                  Text(_formatPrice(totalSaleValue), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.info)),
+                  Text(formatPrice(totalSaleValue), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.info)),
                   Text("Total Sales", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
                 ]),
               )),
               const SizedBox(width: 10),
               Expanded(child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
                 child: Column(children: [
-                  Text(_formatPrice(totalProfit), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.success)),
+                  Text(formatPrice(totalProfit), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.success)),
                   Text("Profit Earned", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
                 ]),
               )),
@@ -279,10 +467,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(s['car'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                      Text("Date: ${s['date']} \u2022 Price: ${_formatPrice(s['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+                      Text("Date: ${s['date']} \u2022 Price: ${formatPrice(s['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
                     ])),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text(_formatPrice(profit), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: profit >= 0 ? AppTheme.success : AppTheme.error)),
+                      Text(formatPrice(profit), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: profit >= 0 ? AppTheme.success : AppTheme.error)),
                       Text("Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted)),
                     ]),
                   ]),
@@ -291,6 +479,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ]),
         ),
         actions: [
+          Button(
+            onPressed: () => _showCustomerPdf(c),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary),
+              const SizedBox(width: 6),
+              const Text("PDF", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            ]),
+          ),
           Button(onPressed: () => Navigator.pop(ctx), child: const Text("Close", style: TextStyle(fontFamily: AppTheme.fontFamily))),
         ],
       ),
@@ -328,7 +524,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                 padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               ),
-              onPressed: () {},
+              onPressed: () => _showAddCustomerDialog(),
               child: const Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(FluentIcons.add, size: 14, color: Colors.white),
                 SizedBox(width: 8),
@@ -343,26 +539,26 @@ class _CustomersScreenState extends State<CustomersScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                _buildStat("Total", "${_customers.length}", FluentIcons.people, AppTheme.primary),
+                StatCard(label: "Total", value: "${_customers.length}", icon: FluentIcons.people, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                _buildStat("VIP", "$_vipCount", FluentIcons.diamond_user, AppTheme.warning),
+                StatCard(label: "VIP", value: "$_vipCount", icon: FluentIcons.diamond_user, color: AppTheme.warning),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                _buildStat("Regular", "$_regularCount", FluentIcons.contact, AppTheme.info),
+                StatCard(label: "Regular", value: "$_regularCount", icon: FluentIcons.contact, color: AppTheme.info),
                 const SizedBox(width: 12),
-                _buildStat("Leads", "$_leadCount", FluentIcons.people_add, AppTheme.success),
+                StatCard(label: "Leads", value: "$_leadCount", icon: FluentIcons.people_add, color: AppTheme.success),
               ]),
             ])
           else
             Row(children: [
-              _buildStat("Total", "${_customers.length}", FluentIcons.people, AppTheme.primary),
+              StatCard(label: "Total", value: "${_customers.length}", icon: FluentIcons.people, color: AppTheme.primary),
               const SizedBox(width: 16),
-              _buildStat("VIP", "$_vipCount", FluentIcons.diamond_user, AppTheme.warning),
+              StatCard(label: "VIP", value: "$_vipCount", icon: FluentIcons.diamond_user, color: AppTheme.warning),
               const SizedBox(width: 16),
-              _buildStat("Regular", "$_regularCount", FluentIcons.contact, AppTheme.info),
+              StatCard(label: "Regular", value: "$_regularCount", icon: FluentIcons.contact, color: AppTheme.info),
               const SizedBox(width: 16),
-              _buildStat("Leads", "$_leadCount", FluentIcons.people_add, AppTheme.success),
+              StatCard(label: "Leads", value: "$_leadCount", icon: FluentIcons.people_add, color: AppTheme.success),
             ]),
 
           const SizedBox(height: 24),
@@ -412,7 +608,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
           // CUSTOMER LIST
           if (!isNarrow) _buildTableHeader(),
           ..._filtered.map((c) => isNarrow ? _buildCustomerCard(c) : _buildCustomerRow(c)),
-          if (_filtered.isEmpty) _buildEmpty(),
+          if (_filtered.isEmpty) const EmptyState(message: 'No customers found'),
 
           const SizedBox(height: 24),
         ],
@@ -447,26 +643,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: sel ? Colors.white.withOpacity(0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: sel ? Colors.white.withValues(alpha: 0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
             child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildStat(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-        child: Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-          const SizedBox(width: 12),
-          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
-          ])),
         ]),
       ),
     );
@@ -494,7 +673,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         SizedBox(width: 70, child: Text("Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 80, child: Text("Purchases", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 100, child: Text("Total Spent", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-        SizedBox(width: 60),
+        SizedBox(width: 120),
       ]),
     );
   }
@@ -524,15 +703,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
         SizedBox(width: 110, child: Text(c['phone'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary))),
         SizedBox(width: 70, child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+          decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
           child: Text(c['type'], textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: typeColor)),
         )),
         SizedBox(width: 80, child: Text("${c['totalPurchases']}", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary))),
-        SizedBox(width: 100, child: Text(_formatPrice(c['totalSpent']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
-        SizedBox(width: 90, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+        SizedBox(width: 100, child: Text(formatPrice(c['totalSpent']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+        SizedBox(width: 120, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
           IconButton(icon: Icon(FluentIcons.view, size: 14, color: AppTheme.textSecondary), onPressed: () => _showCustomerDetailDialog(c)),
+          IconButton(icon: Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary), onPressed: () => _showCustomerPdf(c)),
           IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.primary), onPressed: () => _showEditCustomerDialog(c)),
-          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withOpacity(0.7)), onPressed: () => _showRemoveCustomerDialog(c)),
+          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveCustomerDialog(c)),
         ])),
       ]),
       ),
@@ -561,16 +741,20 @@ class _CustomersScreenState extends State<CustomersScreen> {
             ])),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+              decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
               child: Text(c['type'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: typeColor)),
             ),
             const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary),
+              onPressed: () => _showCustomerPdf(c),
+            ),
             IconButton(
               icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.primary),
               onPressed: () => _showEditCustomerDialog(c),
             ),
             IconButton(
-              icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withOpacity(0.7)),
+              icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)),
               onPressed: () => _showRemoveCustomerDialog(c),
             ),
           ]),
@@ -599,7 +783,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             const SizedBox(width: 16),
             _buildCardDetail(FluentIcons.shopping_cart, "${c['totalPurchases']} purchases"),
             const Spacer(),
-            Text(_formatPrice(c['totalSpent']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary)),
+            Text(formatPrice(c['totalSpent']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary)),
           ]),
         ]),
       ),
@@ -612,18 +796,5 @@ class _CustomersScreenState extends State<CustomersScreen> {
       const SizedBox(width: 4),
       Text(text, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
     ]);
-  }
-
-  Widget _buildEmpty() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60),
-      child: Center(child: Column(children: [
-        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)), child: const Icon(FluentIcons.search, size: 32, color: AppTheme.primary)),
-        const SizedBox(height: 16),
-        Text("No customers found", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-        const SizedBox(height: 4),
-        Text("Try adjusting your search or filters", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted)),
-      ])),
-    );
   }
 }

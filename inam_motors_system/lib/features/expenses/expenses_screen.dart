@@ -1,14 +1,18 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
 
   @override
-  State<ExpensesScreen> createState() => _ExpensesScreenState();
+  State<ExpensesScreen> createState() => ExpensesScreenState();
 }
 
-class _ExpensesScreenState extends State<ExpensesScreen> {
+class ExpensesScreenState extends State<ExpensesScreen> {
+  void showAddDialog() => _showAddExpenseDialog();
+
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
@@ -67,15 +71,100 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     return _expenses.where((e) => dailyCategories.contains(e['category'])).fold(0, (s, e) => s + (e['amount'] as int));
   }
 
-  String _formatPrice(int price) {
-    if (price >= 10000000) return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    if (price >= 100000) return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    if (price >= 1000) return 'Rs ${(price / 1000).toStringAsFixed(0)}K';
-    return 'Rs $price';
-  }
+
 
   int _categoryTotal(String cat) => _expenses.where((e) => e['category'] == cat).fold(0, (s, e) => s + (e['amount'] as int));
   int _categoryCount(String cat) => _expenses.where((e) => e['category'] == cat).length;
+
+  void _showAddExpenseDialog() {
+    final titleCtrl = TextEditingController();
+    final amountCtrl = TextEditingController();
+    final paidToCtrl = TextEditingController();
+    final dateCtrl = TextEditingController(text: "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}");
+    String selectedCategory = 'Miscellaneous';
+    String selectedMethod = 'Cash';
+    bool isRecurring = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: const Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 480),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _expEditField("Title", titleCtrl),
+            Row(children: [
+              Expanded(child: _expEditField("Amount", amountCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _expEditField("Paid To", paidToCtrl)),
+            ]),
+            _expEditField("Date (YYYY-MM-DD)", dateCtrl),
+            Row(children: [
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Category",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedCategory,
+                    isExpanded: true,
+                    items: ['Rent', 'Salaries', 'Maintenance', 'Bills', 'Marketing', 'Tea', 'Miscellaneous'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedCategory = v); },
+                  ),
+                ),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Method",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedMethod,
+                    isExpanded: true,
+                    items: ['Cash', 'Online', 'Bank Transfer', 'Cheque'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedMethod = v); },
+                  ),
+                ),
+              )),
+            ]),
+            Row(children: [
+              Checkbox(
+                checked: isRecurring,
+                onChanged: (v) => setDialogState(() => isRecurring = v ?? false),
+              ),
+              const SizedBox(width: 8),
+              Text("Recurring Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary)),
+            ]),
+          ]),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              if (titleCtrl.text.trim().isEmpty) return;
+              final id = "EXP-${(_expenses.length + 1).toString().padLeft(3, '0')}";
+              setState(() {
+                _expenses.insert(0, {
+                  'id': id,
+                  'title': titleCtrl.text.trim(),
+                  'category': selectedCategory,
+                  'amount': int.tryParse(amountCtrl.text) ?? 0,
+                  'date': dateCtrl.text,
+                  'paidTo': paidToCtrl.text.trim(),
+                  'method': selectedMethod,
+                  'recurring': isRecurring,
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
 
   void _showEditExpenseDialog(Map<String, dynamic> e) {
     final idx = _expenses.indexOf(e);
@@ -193,13 +282,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withValues(alpha: 0.2))),
             child: Row(children: [
               Icon(FluentIcons.warning, size: 16, color: AppTheme.error),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(e['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("${_formatPrice(e['amount'])} \u2022 ${e['category']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("${formatPrice(e['amount'])} \u2022 ${e['category']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
@@ -267,7 +356,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                 padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
               ),
-              onPressed: () {},
+              onPressed: () => _showAddExpenseDialog(),
               child: const Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(FluentIcons.add, size: 14, color: Colors.white),
                 SizedBox(width: 8),
@@ -282,26 +371,26 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                _buildStat("Total Expenses", _formatPrice(_totalExpenses), FluentIcons.calculator_addition, AppTheme.error),
+                StatCard(valueFontSize: 18, label: "Total Expenses", value: formatPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
                 const SizedBox(width: 12),
-                _buildStat("Daily Costs", _formatPrice(_dailyCosts), FluentIcons.cafe, const Color(0xFF8B5CF6)),
+                StatCard(valueFontSize: 18, label: "Daily Costs", value: formatPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                _buildStat("Recurring", _formatPrice(_monthlyRecurring), FluentIcons.sync_folder, AppTheme.warning),
+                StatCard(valueFontSize: 18, label: "Recurring", value: formatPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
                 const SizedBox(width: 12),
-                _buildStat("One-Time", _formatPrice(_oneTimeExpenses), FluentIcons.page, AppTheme.info),
+                StatCard(valueFontSize: 18, label: "One-Time", value: formatPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
               ]),
             ])
           else
             Row(children: [
-              _buildStat("Total Expenses", _formatPrice(_totalExpenses), FluentIcons.calculator_addition, AppTheme.error),
+              StatCard(valueFontSize: 18, label: "Total Expenses", value: formatPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
               const SizedBox(width: 16),
-              _buildStat("Daily Costs", _formatPrice(_dailyCosts), FluentIcons.cafe, const Color(0xFF8B5CF6)),
+              StatCard(valueFontSize: 18, label: "Daily Costs", value: formatPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
               const SizedBox(width: 16),
-              _buildStat("Recurring", _formatPrice(_monthlyRecurring), FluentIcons.sync_folder, AppTheme.warning),
+              StatCard(valueFontSize: 18, label: "Recurring", value: formatPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
               const SizedBox(width: 16),
-              _buildStat("One-Time", _formatPrice(_oneTimeExpenses), FluentIcons.page, AppTheme.info),
+              StatCard(valueFontSize: 18, label: "One-Time", value: formatPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
             ]),
 
           const SizedBox(height: 24),
@@ -344,11 +433,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withOpacity(0.1), borderRadius: BorderRadius.circular(6)), child: const Icon(FluentIcons.cafe, size: 14, color: Color(0xFF8B5CF6))),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)), child: const Icon(FluentIcons.cafe, size: 14, color: Color(0xFF8B5CF6))),
           const SizedBox(width: 10),
           Text("Daily & Running Costs", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
           const Spacer(),
-          Text(_formatPrice(_dailyCosts), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.error)),
+          Text(formatPrice(_dailyCosts), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.error)),
         ]),
         const SizedBox(height: 16),
         if (isNarrow)
@@ -380,7 +469,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.15))),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.15))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(icon, size: 14, color: color),
@@ -388,7 +477,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           Text(category, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ]),
         const SizedBox(height: 10),
-        Text(_formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+        Text(formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
         Text("$count entries", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
       ]),
     );
@@ -400,7 +489,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)), child: const Icon(FluentIcons.report_document, size: 14, color: AppTheme.primary)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)), child: const Icon(FluentIcons.report_document, size: 14, color: AppTheme.primary)),
           const SizedBox(width: 10),
           Text("Monthly Reports", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
           const Spacer(),
@@ -432,12 +521,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withOpacity(0.5)))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
       child: Row(children: [
         Expanded(flex: 2, child: Text(m['month'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
-        Expanded(child: Text(_formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success))),
-        Expanded(child: Text(_formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.error))),
-        Expanded(child: Text(_formatPrice(m['net']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error))),
+        Expanded(child: Text(formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success))),
+        Expanded(child: Text(formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.error))),
+        Expanded(child: Text(formatPrice(m['net']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error))),
         SizedBox(
           width: 100,
           child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
@@ -445,7 +534,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               width: 50,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(3),
-                child: SizedBox(height: 6, child: ProgressBar(value: expenseRatio * 100, backgroundColor: AppTheme.success.withOpacity(0.2), activeColor: AppTheme.error)),
+                child: SizedBox(height: 6, child: ProgressBar(value: expenseRatio * 100, backgroundColor: AppTheme.success.withValues(alpha: 0.2), activeColor: AppTheme.error)),
               ),
             ),
             const SizedBox(width: 6),
@@ -467,15 +556,15 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text("Income", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(_formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
+            Text(formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
           ])),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text("Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(_formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.error)),
+            Text(formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.error)),
           ])),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text("Net Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(_formatPrice(m['net']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error)),
+            Text(formatPrice(m['net']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error)),
           ])),
         ]),
       ]),
@@ -501,12 +590,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               Row(children: [
                 Container(
                   padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                   child: Icon(_categoryIcon(cat), color: color, size: 12),
                 ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(cat, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary))),
-                Text(_formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                Text(formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
               ]),
               const SizedBox(height: 6),
               ClipRRect(
@@ -553,11 +642,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     final catColor = _categoryColor(e['category']);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withOpacity(0.5)))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
       child: Row(children: [
         Container(
           width: 36, height: 36,
-          decoration: BoxDecoration(color: catColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: catColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(_categoryIcon(e['category']), size: 14, color: catColor),
         ),
         const SizedBox(width: 12),
@@ -569,7 +658,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 padding: const EdgeInsets.only(left: 6),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(color: AppTheme.info.withOpacity(0.1), borderRadius: BorderRadius.circular(3)),
+                  decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3)),
                   child: const Text("Recurring", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 8, fontWeight: FontWeight.w700, color: AppTheme.info)),
                 ),
               ),
@@ -579,12 +668,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         ])),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(_formatPrice(e['amount']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.error)),
+          Text(formatPrice(e['amount']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.error)),
           Text(e['date'].toString().substring(5), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
         ]),
         const SizedBox(width: 4),
         IconButton(icon: const Icon(FluentIcons.edit, size: 13, color: AppTheme.primary), onPressed: () => _showEditExpenseDialog(e)),
-        IconButton(icon: Icon(FluentIcons.delete, size: 13, color: AppTheme.error.withOpacity(0.7)), onPressed: () => _showRemoveExpenseDialog(e)),
+        IconButton(icon: Icon(FluentIcons.delete, size: 13, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveExpenseDialog(e)),
       ]),
     );
   }
@@ -615,20 +704,4 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
-  Widget _buildStat(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-        child: Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-          const SizedBox(width: 12),
-          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
-          ])),
-        ]),
-      ),
-    );
-  }
 }

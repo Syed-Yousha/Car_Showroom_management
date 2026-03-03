@@ -20,6 +20,22 @@ class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
   PaneDisplayMode _displayMode = PaneDisplayMode.open;
 
+  final _inventoryKey = GlobalKey<InventoryScreenState>();
+  final _salesKey = GlobalKey<SalesScreenState>();
+  final _customersKey = GlobalKey<CustomersScreenState>();
+  final _expensesKey = GlobalKey<ExpensesScreenState>();
+
+  void _openAddDialog(int index, GlobalKey key) {
+    setState(() => _selectedIndex = index);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = key.currentState;
+      if (state is InventoryScreenState) state.showAddDialog();
+      if (state is SalesScreenState) state.showAddDialog();
+      if (state is CustomersScreenState) state.showAddDialog();
+      if (state is ExpensesScreenState) state.showAddDialog();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isOpen = _displayMode == PaneDisplayMode.open;
@@ -153,45 +169,50 @@ class _MainLayoutState extends State<MainLayout> {
         items: [
           PaneItem(
             icon: const Icon(FluentIcons.speed_high),
-            title: const Text("Dashboard", style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            body: const DashboardScreen(),
+            title: Text("Dashboard", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: DashboardScreen(
+              onAddCar: () => _openAddDialog(1, _inventoryKey),
+              onNewSale: () => _openAddDialog(2, _salesKey),
+              onAddCustomer: () => _openAddDialog(3, _customersKey),
+              onAddExpense: () => _openAddDialog(6, _expensesKey),
+            ),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.car),
-            title: const Text("Inventory", style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            body: const InventoryScreen(),
+            title: Text("Inventory", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: InventoryScreen(key: _inventoryKey),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.document_set),
-            title: const Text("Sales & Payments", style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            body: const SalesScreen(),
+            title: Text("Sales & Payments", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: SalesScreen(key: _salesKey),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.people),
-            title: const Text("Customers", style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            body: const CustomersScreen(),
+            title: Text("Customers", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: CustomersScreen(key: _customersKey),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.people_repeat),
-            title: const Text("Salesmen & Profit", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            title: Text("Salesmen & Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: const SalesmenScreen(),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.money),
-            title: const Text("Investors", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            title: Text("Investors", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: const InvestorsScreen(),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.calculator_addition),
-            title: const Text("Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            body: const ExpensesScreen(),
+            title: Text("Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: ExpensesScreen(key: _expensesKey),
           ),
         ],
         footerItems: [
           PaneItemSeparator(),
           PaneItem(
             icon: const Icon(FluentIcons.settings),
-            title: const Text("Settings", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            title: Text("Settings", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: const SettingsScreen(),
           ),
         ],

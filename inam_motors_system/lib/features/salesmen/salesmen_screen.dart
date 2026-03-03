@@ -1,5 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class SalesmenScreen extends StatefulWidget {
   const SalesmenScreen({super.key});
@@ -102,13 +104,6 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
       },
     },
   ];
-
-  String _formatPrice(int price) {
-    if (price >= 10000000) return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    if (price >= 100000) return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    if (price >= 1000) return 'Rs ${(price / 1000).toStringAsFixed(0)}K';
-    return 'Rs $price';
-  }
 
   Map<String, dynamic> _getYearData(Map<String, dynamic> partner) {
     final yearlySales = partner['yearlySales'] as Map<String, dynamic>;
@@ -266,12 +261,12 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
             color: AppTheme.cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.divider),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 4))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 4))],
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
               child: const Icon(FluentIcons.lock, size: 36, color: AppTheme.primary),
             ),
             const SizedBox(height: 20),
@@ -375,7 +370,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                    decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(FluentIcons.lock, size: 10, color: AppTheme.success),
                       const SizedBox(width: 4),
@@ -438,8 +433,8 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               ]),
               Wrap(spacing: 12, runSpacing: 8, children: [
                 _buildMiniStat("Sales", "$_yearTotalSales", AppTheme.primary),
-                _buildMiniStat("Revenue", _formatPrice(_yearTotalRevenue), AppTheme.info),
-                _buildMiniStat("Profit", _formatPrice(_yearTotalProfit), AppTheme.success),
+                _buildMiniStat("Revenue", formatPrice(_yearTotalRevenue), AppTheme.info),
+                _buildMiniStat("Profit", formatPrice(_yearTotalProfit), AppTheme.success),
               ]),
             ],
           ),
@@ -450,32 +445,32 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                _buildStat("Total Sales", "$_yearTotalSales", FluentIcons.shopping_cart, AppTheme.primary),
+                StatCard(valueFontSize: 18, label: "Total Sales", value: "$_yearTotalSales", icon: FluentIcons.shopping_cart, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                _buildStat("Revenue", _formatPrice(_yearTotalRevenue), FluentIcons.money, AppTheme.info),
+                StatCard(valueFontSize: 18, label: "Revenue", value: formatPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                _buildStat("Net Profit", _formatPrice(_yearTotalProfit), FluentIcons.up, AppTheme.success),
+                StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
                 const SizedBox(width: 12),
-                _buildStat("Partners", "${_partners.length}", FluentIcons.people, AppTheme.warning),
+                StatCard(valueFontSize: 18, label: "Partners", value: "${_partners.length}", icon: FluentIcons.people, color: AppTheme.warning),
               ]),
             ])
           else
             Row(children: [
-              _buildStat("Total Sales", "$_yearTotalSales", FluentIcons.shopping_cart, AppTheme.primary),
+              StatCard(valueFontSize: 18, label: "Total Sales", value: "$_yearTotalSales", icon: FluentIcons.shopping_cart, color: AppTheme.primary),
               const SizedBox(width: 16),
-              _buildStat("Revenue", _formatPrice(_yearTotalRevenue), FluentIcons.money, AppTheme.info),
+              StatCard(valueFontSize: 18, label: "Revenue", value: formatPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
               const SizedBox(width: 16),
-              _buildStat("Net Profit", _formatPrice(_yearTotalProfit), FluentIcons.up, AppTheme.success),
+              StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
               const SizedBox(width: 16),
-              _buildStat("Partners", "${_partners.length}", FluentIcons.people, AppTheme.warning),
+              StatCard(valueFontSize: 18, label: "Partners", value: "${_partners.length}", icon: FluentIcons.people, color: AppTheme.warning),
             ]),
 
           const SizedBox(height: 24),
 
           // PARTNERSHIP SHARE BAR
-          _buildCard(
+          AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text("Partnership Share", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 4),
@@ -523,7 +518,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
     final yearData = _getYearData(partner);
     final cars = yearData['cars'] as List;
 
-    return _buildCard(
+    return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
         Row(children: [
@@ -539,7 +534,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           ])),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+            decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
             child: Text(partner['status'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.success)),
           ),
           const SizedBox(width: 6),
@@ -554,19 +549,19 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           Column(children: [
             Row(children: [
               Expanded(child: _buildDetail("Sales ($_selectedYear)", "${yearData['totalSales']}")),
-              Expanded(child: _buildDetail("Revenue", _formatPrice(yearData['totalRevenue']))),
+              Expanded(child: _buildDetail("Revenue", formatPrice(yearData['totalRevenue']))),
             ]),
             const SizedBox(height: 10),
             Row(children: [
-              Expanded(child: _buildDetail("Net Profit", _formatPrice(yearData['totalProfit']), color: AppTheme.success)),
+              Expanded(child: _buildDetail("Net Profit", formatPrice(yearData['totalProfit']), color: AppTheme.success)),
               Expanded(child: _buildDetail("Share", "${partner['share']}%")),
             ]),
           ])
         else
           Row(children: [
             Expanded(child: _buildDetail("Sales ($_selectedYear)", "${yearData['totalSales']}")),
-            Expanded(child: _buildDetail("Revenue", _formatPrice(yearData['totalRevenue']))),
-            Expanded(child: _buildDetail("Net Profit", _formatPrice(yearData['totalProfit']), color: AppTheme.success)),
+            Expanded(child: _buildDetail("Revenue", formatPrice(yearData['totalRevenue']))),
+            Expanded(child: _buildDetail("Net Profit", formatPrice(yearData['totalProfit']), color: AppTheme.success)),
             Expanded(child: _buildDetail("Share", "${partner['share']}%")),
           ]),
 
@@ -630,19 +625,19 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
   Widget _buildCarRow(Map<String, dynamic> car) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withOpacity(0.5)))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
       child: Row(children: [
         Expanded(flex: 3, child: Text(car['car'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textPrimary))),
         SizedBox(width: 100, child: Text(car['buyer'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-        SizedBox(width: 80, child: Text(_formatPrice(car['salePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-        SizedBox(width: 80, child: Text(_formatPrice(car['profit']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
+        SizedBox(width: 80, child: Text(formatPrice(car['salePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+        SizedBox(width: 80, child: Text(formatPrice(car['profit']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
         SizedBox(width: 80, child: Text(car['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted))),
         SizedBox(width: 70, child: Align(
           alignment: Alignment.centerRight,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: (car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning).withOpacity(0.1),
+              color: (car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(car['type'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, fontWeight: FontWeight.w700, color: car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning)),
@@ -662,7 +657,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           Expanded(child: Text(car['car'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: (car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(color: (car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
             child: Text(car['type'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, fontWeight: FontWeight.w700, color: car['type'] == 'Cash' ? AppTheme.success : AppTheme.warning)),
           ),
         ]),
@@ -676,9 +671,9 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
         ]),
         const SizedBox(height: 6),
         Row(children: [
-          Text("Sale: ${_formatPrice(car['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary)),
+          Text("Sale: ${formatPrice(car['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary)),
           const Spacer(),
-          Text("Profit: ${_formatPrice(car['profit'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.success)),
+          Text("Profit: ${formatPrice(car['profit'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.success)),
         ]),
       ]),
     );
@@ -687,7 +682,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
   Widget _buildMiniStat(String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Text("$label: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
         Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: color)),
@@ -703,28 +698,4 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
     ]);
   }
 
-  Widget _buildStat(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-        child: Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-          const SizedBox(width: 12),
-          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
-          ])),
-        ]),
-      ),
-    );
-  }
-
-  static Widget _buildCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-      child: child,
-    );
-  }
 }

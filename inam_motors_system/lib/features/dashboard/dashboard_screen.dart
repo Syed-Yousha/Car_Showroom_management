@@ -1,9 +1,14 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'dart:math' as math;
 import '../../core/theme.dart';
+import '../shared/widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onAddCar;
+  final VoidCallback? onNewSale;
+  final VoidCallback? onAddCustomer;
+  final VoidCallback? onAddExpense;
+  const DashboardScreen({super.key, this.onAddCar, this.onNewSale, this.onAddCustomer, this.onAddExpense});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -59,7 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () => widget.onAddCar?.call(),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -87,22 +92,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _buildQuickActionFixed(FluentIcons.add_to, "Add Car", AppTheme.primary),
-                  _buildQuickActionFixed(FluentIcons.document, "New Sale", AppTheme.success),
-                  _buildQuickActionFixed(FluentIcons.people_add, "Add Customer", AppTheme.warning),
-                  _buildQuickActionFixed(FluentIcons.calculator, "Add Expense", AppTheme.error),
+                  _buildQuickActionFixed(FluentIcons.add_to, "Add Car", AppTheme.primary, () => widget.onAddCar?.call()),
+                  _buildQuickActionFixed(FluentIcons.document, "New Sale", AppTheme.success, () => widget.onNewSale?.call()),
+                  _buildQuickActionFixed(FluentIcons.people_add, "Add Customer", AppTheme.warning, () => widget.onAddCustomer?.call()),
+                  _buildQuickActionFixed(FluentIcons.calculator, "Add Expense", AppTheme.error, () => widget.onAddExpense?.call()),
                 ],
               )
             else
               Row(
                 children: [
-                  _buildQuickAction(icon: FluentIcons.add_to, label: "Add Car", color: AppTheme.primary),
+                  _buildQuickAction(icon: FluentIcons.add_to, label: "Add Car", color: AppTheme.primary, onTap: () => widget.onAddCar?.call()),
                   const SizedBox(width: 12),
-                  _buildQuickAction(icon: FluentIcons.document, label: "New Sale", color: AppTheme.success),
+                  _buildQuickAction(icon: FluentIcons.document, label: "New Sale", color: AppTheme.success, onTap: () => widget.onNewSale?.call()),
                   const SizedBox(width: 12),
-                  _buildQuickAction(icon: FluentIcons.people_add, label: "Add Customer", color: AppTheme.warning),
+                  _buildQuickAction(icon: FluentIcons.people_add, label: "Add Customer", color: AppTheme.warning, onTap: () => widget.onAddCustomer?.call()),
                   const SizedBox(width: 12),
-                  _buildQuickAction(icon: FluentIcons.calculator, label: "Add Expense", color: AppTheme.error),
+                  _buildQuickAction(icon: FluentIcons.calculator, label: "Add Expense", color: AppTheme.error, onTap: () => widget.onAddExpense?.call()),
                 ],
               ),
 
@@ -149,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (isMedium)
               Column(
                 children: [
-                  _buildCard(
+                  AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -170,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         SizedBox(
                           height: 220,
                           child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withOpacity(0.3)),
+                            Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withValues(alpha: 0.3)),
                             const SizedBox(height: 12),
                             Text("Revenue Chart", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                             const SizedBox(height: 4),
@@ -181,7 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildCard(
+                  AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -212,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: _buildCard(
+                    child: AppCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -233,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           SizedBox(
                             height: 260,
                             child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withOpacity(0.3)),
+                              Icon(FluentIcons.chart, size: 40, color: AppTheme.primary.withValues(alpha: 0.3)),
                               const SizedBox(height: 12),
                               Text("Revenue Chart", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                               const SizedBox(height: 4),
@@ -247,7 +252,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 20),
                   Expanded(
                     flex: 1,
-                    child: _buildCard(
+                    child: AppCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -277,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 24),
 
             // BOTTOM: Top Selling Brands
-            _buildCard(
+            AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -378,7 +383,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.error.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +391,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
               child: const Icon(FluentIcons.warning, size: 14, color: AppTheme.error),
             ),
             const SizedBox(width: 10),
@@ -394,7 +399,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: Text("${alerts.length}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.error)),
             ),
             const Spacer(),
@@ -411,9 +416,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: urgencyColor.withOpacity(0.03),
+                color: urgencyColor.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: urgencyColor.withOpacity(0.12)),
+                border: Border.all(color: urgencyColor.withValues(alpha: 0.12)),
               ),
               child: Row(children: [
                 Container(
@@ -426,7 +431,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(child: Text(a['buyer']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: urgencyColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: urgencyColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text(a['status']!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, fontWeight: FontWeight.w700, color: urgencyColor)),
                     ),
                   ]),
@@ -446,7 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: () => _showWhatsAppDialog(a),
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                         child: const Icon(FluentIcons.chat, size: 14, color: AppTheme.success),
                       ),
                     ),
@@ -460,62 +465,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── Card wrapper ──
-  static Widget _buildCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: child,
-    );
-  }
-
   // ── Quick Action chip (expanded) ──
-  Widget _buildQuickAction({required IconData icon, required String label, required Color color}) {
+  Widget _buildQuickAction({required IconData icon, required String label, required Color color, VoidCallback? onTap}) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppTheme.divider),
+      child: GestureDetector(
+        onTap: onTap,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.divider),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: color, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              ),
+            ]),
+          ),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-          ),
-        ]),
       ),
     );
   }
 
   // ── Quick Action chip (fixed width for wrap) ──
-  Widget _buildQuickActionFixed(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-          child: Icon(icon, color: color, size: 14),
+  Widget _buildQuickActionFixed(IconData icon, String label, Color color, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+              child: Icon(icon, color: color, size: 14),
+            ),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          ]),
         ),
-        const SizedBox(width: 8),
-        Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-      ]),
+      ),
     );
   }
 
@@ -587,7 +591,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
             child: Text(status, style: TextStyle(fontFamily: AppTheme.fontFamily, color: statusColor, fontSize: 10, fontWeight: FontWeight.w600)),
           ),
         ]),
@@ -630,7 +634,7 @@ class _SparklinePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final points = <Offset>[];
-    final random = math.Random(color.value);
+    final random = math.Random(color.toARGB32());
     double y = size.height * 0.7;
     for (int i = 0; i <= 8; i++) {
       final x = (size.width / 8) * i;
@@ -660,7 +664,7 @@ class _SparklinePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [color.withOpacity(0.15), color.withOpacity(0.0)],
+        colors: [color.withValues(alpha: 0.15), color.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(fillPath, fillPaint);
   }

@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _sections.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => _buildSectionChip(i),
               ),
             ),
@@ -305,9 +305,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.error.withOpacity(0.05),
+              color: AppTheme.error.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.error.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -317,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Button(
                 style: ButtonStyle(
                   foregroundColor: WidgetStateProperty.all(AppTheme.error),
-                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: AppTheme.error.withOpacity(0.4)))),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: AppTheme.error.withValues(alpha: 0.4)))),
                 ),
                 onPressed: () {},
                 child: const Text("Reset", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600)),

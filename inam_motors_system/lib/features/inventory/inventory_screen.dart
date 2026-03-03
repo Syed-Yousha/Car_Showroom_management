@@ -1,14 +1,21 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
 
   @override
-  State<InventoryScreen> createState() => _InventoryScreenState();
+  State<InventoryScreen> createState() => InventoryScreenState();
 }
 
-class _InventoryScreenState extends State<InventoryScreen> {
+class InventoryScreenState extends State<InventoryScreen> {
+  void showAddDialog() => _showAddCarDialog();
+
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isGridView = true;
@@ -227,17 +234,181 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return list;
   }
 
-  String _formatPrice(int price) {
-    if (price >= 10000000) return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    if (price >= 100000) return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    if (price >= 1000) return 'Rs ${(price / 1000).toStringAsFixed(0)}K';
-    return 'Rs $price';
-  }
-
   int get _availableCount => _cars.where((c) => c['status'] == 'Available').length;
   int get _soldCount => _cars.where((c) => c['status'] == 'Sold').length;
   int get _bookedCount => _cars.where((c) => c['status'] == 'Booked').length;
   int get _totalCarExpenses => _cars.fold(0, (s, c) => s + ((c['carExpenses'] as List).fold(0, (ss, e) => (ss) + ((e as Map)['amount'] as int))));
+
+  // ═══════════════════════════════════════════════
+  //  CAR PDF EXPORT
+  // ═══════════════════════════════════════════════
+  Future<void> _showCarPdf(Map<String, dynamic> car) async {
+    final expenses = car['carExpenses'] as List;
+    final totalExpense = expenses.fold(0, (s, e) => s + ((e as Map)['amount'] as int));
+    final statusText = car['status'] as String;
+
+    final pdf = pw.Document();
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(32),
+      build: (pw.Context context) {
+        return [
+          // Header
+          pw.Center(child: pw.Column(children: [
+            pw.Text("INAM MOTORS", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
+            pw.SizedBox(height: 2),
+            pw.Text("Car Showroom & Dealership", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 2, width: 200, color: PdfColor.fromHex('#6C5DD3')),
+          ])),
+          pw.SizedBox(height: 16),
+
+          // Title & Status
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text("Vehicle Profile", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: pw.BoxDecoration(
+                color: statusText == 'Available' ? PdfColors.green50 : statusText == 'Sold' ? PdfColors.grey200 : PdfColors.orange50,
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(
+                  color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange,
+                  width: 0.5,
+                ),
+              ),
+              child: pw.Text(statusText, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold,
+                color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange)),
+            ),
+          ]),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+
+          // Car Details
+          pw.Text("Car Information", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Name", car['name']),
+          _pdfRow("Make", car['make']),
+          _pdfRow("Model", car['model']),
+          _pdfRow("Year", "${car['year']}"),
+          _pdfRow("Color", car['color']),
+          _pdfRow("Price", formatFullPrice(car['price'])),
+          _pdfRow("Reg Number", car['regNo']),
+          _pdfRow("Mileage", car['mileage']),
+          _pdfRow("Fuel Type", car['fuel']),
+          _pdfRow("Transmission", car['transmission']),
+          _pdfRow("Engine No", car['engineNo']),
+          _pdfRow("Chassis No", car['chassisNo']),
+          pw.SizedBox(height: 14),
+
+          // Investor & Buyer
+          pw.Text("Ownership Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Investor", car['investor']),
+          if (car['buyer'] != null && (car['buyer'] as String).isNotEmpty)
+            _pdfRow("Buyer", car['buyer']),
+          pw.SizedBox(height: 14),
+
+          // Document Handover Status
+          pw.Text("Document Handover Status", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.Row(children: [
+            _pdfCheckBox("File", car['fileHandedOver'] == true),
+            pw.SizedBox(width: 20),
+            _pdfCheckBox("Smart Card", car['smartCardHandedOver'] == true),
+            pw.SizedBox(width: 20),
+            _pdfCheckBox("Number Plate", car['numberPlateHandedOver'] == true),
+          ]),
+          pw.SizedBox(height: 14),
+
+          // Summary Stats
+          pw.Row(children: [
+            _pdfStatBox("Price", formatFullPrice(car['price']), PdfColor.fromHex('#6C5DD3')),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Total Expenses", formatFullPrice(totalExpense), PdfColors.orange),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Status", statusText, statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange),
+          ]),
+          pw.SizedBox(height: 18),
+
+          // Expenses Table
+          pw.Text("Car Expenses", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          if (expenses.isEmpty)
+            pw.Center(child: pw.Padding(padding: const pw.EdgeInsets.all(16), child: pw.Text("No expenses recorded", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey500))))
+          else
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F0EEFF')),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              headers: ['#', 'Title', 'Date', 'Amount'],
+              data: expenses.asMap().entries.map((entry) {
+                final e = entry.value as Map;
+                return [
+                  '${entry.key + 1}',
+                  e['title'] ?? '',
+                  e['date'] ?? '',
+                  formatFullPrice(e['amount'] as int),
+                ];
+              }).toList(),
+            ),
+
+          pw.SizedBox(height: 30),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(children: [
+              pw.Container(width: 120, height: 0.5, color: PdfColors.grey400),
+              pw.SizedBox(height: 4),
+              pw.Text("Authorized Signature", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+            ]),
+            pw.Text("Generated by Inam Motors System", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
+          ]),
+        ];
+      },
+    ));
+
+    final bytes = await pdf.save();
+    await Printing.sharePdf(bytes: bytes, filename: 'Car_${car['name'].toString().replaceAll(' ', '_')}_${car['regNo']}.pdf');
+  }
+
+  pw.Widget _pdfRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 3),
+      child: pw.Row(children: [
+        pw.SizedBox(width: 130, child: pw.Text(label, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
+        pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 11))),
+      ]),
+    );
+  }
+
+  pw.Widget _pdfStatBox(String label, String value, PdfColor color) {
+    return pw.Expanded(child: pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: color, width: 0.5), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Column(children: [
+        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.SizedBox(height: 2),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+      ]),
+    ));
+  }
+
+  pw.Widget _pdfCheckBox(String label, bool checked) {
+    return pw.Row(children: [
+      pw.Container(
+        width: 14, height: 14,
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: checked ? PdfColors.green : PdfColors.grey, width: 1),
+          borderRadius: pw.BorderRadius.circular(3),
+          color: checked ? PdfColors.green50 : PdfColors.white,
+        ),
+        child: checked ? pw.Center(child: pw.Text("\u2713", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.green))) : pw.SizedBox(),
+      ),
+      pw.SizedBox(width: 4),
+      pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
+    ]);
+  }
 
   void _showAddCarDialog() {
     final nameCtrl = TextEditingController();
@@ -387,7 +558,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withValues(alpha: 0.2))),
             child: Row(children: [
               Container(
                 width: 40, height: 40,
@@ -397,7 +568,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text("${car['name']} (${car['year']})", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${_formatPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
@@ -632,26 +803,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                _buildStat("Total Cars", "${_cars.length}", FluentIcons.car, AppTheme.primary),
+                StatCard(label: "Total Cars", value: "${_cars.length}", icon: FluentIcons.car, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                _buildStat("Available", "$_availableCount", FluentIcons.check_mark, AppTheme.success),
+                StatCard(label: "Available", value: "$_availableCount", icon: FluentIcons.check_mark, color: AppTheme.success),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                _buildStat("Sold", "$_soldCount", FluentIcons.completed, AppTheme.textMuted),
+                StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
                 const SizedBox(width: 12),
-                _buildStat("Car Expenses", _formatPrice(_totalCarExpenses), FluentIcons.repair, AppTheme.warning),
+                StatCard(label: "Car Expenses", value: formatPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
               ]),
             ])
           else
             Row(children: [
-              _buildStat("Total Cars", "${_cars.length}", FluentIcons.car, AppTheme.primary),
+              StatCard(label: "Total Cars", value: "${_cars.length}", icon: FluentIcons.car, color: AppTheme.primary),
               const SizedBox(width: 16),
-              _buildStat("Available", "$_availableCount", FluentIcons.check_mark, AppTheme.success),
+              StatCard(label: "Available", value: "$_availableCount", icon: FluentIcons.check_mark, color: AppTheme.success),
               const SizedBox(width: 16),
-              _buildStat("Sold", "$_soldCount", FluentIcons.completed, AppTheme.textMuted),
+              StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
               const SizedBox(width: 16),
-              _buildStat("Car Expenses", _formatPrice(_totalCarExpenses), FluentIcons.repair, AppTheme.warning),
+              StatCard(label: "Car Expenses", value: formatPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
             ]),
 
           const SizedBox(height: 24),
@@ -708,7 +879,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           else
             ..._filtered.asMap().entries.map((e) => _buildCarListItem(e.value, e.key, isNarrow)),
 
-          if (_filtered.isEmpty) _buildEmpty(),
+          if (_filtered.isEmpty) const EmptyState(message: 'No cars found'),
 
           const SizedBox(height: 24),
         ],
@@ -754,24 +925,24 @@ class _InventoryScreenState extends State<InventoryScreen> {
         Container(
           height: 140,
           decoration: BoxDecoration(
-            color: AppTheme.divider.withOpacity(0.3),
+            color: AppTheme.divider.withValues(alpha: 0.3),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
           ),
           child: Stack(children: [
-            Center(child: Icon(FluentIcons.car, size: 40, color: AppTheme.textMuted.withOpacity(0.3))),
+            Center(child: Icon(FluentIcons.car, size: 40, color: AppTheme.textMuted.withValues(alpha: 0.3))),
             Positioned(top: 10, left: 10, child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(5)),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(5)),
               child: Text("${car['year']}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
             )),
             Positioned(top: 10, right: 10, child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.9), borderRadius: BorderRadius.circular(5)),
+              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(5)),
               child: Text(car['status'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
             )),
             Positioned(bottom: 10, right: 10, child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(5)),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(5)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(FluentIcons.camera, size: 10, color: Colors.white),
                 const SizedBox(width: 4),
@@ -836,7 +1007,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(color: AppTheme.info.withOpacity(0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.info.withOpacity(0.15))),
+                decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.info.withValues(alpha: 0.15))),
                 child: Row(children: [
                   Icon(FluentIcons.contact, size: 12, color: AppTheme.info),
                   const SizedBox(width: 6),
@@ -850,12 +1021,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
             // Price + Expense
             Row(children: [
-              Expanded(child: Text(_formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary))),
+              Expanded(child: Text(formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary))),
               if (totalExpense > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(color: AppTheme.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text("Exp: ${_formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.warning)),
+                  decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                  child: Text("Exp: ${formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.warning)),
                 ),
             ]),
 
@@ -891,11 +1062,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 6),
               Expanded(child: FilledButton(
                 style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(AppTheme.error.withOpacity(0.9)),
+                  backgroundColor: WidgetStateProperty.all(AppTheme.error.withValues(alpha: 0.9)),
                   shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
                   padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 8)),
                 ),
-                onPressed: () {},
+                onPressed: () => _showCarPdf(car),
                 child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(FluentIcons.pdf, size: 12, color: Colors.white),
                   SizedBox(width: 6),
@@ -920,7 +1091,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isExpanded ? AppTheme.primary.withOpacity(0.3) : AppTheme.divider),
+        border: Border.all(color: isExpanded ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.divider),
       ),
       child: Column(children: [
         // Main row
@@ -929,8 +1100,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
           child: Row(children: [
             Container(
               width: 50, height: 50,
-              decoration: BoxDecoration(color: AppTheme.divider.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
-              child: Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withOpacity(0.5)),
+              decoration: BoxDecoration(color: AppTheme.divider.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
+              child: Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withValues(alpha: 0.5)),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -939,7 +1110,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                   child: Text(car['status'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
                 ),
               ]),
@@ -965,7 +1136,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ])),
             if (!isNarrow) ...[
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(_formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
+                Text(formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
                 const SizedBox(height: 4),
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   _buildDocCheckbox("File", car['fileHandedOver']),
@@ -987,12 +1158,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 onPressed: () => _showEditCarDialog(car),
               ),
               IconButton(
-                icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withOpacity(0.7)),
+                icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.7)),
                 onPressed: () => _showRemoveCarDialog(car),
               ),
               IconButton(
                 icon: const Icon(FluentIcons.pdf, size: 12, color: AppTheme.error),
-                onPressed: () {},
+                onPressed: () => _showCarPdf(car),
               ),
             ]),
           ]),
@@ -1037,7 +1208,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     border: Border.all(color: AppTheme.divider),
                   ),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withOpacity(0.5)),
+                    Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                     const SizedBox(height: 4),
                     Text(photo, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted)),
                   ]),
@@ -1045,13 +1216,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 Container(
                   width: 80, height: 60,
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.05),
+                    color: AppTheme.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                   ),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(FluentIcons.add, size: 14, color: AppTheme.primary.withOpacity(0.6)),
-                    Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.primary.withOpacity(0.6))),
+                    Icon(FluentIcons.add, size: 14, color: AppTheme.primary.withValues(alpha: 0.6)),
+                    Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.primary.withValues(alpha: 0.6))),
                   ]),
                 ),
               ]),
@@ -1061,7 +1232,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 Row(children: [
                   Text("Car-Specific Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const Spacer(),
-                  Text("Total: ${_formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
+                  Text("Total: ${formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
                 ]),
                 const SizedBox(height: 8),
                 ...carExpenses.map((exp) => Container(
@@ -1070,7 +1241,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icon(FluentIcons.repair, size: 12, color: AppTheme.warning),
                     const SizedBox(width: 8),
                     Expanded(child: Text((exp as Map)['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary))),
-                    Text(_formatPrice(exp['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning)),
+                    Text(formatPrice(exp['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning)),
                     const SizedBox(width: 12),
                     Text(exp['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
                   ]),
@@ -1099,9 +1270,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       Container(
         width: 20, height: 20,
         decoration: BoxDecoration(
-          color: value ? AppTheme.success.withOpacity(0.1) : AppTheme.error.withOpacity(0.1),
+          color: value ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withOpacity(0.5)),
+          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withValues(alpha: 0.5)),
         ),
         child: Icon(value ? FluentIcons.check_mark : FluentIcons.cancel, size: 12, color: value ? AppTheme.success : AppTheme.error),
       ),
@@ -1117,9 +1288,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       Container(
         width: 14, height: 14,
         decoration: BoxDecoration(
-          color: value ? AppTheme.success.withOpacity(0.15) : AppTheme.error.withOpacity(0.1),
+          color: value ? AppTheme.success.withValues(alpha: 0.15) : AppTheme.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(3),
-          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withOpacity(0.5), width: 1),
+          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withValues(alpha: 0.5), width: 1),
         ),
         child: Icon(value ? FluentIcons.check_mark : FluentIcons.cancel, size: 8, color: value ? AppTheme.success : AppTheme.error),
       ),
@@ -1170,41 +1341,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: sel ? Colors.white.withOpacity(0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: sel ? Colors.white.withValues(alpha: 0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
             child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
         ]),
       ),
-    );
-  }
-
-  Widget _buildStat(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-        child: Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-          const SizedBox(width: 12),
-          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
-          ])),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60),
-      child: Center(child: Column(children: [
-        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)), child: const Icon(FluentIcons.search, size: 32, color: AppTheme.primary)),
-        const SizedBox(height: 16),
-        Text("No cars found", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-        const SizedBox(height: 4),
-        Text("Try adjusting your search or filters", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted)),
-      ])),
     );
   }
 

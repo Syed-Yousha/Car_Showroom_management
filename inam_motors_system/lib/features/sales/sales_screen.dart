@@ -1,14 +1,21 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
 
   @override
-  State<SalesScreen> createState() => _SalesScreenState();
+  State<SalesScreen> createState() => SalesScreenState();
 }
 
-class _SalesScreenState extends State<SalesScreen> {
+class SalesScreenState extends State<SalesScreen> {
+  void showAddDialog() => _showAddSaleDialog();
+
   String _searchQuery = '';
   String _selectedTab = 'All';
   int? _expandedSaleIndex;
@@ -187,26 +194,6 @@ class _SalesScreenState extends State<SalesScreen> {
     }).toList();
   }
 
-  String _formatPrice(int price) {
-    if (price >= 10000000) return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    if (price >= 100000) return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    if (price >= 1000) return 'Rs ${(price / 1000).toStringAsFixed(0)}K';
-    return 'Rs $price';
-  }
-
-  String _formatFullPrice(int price) {
-    final str = price.toString();
-    final buf = StringBuffer();
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      buf.write(str[i]);
-      count++;
-      if (count == 3 && i > 0) { buf.write(','); count = 0; }
-      else if (count > 3 && (count - 3) % 2 == 0 && i > 0) buf.write(',');
-    }
-    return 'Rs ${buf.toString().split('').reversed.join()}';
-  }
-
   // ═══════════════════════════════════════════════
   //  ADD SALE DIALOG
   // ═══════════════════════════════════════════════
@@ -214,10 +201,27 @@ class _SalesScreenState extends State<SalesScreen> {
     String? selectedCarName;
     String? selectedBuyerName;
     String? selectedSellerName;
+    String carSearchText = '';
+    String buyerSearchText = '';
+    String sellerSearchText = '';
     final priceCtrl = TextEditingController();
     final firstPaymentAmountCtrl = TextEditingController();
     String firstPaymentType = 'Cash';
     final firstPaymentAccCtrl = TextEditingController();
+
+    // Inline add buyer form
+    bool showAddBuyerForm = false;
+    final newBuyerNameCtrl = TextEditingController();
+    final newBuyerPhoneCtrl = TextEditingController();
+    final newBuyerCnicCtrl = TextEditingController();
+    final newBuyerAddressCtrl = TextEditingController();
+
+    // Inline add seller form
+    bool showAddSellerForm = false;
+    final newSellerNameCtrl = TextEditingController();
+    final newSellerPhoneCtrl = TextEditingController();
+    final newSellerCnicCtrl = TextEditingController();
+    final newSellerAddressCtrl = TextEditingController();
 
     showDialog(
       context: context,
@@ -232,25 +236,57 @@ class _SalesScreenState extends State<SalesScreen> {
             ? _sellers.firstWhere((s) => s['name'] == selectedSellerName, orElse: () => <String, dynamic>{})
             : null;
 
+        // Filtered lists for search
+        final filteredCars = _availableCars.where((c) {
+          if (carSearchText.isEmpty) return true;
+          final q = carSearchText.toLowerCase();
+          return (c['name'] as String).toLowerCase().contains(q) ||
+              (c['regNo'] as String).toLowerCase().contains(q) ||
+              (c['make'] as String).toLowerCase().contains(q) ||
+              c['year'].toString().contains(q);
+        }).toList();
+
+        final filteredBuyers = _buyers.where((b) {
+          if (buyerSearchText.isEmpty) return true;
+          final q = buyerSearchText.toLowerCase();
+          return (b['name'] as String).toLowerCase().contains(q) ||
+              (b['phone'] as String).toLowerCase().contains(q) ||
+              (b['cnic'] as String).toLowerCase().contains(q);
+        }).toList();
+
+        final filteredSellers = _sellers.where((s) {
+          if (sellerSearchText.isEmpty) return true;
+          final q = sellerSearchText.toLowerCase();
+          return (s['name'] as String).toLowerCase().contains(q) ||
+              (s['phone'] as String).toLowerCase().contains(q);
+        }).toList();
+
         return ContentDialog(
           title: const Text("New Sale", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
-          constraints: const BoxConstraints(maxWidth: 580),
+          constraints: const BoxConstraints(maxWidth: 620),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // ── Car Search ──
               Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.only(bottom: 6),
                 child: InfoLabel(
-                  label: "Select Car",
+                  label: "Search Car",
                   labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                  child: ComboBox<String>(
-                    placeholder: const Text("Choose a car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                    value: selectedCarName,
-                    isExpanded: true,
-                    items: _availableCars.map((c) => ComboBoxItem<String>(
+                  child: AutoSuggestBox<String>(
+                    placeholder: "Type car name, reg no, or make...",
+                    placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                    items: filteredCars.map((c) => AutoSuggestBoxItem<String>(
                       value: c['name'] as String,
-                      child: Text("${c['name']} ${c['year']} (${c['regNo']})", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                      label: "${c['name']} ${c['year']} (${c['regNo']})",
                     )).toList(),
-                    onChanged: (v) => setDialogState(() => selectedCarName = v),
+                    onChanged: (text, reason) {
+                      setDialogState(() => carSearchText = text);
+                      if (reason == TextChangedReason.cleared) {
+                        setDialogState(() => selectedCarName = null);
+                      }
+                    },
+                    onSelected: (item) => setDialogState(() => selectedCarName = item.value),
                   ),
                 ),
               ),
@@ -258,61 +294,191 @@ class _SalesScreenState extends State<SalesScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.04), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.primary.withOpacity(0.12))),
+                  decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.primary.withValues(alpha: 0.12))),
                   child: Row(children: [
                     Icon(FluentIcons.car, size: 14, color: AppTheme.primary),
                     const SizedBox(width: 8),
                     Expanded(child: Text("${selectedCar['make']} ${selectedCar['model']} | ${selectedCar['color']} | ${selectedCar['regNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
                   ]),
                 ),
+              const SizedBox(height: 8),
+
+              // ── Buyer Search + Add ──
               Row(children: [
-                Expanded(child: Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: InfoLabel(
-                    label: "Select Buyer",
-                    labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                    child: ComboBox<String>(
-                      placeholder: const Text("Choose buyer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                      value: selectedBuyerName,
-                      isExpanded: true,
-                      items: _buyers.map((b) => ComboBoxItem<String>(
-                        value: b['name'] as String,
-                        child: Text("${b['name']} (${b['phone']})", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                      )).toList(),
-                      onChanged: (v) => setDialogState(() => selectedBuyerName = v),
-                    ),
+                Expanded(child: InfoLabel(
+                  label: "Search Buyer",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: AutoSuggestBox<String>(
+                    placeholder: "Type buyer name, phone, CNIC...",
+                    placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                    items: filteredBuyers.map((b) => AutoSuggestBoxItem<String>(
+                      value: b['name'] as String,
+                      label: "${b['name']} (${b['phone']})",
+                    )).toList(),
+                    onChanged: (text, reason) {
+                      setDialogState(() => buyerSearchText = text);
+                      if (reason == TextChangedReason.cleared) {
+                        setDialogState(() => selectedBuyerName = null);
+                      }
+                    },
+                    onSelected: (item) => setDialogState(() { selectedBuyerName = item.value; showAddBuyerForm = false; }),
                   ),
                 )),
-                const SizedBox(width: 12),
-                Expanded(child: Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: InfoLabel(
-                    label: "Select Seller",
-                    labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                    child: ComboBox<String>(
-                      placeholder: const Text("Choose seller", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                      value: selectedSellerName,
-                      isExpanded: true,
-                      items: _sellers.map((s) => ComboBoxItem<String>(
-                        value: s['name'] as String,
-                        child: Text(s['name'] as String, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                      )).toList(),
-                      onChanged: (v) => setDialogState(() => selectedSellerName = v),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Tooltip(
+                    message: "Add New Buyer",
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(FluentIcons.add_friend, size: 14, color: AppTheme.info),
+                      ),
+                      onPressed: () => setDialogState(() { showAddBuyerForm = !showAddBuyerForm; showAddSellerForm = false; }),
                     ),
                   ),
-                )),
+                ),
               ]),
-              if (selectedBuyer != null && selectedBuyer.isNotEmpty)
+              if (selectedBuyer != null && selectedBuyer.isNotEmpty && !showAddBuyerForm)
                 Container(
                   padding: const EdgeInsets.all(10),
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(color: AppTheme.info.withOpacity(0.04), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.info.withOpacity(0.12))),
+                  margin: const EdgeInsets.only(top: 6, bottom: 8),
+                  decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.info.withValues(alpha: 0.12))),
                   child: Row(children: [
                     Icon(FluentIcons.contact, size: 14, color: AppTheme.info),
                     const SizedBox(width: 8),
-                    Expanded(child: Text("${selectedBuyer['cnic']} | ${selectedBuyer['address']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+                    Expanded(child: Text("${selectedBuyer['cnic']} | ${selectedBuyer['phone']} | ${selectedBuyer['address']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
                   ]),
                 ),
+
+              // Inline Add Buyer Form
+              if (showAddBuyerForm)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(top: 6, bottom: 8),
+                  decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.info.withValues(alpha: 0.15))),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Icon(FluentIcons.add_friend, size: 14, color: AppTheme.info),
+                      const SizedBox(width: 6),
+                      Text("Add New Buyer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.info)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(child: _saleEditField("Name", newBuyerNameCtrl)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _saleEditField("Phone", newBuyerPhoneCtrl)),
+                    ]),
+                    Row(children: [
+                      Expanded(child: _saleEditField("NIC / CNIC", newBuyerCnicCtrl)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _saleEditField("Address", newBuyerAddressCtrl)),
+                    ]),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.info), padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 14, vertical: 6))),
+                        onPressed: () {
+                          if (newBuyerNameCtrl.text.trim().isEmpty) return;
+                          final newBuyer = {'name': newBuyerNameCtrl.text.trim(), 'phone': newBuyerPhoneCtrl.text.trim(), 'cnic': newBuyerCnicCtrl.text.trim(), 'address': newBuyerAddressCtrl.text.trim()};
+                          setState(() => _buyers.add(newBuyer));
+                          setDialogState(() {
+                            selectedBuyerName = newBuyer['name'] as String;
+                            showAddBuyerForm = false;
+                          });
+                        },
+                        child: const Text("Save Buyer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                      ),
+                    ),
+                  ]),
+                ),
+
+              const SizedBox(height: 8),
+
+              // ── Seller Search + Add ──
+              Row(children: [
+                Expanded(child: InfoLabel(
+                  label: "Search Seller",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: AutoSuggestBox<String>(
+                    placeholder: "Type seller name or phone...",
+                    placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                    items: filteredSellers.map((s) => AutoSuggestBoxItem<String>(
+                      value: s['name'] as String,
+                      label: "${s['name']} (${s['phone']})",
+                    )).toList(),
+                    onChanged: (text, reason) {
+                      setDialogState(() => sellerSearchText = text);
+                      if (reason == TextChangedReason.cleared) {
+                        setDialogState(() => selectedSellerName = null);
+                      }
+                    },
+                    onSelected: (item) => setDialogState(() { selectedSellerName = item.value; showAddSellerForm = false; }),
+                  ),
+                )),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Tooltip(
+                    message: "Add New Seller",
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                        child: const Icon(FluentIcons.add_friend, size: 14, color: AppTheme.warning),
+                      ),
+                      onPressed: () => setDialogState(() { showAddSellerForm = !showAddSellerForm; showAddBuyerForm = false; }),
+                    ),
+                  ),
+                ),
+              ]),
+
+              // Inline Add Seller Form
+              if (showAddSellerForm)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(top: 6, bottom: 8),
+                  decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.warning.withValues(alpha: 0.15))),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Icon(FluentIcons.add_friend, size: 14, color: AppTheme.warning),
+                      const SizedBox(width: 6),
+                      Text("Add New Seller", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(child: _saleEditField("Name", newSellerNameCtrl)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _saleEditField("Phone", newSellerPhoneCtrl)),
+                    ]),
+                    Row(children: [
+                      Expanded(child: _saleEditField("NIC / CNIC", newSellerCnicCtrl)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _saleEditField("Address", newSellerAddressCtrl)),
+                    ]),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.warning), padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 14, vertical: 6))),
+                        onPressed: () {
+                          if (newSellerNameCtrl.text.trim().isEmpty) return;
+                          final newSeller = {'name': newSellerNameCtrl.text.trim(), 'phone': newSellerPhoneCtrl.text.trim(), 'cnic': newSellerCnicCtrl.text.trim(), 'address': newSellerAddressCtrl.text.trim()};
+                          setState(() => _sellers.add(newSeller));
+                          setDialogState(() {
+                            selectedSellerName = newSeller['name'] as String;
+                            showAddSellerForm = false;
+                          });
+                        },
+                        child: const Text("Save Seller", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                      ),
+                    ),
+                  ]),
+                ),
+
+              const SizedBox(height: 8),
               _saleEditField("Total Price (Rs)", priceCtrl),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -390,6 +556,116 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   // ═══════════════════════════════════════════════
+  //  EDIT PAYMENT DIALOG
+  // ═══════════════════════════════════════════════
+  void _showEditPaymentDialog(Map<String, dynamic> sale, int paymentIndex) {
+    final saleIdx = _sales.indexOf(sale);
+    if (saleIdx == -1) return;
+    final payments = sale['payments'] as List;
+    if (paymentIndex < 0 || paymentIndex >= payments.length) return;
+    final p = payments[paymentIndex] as Map;
+
+    final amountCtrl = TextEditingController(text: p['amount'].toString());
+    final accCtrl = TextEditingController(text: p['accNo'] ?? '');
+    final dateCtrl = TextEditingController(text: p['date'] ?? '');
+    String payType = p['type'] ?? 'Cash';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: Text("Edit Payment #${paymentIndex + 1}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 440),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          _saleEditField("Amount (Rs)", amountCtrl),
+          Row(children: [
+            Expanded(child: Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "Payment Type",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: ComboBox<String>(
+                  value: payType,
+                  isExpanded: true,
+                  items: ['Cash', 'Online', 'Cheque', 'Bank Transfer'].map((t) => ComboBoxItem<String>(value: t, child: Text(t, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                  onChanged: (v) { if (v != null) setDialogState(() => payType = v); },
+                ),
+              ),
+            )),
+            const SizedBox(width: 12),
+            Expanded(child: _saleEditField("Date (YYYY-MM-DD)", dateCtrl)),
+          ]),
+          if (payType != 'Cash')
+            _saleEditField("Account / Cheque Number", accCtrl),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              final amount = int.tryParse(amountCtrl.text) ?? 0;
+              if (amount <= 0) return;
+              setState(() {
+                (_sales[saleIdx]['payments'] as List)[paymentIndex] = {
+                  'amount': amount,
+                  'type': payType,
+                  'date': dateCtrl.text,
+                  'accNo': accCtrl.text,
+                };
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
+
+  void _showDeletePaymentDialog(Map<String, dynamic> sale, int paymentIndex) {
+    final saleIdx = _sales.indexOf(sale);
+    if (saleIdx == -1) return;
+    final payments = sale['payments'] as List;
+    if (paymentIndex < 0 || paymentIndex >= payments.length) return;
+    final p = payments[paymentIndex] as Map;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("Delete Payment", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Are you sure you want to delete this payment?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withValues(alpha: 0.2))),
+            child: Row(children: [
+              Icon(FluentIcons.warning, size: 16, color: AppTheme.error),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text("Payment #${paymentIndex + 1} \u2014 ${p['type']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                Text("${formatPrice(p['amount'] as int)} on ${p['date']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              ])),
+            ]),
+          ),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () {
+              setState(() {
+                (_sales[saleIdx]['payments'] as List).removeAt(paymentIndex);
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Delete", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════
   //  ADD PAYMENT DIALOG
   // ═══════════════════════════════════════════════
   void _showAddPaymentDialog(Map<String, dynamic> sale) {
@@ -412,12 +688,12 @@ class _SalesScreenState extends State<SalesScreen> {
             decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8)),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text("Total: ${_formatPrice(sale['totalPrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary)),
-                Text("Paid: ${_formatPrice(_totalPaid(sale))}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success)),
+                Text("Total: ${formatPrice(sale['totalPrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary)),
+                Text("Paid: ${formatPrice(_totalPaid(sale))}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success)),
               ]),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                 Text("Remaining", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-                Text(_formatPrice(_remaining(sale)), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: _remaining(sale) > 0 ? AppTheme.warning : AppTheme.success)),
+                Text(formatPrice(_remaining(sale)), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: _remaining(sale) > 0 ? AppTheme.warning : AppTheme.success)),
               ]),
             ]),
           ),
@@ -474,13 +750,13 @@ class _SalesScreenState extends State<SalesScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppTheme.error.withOpacity(0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withOpacity(0.2))),
+            decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withValues(alpha: 0.2))),
             child: Row(children: [
               Icon(FluentIcons.warning, size: 16, color: AppTheme.error),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text("${sale['invoiceNo']} \u2014 ${sale['car']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("Buyer: ${sale['buyer']} | ${_formatPrice(sale['totalPrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("Buyer: ${sale['buyer']} | ${formatPrice(sale['totalPrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
@@ -505,7 +781,6 @@ class _SalesScreenState extends State<SalesScreen> {
     final rem = _remaining(sale);
     final carD = sale['carDetails'] as Map<String, dynamic>;
     final payments = sale['payments'] as List;
-    final latestPayment = payments.isNotEmpty ? payments.last as Map : null;
 
     showDialog(
       context: context,
@@ -517,11 +792,11 @@ class _SalesScreenState extends State<SalesScreen> {
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+            decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
             child: Text(sale['invoiceNo'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primary)),
           ),
         ]),
-        constraints: const BoxConstraints(maxWidth: 620),
+        constraints: const BoxConstraints(maxWidth: 660),
         content: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Center(child: Column(children: [
@@ -560,17 +835,71 @@ class _SalesScreenState extends State<SalesScreen> {
               _invoiceRow("NIC", sale['sellerCnic']),
               _invoiceRow("Address", sale['sellerAddress']),
             ]),
-            _invoiceSectionHeader("Payment Details"),
-            _invoiceBlock([
-              _invoiceRow("Total Price", _formatFullPrice(sale['totalPrice'])),
-              _invoiceRow("Advance / Paid", _formatFullPrice(paid)),
-              _invoiceRow("Remaining Amount", _formatFullPrice(rem)),
-              if (latestPayment != null) ...[
-                _invoiceRow("Payment Type", latestPayment['type'] ?? ''),
-                if ((latestPayment['accNo'] ?? '').toString().isNotEmpty)
-                  _invoiceRow("Acc / Cheque No", latestPayment['accNo']),
-              ],
-            ]),
+            _invoiceSectionHeader("Payment History"),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8)),
+              child: Column(children: [
+                // Payment table header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.06),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+                  ),
+                  child: Row(children: [
+                    SizedBox(width: 28, child: Text("#", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textMuted))),
+                    Expanded(flex: 2, child: Text("Date", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textMuted))),
+                    Expanded(flex: 2, child: Text("Type", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textMuted))),
+                    Expanded(flex: 2, child: Text("Acc/Cheque No", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textMuted))),
+                    Expanded(flex: 2, child: Text("Amount", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.textMuted))),
+                  ]),
+                ),
+                // Payment rows
+                if (payments.isEmpty)
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Center(child: Text("No payments recorded", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)))),
+                ...payments.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final p = entry.value as Map;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
+                    child: Row(children: [
+                      SizedBox(width: 28, child: Text("${i + 1}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+                      Expanded(flex: 2, child: Text(p['date'] ?? '', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textPrimary))),
+                      Expanded(flex: 2, child: Center(child: Text(p['type'] ?? '', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w500, color: _payTypeColor(p['type'] ?? ''))))),
+                      Expanded(flex: 2, child: Text((p['accNo'] ?? '').toString().isNotEmpty ? p['accNo'] : '\u2014', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+                      Expanded(flex: 2, child: Text(formatFullPrice(p['amount'] as int), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.success))),
+                    ]),
+                  );
+                }),
+                // Totals row
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withValues(alpha: 0.05),
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
+                  ),
+                  child: Column(children: [
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text("Total Price", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      Text(formatFullPrice(sale['totalPrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                    ]),
+                    const SizedBox(height: 4),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text("Total Paid", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success)),
+                      Text(formatFullPrice(paid), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.success)),
+                    ]),
+                    const SizedBox(height: 4),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text("Remaining", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: rem > 0 ? AppTheme.warning : AppTheme.success)),
+                      Text(formatFullPrice(rem), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w800, color: rem > 0 ? AppTheme.warning : AppTheme.success)),
+                    ]),
+                  ]),
+                ),
+              ]),
+            ),
             Container(height: 1, color: AppTheme.divider, margin: const EdgeInsets.symmetric(vertical: 8)),
             const SizedBox(height: 20),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -593,7 +922,7 @@ class _SalesScreenState extends State<SalesScreen> {
           Button(onPressed: () => Navigator.pop(ctx), child: const Text("Close", style: TextStyle(fontFamily: AppTheme.fontFamily))),
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () { Navigator.pop(ctx); _showSalePdf(sale); },
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(FluentIcons.print, size: 14, color: Colors.white),
               SizedBox(width: 6),
@@ -606,10 +935,167 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   // ═══════════════════════════════════════════════
+  //  SALE PDF EXPORT
+  // ═══════════════════════════════════════════════
+  Future<void> _showSalePdf(Map<String, dynamic> sale) async {
+    final carD = sale['carDetails'] as Map;
+    final payments = sale['payments'] as List;
+    final paid = _totalPaid(sale);
+    final rem = _remaining(sale);
+    final status = _saleStatus(sale);
+
+    final pdf = pw.Document();
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(32),
+      build: (pw.Context context) {
+        return [
+          // Header
+          pw.Center(child: pw.Column(children: [
+            pw.Text("INAM MOTORS", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
+            pw.SizedBox(height: 2),
+            pw.Text("Car Showroom & Dealership", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 2, width: 200, color: PdfColor.fromHex('#6C5DD3')),
+          ])),
+          pw.SizedBox(height: 16),
+
+          // Invoice & Status row
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text("Invoice: ${sale['invoiceNo']}", style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: pw.BoxDecoration(
+                color: status == 'Completed' ? PdfColors.green50 : PdfColors.orange50,
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(color: status == 'Completed' ? PdfColors.green : PdfColors.orange, width: 0.5),
+              ),
+              child: pw.Text(status, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: status == 'Completed' ? PdfColors.green : PdfColors.orange)),
+            ),
+          ]),
+          pw.SizedBox(height: 4),
+          pw.Text("Date: ${sale['saleDate']}", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+
+          // Car Details
+          pw.Text("Car Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Car Name", sale['car']),
+          _pdfRow("Make / Model", "${carD['make']} ${carD['model']}"),
+          _pdfRow("Year", "${carD['year']}"),
+          _pdfRow("Color", carD['color'] ?? ''),
+          _pdfRow("Reg Number", carD['regNo'] ?? ''),
+          _pdfRow("Engine No", carD['engineNo'] ?? ''),
+          _pdfRow("Chassis No", carD['chassisNo'] ?? ''),
+          pw.SizedBox(height: 14),
+
+          // Buyer Details
+          pw.Text("Buyer Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Name", sale['buyer']),
+          _pdfRow("Phone", sale['buyerPhone']),
+          _pdfRow("CNIC", sale['buyerCnic']),
+          _pdfRow("Address", sale['buyerAddress']),
+          pw.SizedBox(height: 14),
+
+          // Seller Details
+          pw.Text("Seller Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Name", sale['seller']),
+          _pdfRow("Phone", sale['sellerPhone']),
+          _pdfRow("CNIC", sale['sellerCnic']),
+          _pdfRow("Address", sale['sellerAddress']),
+          pw.SizedBox(height: 14),
+
+          // Financial Summary
+          pw.Text("Financial Summary", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.Row(children: [
+            _pdfStatBox("Total Price", formatFullPrice(sale['totalPrice']), PdfColor.fromHex('#6C5DD3')),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Paid", formatFullPrice(paid), PdfColors.green),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Remaining", formatFullPrice(rem), rem > 0 ? PdfColors.orange : PdfColors.green),
+          ]),
+          pw.SizedBox(height: 18),
+
+          // Payments Table
+          pw.Text("Payment History", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          if (payments.isEmpty)
+            pw.Center(child: pw.Padding(padding: const pw.EdgeInsets.all(16), child: pw.Text("No payments recorded", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey500))))
+          else
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F0EEFF')),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              headers: ['#', 'Date', 'Type', 'Acc/Cheque No', 'Amount'],
+              data: payments.asMap().entries.map((entry) {
+                final p = entry.value as Map;
+                return [
+                  '${entry.key + 1}',
+                  p['date'] ?? '',
+                  p['type'] ?? '',
+                  (p['accNo'] ?? '').toString().isNotEmpty ? p['accNo'] : '\u2014',
+                  formatFullPrice(p['amount'] as int),
+                ];
+              }).toList(),
+            ),
+
+          pw.SizedBox(height: 30),
+          pw.Divider(),
+          pw.SizedBox(height: 16),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(children: [
+              pw.Container(width: 140, height: 0.5, color: PdfColors.grey400),
+              pw.SizedBox(height: 4),
+              pw.Text("Buyer's Signature", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+            ]),
+            pw.Column(children: [
+              pw.Container(width: 140, height: 0.5, color: PdfColors.grey400),
+              pw.SizedBox(height: 4),
+              pw.Text("Seller's Signature", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+            ]),
+          ]),
+          pw.SizedBox(height: 12),
+          pw.Center(child: pw.Text("Generated by Inam Motors System", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400))),
+        ];
+      },
+    ));
+
+    final bytes = await pdf.save();
+    await Printing.sharePdf(bytes: bytes, filename: 'Sale_${sale['invoiceNo']}.pdf');
+  }
+
+  pw.Widget _pdfRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 3),
+      child: pw.Row(children: [
+        pw.SizedBox(width: 120, child: pw.Text(label, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
+        pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 11))),
+      ]),
+    );
+  }
+
+  pw.Widget _pdfStatBox(String label, String value, PdfColor color) {
+    return pw.Expanded(child: pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: color, width: 0.5), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Column(children: [
+        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.SizedBox(height: 2),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+      ]),
+    ));
+  }
+
+  // ═══════════════════════════════════════════════
   //  WHATSAPP REMINDER
   // ═══════════════════════════════════════════════
   void _showWhatsAppDialog(Map<String, dynamic> sale) {
-    final msg = "Assalam o Alaikum ${sale['buyer']},\n\nThis is a gentle reminder from Inam Motors regarding your account for ${sale['car']}.\n\nTotal: ${_formatPrice(sale['totalPrice'])}\nPaid: ${_formatPrice(_totalPaid(sale))}\nRemaining: ${_formatPrice(_remaining(sale))}\n\nKindly make the payment at your earliest convenience.\n\nThank you,\nInam Motors";
+    final msg = "Assalam o Alaikum ${sale['buyer']},\n\nThis is a gentle reminder from Inam Motors regarding your account for ${sale['car']}.\n\nTotal: ${formatPrice(sale['totalPrice'])}\nPaid: ${formatPrice(_totalPaid(sale))}\nRemaining: ${formatPrice(_remaining(sale))}\n\nKindly make the payment at your earliest convenience.\n\nThank you,\nInam Motors";
 
     showDialog(
       context: context,
@@ -742,26 +1228,26 @@ class _SalesScreenState extends State<SalesScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                _buildStat("Total Sales", _formatPrice(_totalSalesValue), FluentIcons.money, AppTheme.primary),
+                StatCard(label: "Total Sales", value: formatPrice(_totalSalesValue), icon: FluentIcons.money, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                _buildStat("Received", _formatPrice(_totalReceived), FluentIcons.check_mark, AppTheme.success),
+                StatCard(label: "Received", value: formatPrice(_totalReceived), icon: FluentIcons.check_mark, color: AppTheme.success),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                _buildStat("Pending", _formatPrice(_totalPending), FluentIcons.clock, AppTheme.warning),
+                StatCard(label: "Pending", value: formatPrice(_totalPending), icon: FluentIcons.clock, color: AppTheme.warning),
                 const SizedBox(width: 12),
-                _buildStat("Active", "$_activeCount", FluentIcons.sync_folder, AppTheme.error),
+                StatCard(label: "Active", value: "$_activeCount", icon: FluentIcons.sync_folder, color: AppTheme.error),
               ]),
             ])
           else
             Row(children: [
-              _buildStat("Total Sales", _formatPrice(_totalSalesValue), FluentIcons.money, AppTheme.primary),
+              StatCard(label: "Total Sales", value: formatPrice(_totalSalesValue), icon: FluentIcons.money, color: AppTheme.primary),
               const SizedBox(width: 16),
-              _buildStat("Received", _formatPrice(_totalReceived), FluentIcons.check_mark, AppTheme.success),
+              StatCard(label: "Received", value: formatPrice(_totalReceived), icon: FluentIcons.check_mark, color: AppTheme.success),
               const SizedBox(width: 16),
-              _buildStat("Pending", _formatPrice(_totalPending), FluentIcons.clock, AppTheme.warning),
+              StatCard(label: "Pending", value: formatPrice(_totalPending), icon: FluentIcons.clock, color: AppTheme.warning),
               const SizedBox(width: 16),
-              _buildStat("Active Accounts", "$_activeCount", FluentIcons.sync_folder, AppTheme.info),
+              StatCard(label: "Active Accounts", value: "$_activeCount", icon: FluentIcons.sync_folder, color: AppTheme.info),
             ]),
           const SizedBox(height: 24),
 
@@ -794,7 +1280,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
           // Sale cards
           ..._filtered.asMap().entries.map((entry) => _buildSaleCard(entry.value, entry.key, isNarrow, isMedium)),
-          if (_filtered.isEmpty) _buildEmpty(),
+          if (_filtered.isEmpty) const EmptyState(message: 'No sales found'),
           const SizedBox(height: 24),
         ],
       );
@@ -818,7 +1304,7 @@ class _SalesScreenState extends State<SalesScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isExpanded ? AppTheme.primary.withOpacity(0.3) : AppTheme.divider),
+        border: Border.all(color: isExpanded ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.divider),
       ),
       child: Column(children: [
         // Card header
@@ -831,7 +1317,7 @@ class _SalesScreenState extends State<SalesScreen> {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                 child: Text(status, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
               ),
               const SizedBox(width: 8),
@@ -840,7 +1326,8 @@ class _SalesScreenState extends State<SalesScreen> {
               if (status == 'Active')
                 Tooltip(message: "WhatsApp Reminder", child: IconButton(icon: Icon(FluentIcons.chat, size: 14, color: AppTheme.success), onPressed: () => _showWhatsAppDialog(sale))),
               Tooltip(message: "Generate Invoice", child: IconButton(icon: const Icon(FluentIcons.print, size: 14, color: AppTheme.primary), onPressed: () => _showInvoiceDialog(sale))),
-              Tooltip(message: "Remove Sale", child: IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withOpacity(0.7)), onPressed: () => _showRemoveSaleDialog(sale))),
+              Tooltip(message: "Download PDF", child: IconButton(icon: const Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary), onPressed: () => _showSalePdf(sale))),
+              Tooltip(message: "Remove Sale", child: IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveSaleDialog(sale))),
               IconButton(
                 icon: Icon(isExpanded ? FluentIcons.chevron_up : FluentIcons.chevron_down, size: 12, color: AppTheme.textSecondary),
                 onPressed: () => setState(() => _expandedSaleIndex = isExpanded ? null : index),
@@ -907,14 +1394,14 @@ class _SalesScreenState extends State<SalesScreen> {
               decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8)),
               child: isMedium
                   ? Column(children: [
-                      Row(children: [_buildAmountItem("Total Price", _formatPrice(sale['totalPrice']), AppTheme.textPrimary), _buildAmountItem("Total Paid", _formatPrice(paid), AppTheme.success)]),
+                      Row(children: [_buildAmountItem("Total Price", formatPrice(sale['totalPrice']), AppTheme.textPrimary), _buildAmountItem("Total Paid", formatPrice(paid), AppTheme.success)]),
                       const SizedBox(height: 10),
-                      Row(children: [_buildAmountItem("Remaining", _formatPrice(rem), rem > 0 ? AppTheme.warning : AppTheme.success), _buildAmountItem("Payments", "${payments.length}", AppTheme.info)]),
+                      Row(children: [_buildAmountItem("Remaining", formatPrice(rem), rem > 0 ? AppTheme.warning : AppTheme.success), _buildAmountItem("Payments", "${payments.length}", AppTheme.info)]),
                     ])
                   : Row(children: [
-                      _buildAmountItem("Total Price", _formatPrice(sale['totalPrice']), AppTheme.textPrimary),
-                      _buildAmountItem("Total Paid", _formatPrice(paid), AppTheme.success),
-                      _buildAmountItem("Remaining", _formatPrice(rem), rem > 0 ? AppTheme.warning : AppTheme.success),
+                      _buildAmountItem("Total Price", formatPrice(sale['totalPrice']), AppTheme.textPrimary),
+                      _buildAmountItem("Total Paid", formatPrice(paid), AppTheme.success),
+                      _buildAmountItem("Remaining", formatPrice(rem), rem > 0 ? AppTheme.warning : AppTheme.success),
                       _buildAmountItem("Payments", "${payments.length}", AppTheme.info),
                     ]),
             ),
@@ -954,9 +1441,10 @@ class _SalesScreenState extends State<SalesScreen> {
                 child: Row(children: [
                   SizedBox(width: 30, child: Text("#", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                   Expanded(flex: 2, child: Text("Date", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-                  Expanded(flex: 2, child: Text("Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+                  Expanded(flex: 2, child: Text("Type", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                   Expanded(flex: 3, child: Text("Acc / Cheque No", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                   Expanded(flex: 2, child: Text("Amount", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+                  SizedBox(width: 56, child: Text("Actions", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 ]),
               ),
 
@@ -974,33 +1462,42 @@ class _SalesScreenState extends State<SalesScreen> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       Text("#${i + 1}  ${p['date']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: _payTypeColor(p['type']).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                        child: Text(p['type'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: _payTypeColor(p['type']))),
-                      ),
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: _payTypeColor(p['type']).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                          child: Text(p['type'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: _payTypeColor(p['type']))),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary), onPressed: () => _showEditPaymentDialog(sale, i)),
+                        IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showDeletePaymentDialog(sale, i)),
+                      ]),
                     ]),
                     const SizedBox(height: 4),
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       if ((p['accNo'] ?? '').toString().isNotEmpty) Text(p['accNo'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)) else const SizedBox(),
-                      Text(_formatPrice(p['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.success)),
+                      Text(formatPrice(p['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.success)),
                     ]),
                   ]),
                 );
               }
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withOpacity(0.5)))),
+                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
                 child: Row(children: [
                   SizedBox(width: 30, child: Text("${i + 1}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary))),
                   Expanded(flex: 2, child: Text(p['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary))),
-                  Expanded(flex: 2, child: Container(
+                  Expanded(flex: 2, child: Center(child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: _payTypeColor(p['type']).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: _payTypeColor(p['type']).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                     child: Text(p['type'], textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: _payTypeColor(p['type']))),
-                  )),
+                  ))),
                   Expanded(flex: 3, child: Text((p['accNo'] ?? '').toString().isNotEmpty ? p['accNo'] : '\u2014', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-                  Expanded(flex: 2, child: Text(_formatPrice(p['amount']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.success))),
+                  Expanded(flex: 2, child: Text(formatPrice(p['amount']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.success))),
+                  SizedBox(width: 56, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary), onPressed: () => _showEditPaymentDialog(sale, i)),
+                    IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showDeletePaymentDialog(sale, i)),
+                  ])),
                 ]),
               );
             }),
@@ -1013,16 +1510,16 @@ class _SalesScreenState extends State<SalesScreen> {
                 decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(6)),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text("Total Paid", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                  Text(_formatPrice(paid), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.success)),
+                  Text(formatPrice(paid), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.success)),
                 ]),
               ),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(color: (rem > 0 ? AppTheme.warning : AppTheme.success).withOpacity(0.05), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: (rem > 0 ? AppTheme.warning : AppTheme.success).withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6)),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text("Remaining", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                  Text(_formatPrice(rem), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: rem > 0 ? AppTheme.warning : AppTheme.success)),
+                  Text(formatPrice(rem), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w800, color: rem > 0 ? AppTheme.warning : AppTheme.success)),
                 ]),
               ),
             ],
@@ -1070,7 +1567,7 @@ class _SalesScreenState extends State<SalesScreen> {
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: sel ? Colors.white.withOpacity(0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: sel ? Colors.white.withValues(alpha: 0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
             child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
         ]),
@@ -1078,31 +1575,4 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 
-  Widget _buildStat(String label, String value, IconData icon, Color color) {
-    return Expanded(child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
-      child: Row(children: [
-        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-        const SizedBox(width: 12),
-        Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-          Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
-        ])),
-      ]),
-    ));
-  }
-
-  Widget _buildEmpty() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60),
-      child: Center(child: Column(children: [
-        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)), child: const Icon(FluentIcons.search, size: 32, color: AppTheme.primary)),
-        const SizedBox(height: 16),
-        Text("No sales found", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-        const SizedBox(height: 4),
-        Text("Try adjusting your search or filters", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted)),
-      ])),
-    );
-  }
 }
