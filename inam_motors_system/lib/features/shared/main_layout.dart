@@ -2,7 +2,6 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
-import '../sales/sales_screen.dart';
 import '../customers/customers_screen.dart';
 import '../salesmen/salesmen_screen.dart';
 import '../investors/investors_screen.dart';
@@ -21,7 +20,6 @@ class _MainLayoutState extends State<MainLayout> {
   PaneDisplayMode _displayMode = PaneDisplayMode.open;
 
   final _inventoryKey = GlobalKey<InventoryScreenState>();
-  final _salesKey = GlobalKey<SalesScreenState>();
   final _customersKey = GlobalKey<CustomersScreenState>();
   final _expensesKey = GlobalKey<ExpensesScreenState>();
 
@@ -30,7 +28,6 @@ class _MainLayoutState extends State<MainLayout> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = key.currentState;
       if (state is InventoryScreenState) state.showAddDialog();
-      if (state is SalesScreenState) state.showAddDialog();
       if (state is CustomersScreenState) state.showAddDialog();
       if (state is ExpensesScreenState) state.showAddDialog();
     });
@@ -172,20 +169,14 @@ class _MainLayoutState extends State<MainLayout> {
             title: Text("Dashboard", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: DashboardScreen(
               onAddCar: () => _openAddDialog(1, _inventoryKey),
-              onNewSale: () => _openAddDialog(2, _salesKey),
-              onAddCustomer: () => _openAddDialog(3, _customersKey),
-              onAddExpense: () => _openAddDialog(6, _expensesKey),
+              onAddCustomer: () => _openAddDialog(2, _customersKey),
+              onAddExpense: () => _openAddDialog(5, _expensesKey),
             ),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.car),
             title: Text("Inventory", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: InventoryScreen(key: _inventoryKey),
-          ),
-          PaneItem(
-            icon: const Icon(FluentIcons.document_set),
-            title: Text("Sales & Payments", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
-            body: SalesScreen(key: _salesKey),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.people),

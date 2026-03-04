@@ -5,10 +5,9 @@ import '../shared/widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onAddCar;
-  final VoidCallback? onNewSale;
   final VoidCallback? onAddCustomer;
   final VoidCallback? onAddExpense;
-  const DashboardScreen({super.key, this.onAddCar, this.onNewSale, this.onAddCustomer, this.onAddExpense});
+  const DashboardScreen({super.key, this.onAddCar, this.onAddCustomer, this.onAddExpense});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -93,7 +92,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 runSpacing: 10,
                 children: [
                   _buildQuickActionFixed(FluentIcons.add_to, "Add Car", AppTheme.primary, () => widget.onAddCar?.call()),
-                  _buildQuickActionFixed(FluentIcons.document, "New Sale", AppTheme.success, () => widget.onNewSale?.call()),
                   _buildQuickActionFixed(FluentIcons.people_add, "Add Customer", AppTheme.warning, () => widget.onAddCustomer?.call()),
                   _buildQuickActionFixed(FluentIcons.calculator, "Add Expense", AppTheme.error, () => widget.onAddExpense?.call()),
                 ],
@@ -102,8 +100,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   _buildQuickAction(icon: FluentIcons.add_to, label: "Add Car", color: AppTheme.primary, onTap: () => widget.onAddCar?.call()),
-                  const SizedBox(width: 12),
-                  _buildQuickAction(icon: FluentIcons.document, label: "New Sale", color: AppTheme.success, onTap: () => widget.onNewSale?.call()),
                   const SizedBox(width: 12),
                   _buildQuickAction(icon: FluentIcons.people_add, label: "Add Customer", color: AppTheme.warning, onTap: () => widget.onAddCustomer?.call()),
                   const SizedBox(width: 12),
