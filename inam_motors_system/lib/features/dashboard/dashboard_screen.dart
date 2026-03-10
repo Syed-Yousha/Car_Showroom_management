@@ -79,7 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                ),
+                ).withClickCursor,
               ],
             ),
 
@@ -351,7 +351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ]),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.success)),
             onPressed: () => Navigator.pop(ctx),
@@ -360,7 +360,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(width: 6),
               Text("Copy & Send", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
             ]),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -443,12 +443,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Tooltip(
                     message: "Send WhatsApp Reminder",
-                    child: GestureDetector(
-                      onTap: () => _showWhatsAppDialog(a),
-                      child: Container(
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => _showWhatsAppDialog(a),
+                        child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                         child: const Icon(FluentIcons.chat, size: 14, color: AppTheme.success),
+                      ),
                       ),
                     ),
                   ),
@@ -464,10 +467,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ── Quick Action chip (expanded) ──
   Widget _buildQuickAction({required IconData icon, required String label, required Color color, VoidCallback? onTap}) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
             decoration: BoxDecoration(
@@ -494,10 +497,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Quick Action chip (fixed width for wrap) ──
   Widget _buildQuickActionFixed(IconData icon, String label, Color color, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
@@ -666,5 +669,5 @@ class _SparklinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) => oldDelegate.color != color;
 }

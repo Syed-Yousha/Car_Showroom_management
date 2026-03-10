@@ -135,7 +135,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -151,7 +151,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -167,7 +167,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textSecondary),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -175,7 +175,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -199,7 +199,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -223,7 +223,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Add Partner", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -334,7 +334,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
                                   });
                                 },
                                 child: Text(val, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isAction ? 16 : 18, fontWeight: FontWeight.w600, color: val == '\u2713' ? Colors.white : AppTheme.textPrimary)),
-                              ),
+                              ).withClickCursor,
                             ),
                           );
                         }(),
@@ -393,7 +393,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
                     const SizedBox(width: 6),
                     Text("Lock", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                   ]),
-                ),
+                ).withClickCursor,
                 FilledButton(
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(AppTheme.primary),
@@ -406,7 +406,7 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
                     SizedBox(width: 8),
                     Text("Add Partner", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
                   ]),
-                ),
+                ).withClickCursor,
               ]),
             ],
           ),
@@ -433,8 +433,8 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               ]),
               Wrap(spacing: 12, runSpacing: 8, children: [
                 _buildMiniStat("Sales", "$_yearTotalSales", AppTheme.primary),
-                _buildMiniStat("Revenue", formatPrice(_yearTotalRevenue), AppTheme.info),
-                _buildMiniStat("Profit", formatPrice(_yearTotalProfit), AppTheme.success),
+                _buildMiniStat("Revenue", formatFullPrice(_yearTotalRevenue), AppTheme.info),
+                _buildMiniStat("Profit", formatFullPrice(_yearTotalProfit), AppTheme.success),
               ]),
             ],
           ),
@@ -447,11 +447,11 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               Row(children: [
                 StatCard(valueFontSize: 18, label: "Total Sales", value: "$_yearTotalSales", icon: FluentIcons.shopping_cart, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                StatCard(valueFontSize: 18, label: "Revenue", value: formatPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
+                StatCard(valueFontSize: 18, label: "Revenue", value: formatFullPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
+                StatCard(valueFontSize: 18, label: "Net Profit", value: formatFullPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
                 const SizedBox(width: 12),
                 StatCard(valueFontSize: 18, label: "Partners", value: "${_partners.length}", icon: FluentIcons.people, color: AppTheme.warning),
               ]),
@@ -460,9 +460,9 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
             Row(children: [
               StatCard(valueFontSize: 18, label: "Total Sales", value: "$_yearTotalSales", icon: FluentIcons.shopping_cart, color: AppTheme.primary),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "Revenue", value: formatPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
+              StatCard(valueFontSize: 18, label: "Revenue", value: formatFullPrice(_yearTotalRevenue), icon: FluentIcons.money, color: AppTheme.info),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
+              StatCard(valueFontSize: 18, label: "Net Profit", value: formatFullPrice(_yearTotalProfit), icon: FluentIcons.up, color: AppTheme.success),
               const SizedBox(width: 16),
               StatCard(valueFontSize: 18, label: "Partners", value: "${_partners.length}", icon: FluentIcons.people, color: AppTheme.warning),
             ]),
@@ -538,8 +538,8 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
             child: Text(partner['status'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.success)),
           ),
           const SizedBox(width: 6),
-          IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted), onPressed: () => _showEditPartnerDialog(index)),
-          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error), onPressed: () => _showRemovePartnerDialog(index)),
+          IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted), onPressed: () => _showEditPartnerDialog(index)).withClickCursor,
+          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error), onPressed: () => _showRemovePartnerDialog(index)).withClickCursor,
         ]),
 
         const SizedBox(height: 16),
@@ -549,19 +549,19 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
           Column(children: [
             Row(children: [
               Expanded(child: _buildDetail("Sales ($_selectedYear)", "${yearData['totalSales']}")),
-              Expanded(child: _buildDetail("Revenue", formatPrice(yearData['totalRevenue']))),
+              Expanded(child: _buildDetail("Revenue", formatFullPrice(yearData['totalRevenue']))),
             ]),
             const SizedBox(height: 10),
             Row(children: [
-              Expanded(child: _buildDetail("Net Profit", formatPrice(yearData['totalProfit']), color: AppTheme.success)),
+              Expanded(child: _buildDetail("Net Profit", formatFullPrice(yearData['totalProfit']), color: AppTheme.success)),
               Expanded(child: _buildDetail("Share", "${partner['share']}%")),
             ]),
           ])
         else
           Row(children: [
             Expanded(child: _buildDetail("Sales ($_selectedYear)", "${yearData['totalSales']}")),
-            Expanded(child: _buildDetail("Revenue", formatPrice(yearData['totalRevenue']))),
-            Expanded(child: _buildDetail("Net Profit", formatPrice(yearData['totalProfit']), color: AppTheme.success)),
+            Expanded(child: _buildDetail("Revenue", formatFullPrice(yearData['totalRevenue']))),
+            Expanded(child: _buildDetail("Net Profit", formatFullPrice(yearData['totalProfit']), color: AppTheme.success)),
             Expanded(child: _buildDetail("Share", "${partner['share']}%")),
           ]),
 
@@ -600,8 +600,8 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
               child: Row(children: [
                 Expanded(flex: 3, child: Text("Vehicle", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 SizedBox(width: 100, child: Text("Buyer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-                SizedBox(width: 80, child: Text("Sale Price", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-                SizedBox(width: 80, child: Text("Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+                SizedBox(width: 120, child: Text("Sale Price", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+                SizedBox(width: 110, child: Text("Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 SizedBox(width: 80, child: Text("Date", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 SizedBox(width: 70, child: Text("Type", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
               ]),
@@ -629,8 +629,8 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
       child: Row(children: [
         Expanded(flex: 3, child: Text(car['car'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textPrimary))),
         SizedBox(width: 100, child: Text(car['buyer'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-        SizedBox(width: 80, child: Text(formatPrice(car['salePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-        SizedBox(width: 80, child: Text(formatPrice(car['profit']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
+        SizedBox(width: 120, child: Text(formatFullPrice(car['salePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+        SizedBox(width: 110, child: Text(formatFullPrice(car['profit']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
         SizedBox(width: 80, child: Text(car['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted))),
         SizedBox(width: 70, child: Align(
           alignment: Alignment.centerRight,
@@ -671,9 +671,9 @@ class _SalesmenScreenState extends State<SalesmenScreen> {
         ]),
         const SizedBox(height: 6),
         Row(children: [
-          Text("Sale: ${formatPrice(car['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary)),
+          Text("Sale: ${formatFullPrice(car['salePrice'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary)),
           const Spacer(),
-          Text("Profit: ${formatPrice(car['profit'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.success)),
+          Text("Profit: ${formatFullPrice(car['profit'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.success)),
         ]),
       ]),
     );

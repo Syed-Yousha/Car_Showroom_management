@@ -320,6 +320,43 @@ class InventoryScreenState extends State<InventoryScreen> {
           ]),
           pw.SizedBox(height: 14),
 
+          // Car Photos
+          if ((car['photos'] as List?)?.isNotEmpty == true) ...[
+            pw.Text("Car Photos", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 8),
+            pw.Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: (car['photos'] as List).map<pw.Widget>((photo) => pw.Container(
+                width: 120,
+                height: 90,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  borderRadius: pw.BorderRadius.circular(6),
+                  color: PdfColors.grey100,
+                ),
+                child: pw.Column(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Container(
+                      width: 24, height: 24,
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#EBE8FA'),
+                        borderRadius: pw.BorderRadius.circular(12),
+                      ),
+                      child: pw.Center(child: pw.Text("\u{1F4F7}", style: const pw.TextStyle(fontSize: 10))),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Text(photo.toString(), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                    pw.SizedBox(height: 2),
+                    pw.Text("Photo", style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400)),
+                  ],
+                ),
+              )).toList(),
+            ),
+            pw.SizedBox(height: 14),
+          ],
+
           // Summary Stats
           pw.Row(children: [
             _pdfStatBox("Price", formatFullPrice(car['price']), PdfColor.fromHex('#6C5DD3')),
@@ -399,11 +436,39 @@ class InventoryScreenState extends State<InventoryScreen> {
       pw.Container(
         width: 14, height: 14,
         decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: checked ? PdfColors.green : PdfColors.grey, width: 1),
+          border: pw.Border.all(color: checked ? PdfColors.green : PdfColors.red, width: 1),
           borderRadius: pw.BorderRadius.circular(3),
-          color: checked ? PdfColors.green50 : PdfColors.white,
+          color: checked ? PdfColors.green50 : PdfColors.red50,
         ),
-        child: checked ? pw.Center(child: pw.Text("\u2713", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.green))) : pw.SizedBox(),
+        child: pw.Center(
+          child: checked
+            ? pw.CustomPaint(
+                size: const PdfPoint(10, 10),
+                painter: (PdfGraphics canvas, PdfPoint size) {
+                  canvas
+                    ..setStrokeColor(PdfColors.green)
+                    ..setLineWidth(1.5)
+                    ..moveTo(2, 5)
+                    ..lineTo(4.5, 2.5)
+                    ..lineTo(8.5, 7.5)
+                    ..strokePath();
+                },
+              )
+            : pw.CustomPaint(
+                size: const PdfPoint(10, 10),
+                painter: (PdfGraphics canvas, PdfPoint size) {
+                  canvas
+                    ..setStrokeColor(PdfColors.red)
+                    ..setLineWidth(1.5)
+                    ..moveTo(2.5, 7.5)
+                    ..lineTo(7.5, 2.5)
+                    ..strokePath()
+                    ..moveTo(2.5, 2.5)
+                    ..lineTo(7.5, 7.5)
+                    ..strokePath();
+                },
+              ),
+        ),
       ),
       pw.SizedBox(width: 4),
       pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
@@ -414,7 +479,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     final nameCtrl = TextEditingController();
     final makeCtrl = TextEditingController();
     final modelCtrl = TextEditingController();
-    final yearCtrl = TextEditingController(text: '2024');
     final colorCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     final regNoCtrl = TextEditingController();
@@ -427,32 +491,79 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool fileHanded = false;
     bool smartCardHanded = false;
     bool plateHanded = false;
+    final notesCtrl = TextEditingController();
+    final photoLabelCtrl = TextEditingController();
+    List<String> photos = [];
+    List<Map<String, TextEditingController>> expenseRows = [];
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
         title: const Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
-        constraints: const BoxConstraints(maxWidth: 560),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: TextBox(
+                controller: photoLabelCtrl,
+                placeholder: "e.g. Front View, Interior...",
+                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+              )),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                onPressed: () {
+                  if (photoLabelCtrl.text.trim().isNotEmpty) {
+                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
+                    photoLabelCtrl.clear();
+                  }
+                },
+                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+              ).withClickCursor,
+            ]),
+            if (photos.isNotEmpty) ...[  
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
+                  const SizedBox(width: 4),
+                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
+                  const SizedBox(width: 4),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
+                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
+                    ),
+                  ),
+                ]),
+              )).toList()),
+            ],
+            const SizedBox(height: 14),
             Row(children: [
               Expanded(child: _editField("Car Name", nameCtrl)),
               const SizedBox(width: 12),
               Expanded(child: _editField("Make", makeCtrl)),
-            ]),
-            Row(children: [
-              Expanded(child: _editField("Model", modelCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _editField("Year", yearCtrl)),
+              Expanded(child: _editField("Model", modelCtrl)),
             ]),
             Row(children: [
               Expanded(child: _editField("Reg No", regNoCtrl)),
               const SizedBox(width: 12),
               Expanded(child: _editField("Color", colorCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Price (Rs)", priceCtrl)),
             ]),
             Row(children: [
-              Expanded(child: _editField("Price (Rs)", priceCtrl)),
-              const SizedBox(width: 12),
               Expanded(child: _editField("Mileage", mileageCtrl)),
             ]),
             Row(children: [
@@ -507,10 +618,76 @@ class InventoryScreenState extends State<InventoryScreen> {
                 content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
             ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "File Date & Additional Notes",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  placeholder: "Enter file date, remarks, or any extra details...",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                ),
+              ),
+            ),
+            Row(children: [
+              Text("Car Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const Spacer(),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setDialogState(() {
+                    expenseRows.add({
+                      'title': TextEditingController(),
+                      'amount': TextEditingController(),
+                    });
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(FluentIcons.add, size: 12, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            ...expenseRows.asMap().entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: [
+                Expanded(child: TextBox(
+                  controller: entry.value['title']!,
+                  placeholder: "Expense title",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                SizedBox(width: 120, child: TextBox(
+                  controller: entry.value['amount']!,
+                  placeholder: "Amount",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setDialogState(() => expenseRows.removeAt(entry.key)),
+                    child: Icon(FluentIcons.delete, size: 14, color: AppTheme.error),
+                  ),
+                ),
+              ]),
+            )),
           ]),
+          ),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -520,7 +697,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'name': nameCtrl.text,
                   'make': makeCtrl.text,
                   'model': modelCtrl.text,
-                  'year': int.tryParse(yearCtrl.text) ?? 2024,
+                  'year': DateTime.now().year,
                   'color': colorCtrl.text,
                   'price': int.tryParse(priceCtrl.text) ?? 0,
                   'regNo': regNoCtrl.text,
@@ -535,14 +712,22 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
-                  'photos': <String>[],
-                  'carExpenses': <Map<String, dynamic>>[],
+                  'photos': photos,
+                  'carExpenses': expenseRows
+                    .where((row) => row['title']!.text.trim().isNotEmpty)
+                    .map((row) => {
+                      'title': row['title']!.text.trim(),
+                      'amount': int.tryParse(row['amount']!.text) ?? 0,
+                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+                    })
+                    .toList(),
+                  'notes': notesCtrl.text,
                 });
               });
               Navigator.pop(ctx);
             },
             child: const Text("Add Car", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -568,7 +753,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text("${car['name']} (${car['year']})", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatFullPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
@@ -576,7 +761,7 @@ class InventoryScreenState extends State<InventoryScreen> {
           Text("This action cannot be undone.", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
         ]),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -584,7 +769,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -612,14 +797,67 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool fileHanded = car['fileHandedOver'];
     bool smartCardHanded = car['smartCardHandedOver'] ?? false;
     bool plateHanded = car['numberPlateHandedOver'];
+    final notesCtrl = TextEditingController(text: car['notes'] ?? '');
+    final photoLabelCtrl = TextEditingController();
+    List<String> photos = List<String>.from(car['photos'] ?? []);
+    List<Map<String, TextEditingController>> expenseRows = ((car['carExpenses'] ?? []) as List).map<Map<String, TextEditingController>>((e) => {
+      'title': TextEditingController(text: e['title'] ?? ''),
+      'amount': TextEditingController(text: (e['amount'] ?? 0).toString()),
+    }).toList();
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
         title: const Text("Edit Car Details", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
-        constraints: const BoxConstraints(maxWidth: 560),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: TextBox(
+                controller: photoLabelCtrl,
+                placeholder: "e.g. Front View, Interior...",
+                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+              )),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                onPressed: () {
+                  if (photoLabelCtrl.text.trim().isNotEmpty) {
+                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
+                    photoLabelCtrl.clear();
+                  }
+                },
+                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+              ).withClickCursor,
+            ]),
+            if (photos.isNotEmpty) ...[  
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
+                  const SizedBox(width: 4),
+                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
+                  const SizedBox(width: 4),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
+                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
+                    ),
+                  ),
+                ]),
+              )).toList()),
+            ],
+            const SizedBox(height: 14),
             Row(children: [
               Expanded(child: _editField("Car Name", nameCtrl)),
               const SizedBox(width: 12),
@@ -712,10 +950,76 @@ class InventoryScreenState extends State<InventoryScreen> {
                 content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
             ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "File Date & Additional Notes",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  placeholder: "Enter file date, remarks, or any extra details...",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                ),
+              ),
+            ),
+            Row(children: [
+              Text("Car Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const Spacer(),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setDialogState(() {
+                    expenseRows.add({
+                      'title': TextEditingController(),
+                      'amount': TextEditingController(),
+                    });
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(FluentIcons.add, size: 12, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            ...expenseRows.asMap().entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: [
+                Expanded(child: TextBox(
+                  controller: entry.value['title']!,
+                  placeholder: "Expense title",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                SizedBox(width: 120, child: TextBox(
+                  controller: entry.value['amount']!,
+                  placeholder: "Amount",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setDialogState(() => expenseRows.removeAt(entry.key)),
+                    child: Icon(FluentIcons.delete, size: 14, color: AppTheme.error),
+                  ),
+                ),
+              ]),
+            )),
           ]),
+          ),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -740,12 +1044,22 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
+                  'photos': photos,
+                  'carExpenses': expenseRows
+                    .where((row) => row['title']!.text.trim().isNotEmpty)
+                    .map((row) => {
+                      'title': row['title']!.text.trim(),
+                      'amount': int.tryParse(row['amount']!.text) ?? 0,
+                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+                    })
+                    .toList(),
+                  'notes': notesCtrl.text,
                 };
               });
               Navigator.pop(ctx);
             },
             child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -794,7 +1108,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                 SizedBox(width: 8),
                 Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
               ]),
-            ),
+            ).withClickCursor,
           ]),
 
           const SizedBox(height: 24),
@@ -811,7 +1125,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               Row(children: [
                 StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
                 const SizedBox(width: 12),
-                StatCard(label: "Car Expenses", value: formatPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
+                StatCard(label: "Car Expenses", value: formatFullPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
               ]),
             ])
           else
@@ -822,7 +1136,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 16),
               StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
               const SizedBox(width: 16),
-              StatCard(label: "Car Expenses", value: formatPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
+              StatCard(label: "Car Expenses", value: formatFullPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
             ]),
 
           const SizedBox(height: 24),
@@ -866,7 +1180,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               IconButton(
                 icon: Icon(_isGridView ? FluentIcons.grid_view_medium : FluentIcons.list, size: 16, color: AppTheme.textSecondary),
                 onPressed: () => setState(() => _isGridView = !_isGridView),
-              ),
+              ).withClickCursor,
             ]),
 
           const SizedBox(height: 12),
@@ -1021,12 +1335,12 @@ class InventoryScreenState extends State<InventoryScreen> {
 
             // Price + Expense
             Row(children: [
-              Expanded(child: Text(formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary))),
+              Expanded(child: Text(formatFullPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary))),
               if (totalExpense > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text("Exp: ${formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.warning)),
+                  child: Text("Exp: ${formatFullPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.warning)),
                 ),
             ]),
 
@@ -1045,7 +1359,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   SizedBox(width: 6),
                   Text("Edit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
                 ]),
-              )),
+              ).withClickCursor),
               const SizedBox(width: 6),
               Expanded(child: Button(
                 style: ButtonStyle(
@@ -1058,7 +1372,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   const SizedBox(width: 6),
                   Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error)),
                 ]),
-              )),
+              ).withClickCursor),
               const SizedBox(width: 6),
               Expanded(child: FilledButton(
                 style: ButtonStyle(
@@ -1072,7 +1386,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   SizedBox(width: 6),
                   Text("PDF", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
                 ]),
-              )),
+              ).withClickCursor),
             ]),
           ]),
         ),
@@ -1136,7 +1450,7 @@ class InventoryScreenState extends State<InventoryScreen> {
             ])),
             if (!isNarrow) ...[
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(formatPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
+                Text(formatFullPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
                 const SizedBox(height: 4),
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   _buildDocCheckbox("File", car['fileHandedOver']),
@@ -1152,19 +1466,19 @@ class InventoryScreenState extends State<InventoryScreen> {
               IconButton(
                 icon: Icon(isExpanded ? FluentIcons.chevron_up : FluentIcons.chevron_down, size: 12, color: AppTheme.textSecondary),
                 onPressed: () => setState(() => _expandedIndex = isExpanded ? null : index),
-              ),
+              ).withClickCursor,
               IconButton(
                 icon: const Icon(FluentIcons.edit, size: 12, color: AppTheme.primary),
                 onPressed: () => _showEditCarDialog(car),
-              ),
+              ).withClickCursor,
               IconButton(
                 icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.7)),
                 onPressed: () => _showRemoveCarDialog(car),
-              ),
+              ).withClickCursor,
               IconButton(
                 icon: const Icon(FluentIcons.pdf, size: 12, color: AppTheme.error),
                 onPressed: () => _showCarPdf(car),
-              ),
+              ).withClickCursor,
             ]),
           ]),
         ),
@@ -1232,7 +1546,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                 Row(children: [
                   Text("Car-Specific Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const Spacer(),
-                  Text("Total: ${formatPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
+                  Text("Total: ${formatFullPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
                 ]),
                 const SizedBox(height: 8),
                 ...carExpenses.map((exp) => Container(
@@ -1241,7 +1555,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                     Icon(FluentIcons.repair, size: 12, color: AppTheme.warning),
                     const SizedBox(width: 8),
                     Expanded(child: Text((exp as Map)['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary))),
-                    Text(formatPrice(exp['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning)),
+                    Text(formatFullPrice(exp['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning)),
                     const SizedBox(width: 12),
                     Text(exp['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
                   ]),
@@ -1327,9 +1641,11 @@ class InventoryScreenState extends State<InventoryScreen> {
 
   Widget _buildFilterChip(String label, int count) {
     final sel = _selectedFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = label),
-      child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFilter = label),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: sel ? AppTheme.primary : AppTheme.cardColor,
@@ -1345,6 +1661,7 @@ class InventoryScreenState extends State<InventoryScreen> {
             child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
         ]),
+      ),
       ),
     );
   }

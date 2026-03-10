@@ -12,18 +12,14 @@ String formatPrice(int price, {String zeroText = 'Rs 0'}) {
 
 /// Formats price with full comma-separated Indian numbering (e.g. Rs 85,00,000).
 String formatFullPrice(int price) {
-  final str = price.toString();
-  final buf = StringBuffer();
-  int count = 0;
-  for (int i = str.length - 1; i >= 0; i--) {
-    buf.write(str[i]);
-    count++;
-    if (count == 3 && i > 0) {
-      buf.write(',');
-      count = 0;
-    } else if (count > 3 && (count - 3) % 2 == 0 && i > 0) {
-      buf.write(',');
-    }
+  final s = price.toString();
+  if (s.length <= 3) return 'Rs $s';
+  String result = s.substring(s.length - 3);
+  String remaining = s.substring(0, s.length - 3);
+  while (remaining.length > 2) {
+    result = '${remaining.substring(remaining.length - 2)},$result';
+    remaining = remaining.substring(0, remaining.length - 2);
   }
-  return 'Rs ${buf.toString().split('').reversed.join()}';
+  result = '$remaining,$result';
+  return 'Rs $result';
 }

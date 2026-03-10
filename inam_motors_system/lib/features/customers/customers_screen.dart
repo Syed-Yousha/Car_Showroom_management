@@ -50,11 +50,11 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '123 Model Town, Lahore',
       'type': 'VIP',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-01-05', 'type': 'Car Sale', 'details': 'Kia Sportage 2022', 'debit': 9500000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': false, 'handed': true},
+        {'date': '2026-01-05', 'type': 'Car Sale', 'details': 'Kia Sportage 2022', 'debit': 9500000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': false},
         {'date': '2026-01-05', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 5000000, 'salesman': 'Faheem Khan'},
         {'date': '2026-03-10', 'type': 'Payment', 'details': 'Bank Transfer - HBL 0012345', 'debit': 0, 'credit': 2000000, 'salesman': 'Faheem Khan'},
-        {'date': '2026-04-15', 'type': 'Trade-In', 'details': 'Kia Sportage 2022 (Sold Back)', 'debit': 0, 'credit': 7000000, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': false, 'handed': true},
-        {'date': '2026-04-15', 'type': 'Car Sale', 'details': 'Corolla GLI 2023', 'debit': 5000000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': true, 'handed': true},
+        {'date': '2026-04-15', 'type': 'Trade-In', 'details': 'Kia Sportage 2022 (Sold Back)', 'debit': 0, 'credit': 7000000, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': false},
+        {'date': '2026-04-15', 'type': 'Car Sale', 'details': 'Corolla GLI 2023', 'debit': 5000000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': true},
       ],
     },
     {
@@ -65,7 +65,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '45 F-8, Islamabad',
       'type': 'Regular',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-02-03', 'type': 'Car Sale', 'details': 'Honda Civic 2023', 'debit': 7200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2026-02-03', 'type': 'Car Sale', 'details': 'Honda Civic 2023', 'debit': 7200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2026-02-03', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 7200000, 'salesman': 'Inam Khan'},
       ],
     },
@@ -77,9 +77,9 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '78 Clifton Block 5, Karachi',
       'type': 'VIP',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2025-06-15', 'type': 'Car Sale', 'details': 'Suzuki Alto 2025', 'debit': 3200000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2025-06-15', 'type': 'Car Sale', 'details': 'Suzuki Alto 2025', 'debit': 3200000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2025-06-15', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 3200000, 'salesman': 'Faheem Khan'},
-        {'date': '2025-10-20', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': false, 'handed': true},
+        {'date': '2025-10-20', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': false},
         {'date': '2025-10-20', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 5000000, 'salesman': 'Inam Khan'},
         {'date': '2025-11-25', 'type': 'Payment', 'details': 'Bank Transfer - MCB 0098765', 'debit': 0, 'credit': 3000000, 'salesman': 'Inam Khan'},
         {'date': '2025-12-10', 'type': 'Payment', 'details': 'Cash Payment', 'debit': 0, 'credit': 1800000, 'salesman': 'Inam Khan'},
@@ -93,7 +93,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '12 Johar Town Phase 2, Lahore',
       'type': 'New',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-01-28', 'type': 'Car Sale', 'details': 'Suzuki Cultus VXL 2024', 'debit': 3800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': false},
+        {'date': '2026-01-28', 'type': 'Car Sale', 'details': 'Suzuki Cultus VXL 2024', 'debit': 3800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2026-01-28', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 2000000, 'salesman': 'Inam Khan'},
       ],
     },
@@ -105,9 +105,9 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '56 D Ground, Faisalabad',
       'type': 'Regular',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2025-09-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 6800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2025-09-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 6800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2025-09-10', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 6800000, 'salesman': 'Inam Khan'},
-        {'date': '2026-01-25', 'type': 'Car Sale', 'details': 'Hyundai Tucson 2022', 'debit': 11000000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': true, 'handed': true},
+        {'date': '2026-01-25', 'type': 'Car Sale', 'details': 'Hyundai Tucson 2022', 'debit': 11000000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': true},
         {'date': '2026-01-25', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 8000000, 'salesman': 'Faheem Khan'},
         {'date': '2026-02-20', 'type': 'Payment', 'details': 'Bank Transfer - UBL 0055432', 'debit': 0, 'credit': 3000000, 'salesman': 'Faheem Khan'},
       ],
@@ -129,13 +129,13 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '34 Saddar Bazaar, Rawalpindi',
       'type': 'VIP',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2025-04-03', 'type': 'Car Sale', 'details': 'Suzuki Cultus VXL 2024', 'debit': 3800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2025-04-03', 'type': 'Car Sale', 'details': 'Suzuki Cultus VXL 2024', 'debit': 3800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2025-04-03', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 3800000, 'salesman': 'Faheem Khan'},
-        {'date': '2025-07-12', 'type': 'Car Sale', 'details': 'Honda Civic 2023', 'debit': 7200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2025-07-12', 'type': 'Car Sale', 'details': 'Honda Civic 2023', 'debit': 7200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2025-07-12', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 7200000, 'salesman': 'Inam Khan'},
-        {'date': '2025-11-01', 'type': 'Car Sale', 'details': 'Toyota Grande 2024', 'debit': 8500000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': false, 'handed': true},
+        {'date': '2025-11-01', 'type': 'Car Sale', 'details': 'Toyota Grande 2024', 'debit': 8500000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': false},
         {'date': '2025-11-01', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 8500000, 'salesman': 'Inam Khan'},
-        {'date': '2026-01-15', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': false, 'handed': true},
+        {'date': '2026-01-15', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': false},
         {'date': '2026-01-15', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 6000000, 'salesman': 'Faheem Khan'},
         {'date': '2026-02-10', 'type': 'Payment', 'details': 'Bank Transfer', 'debit': 0, 'credit': 3800000, 'salesman': 'Faheem Khan'},
       ],
@@ -148,7 +148,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '67 Canal Road, Lahore',
       'type': 'New',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-01-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 4600000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2026-01-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 4600000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2026-01-10', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 3000000, 'salesman': 'Inam Khan'},
         {'date': '2026-02-15', 'type': 'Payment', 'details': 'Cash Payment', 'debit': 0, 'credit': 1600000, 'salesman': 'Inam Khan'},
       ],
@@ -170,7 +170,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '15 University Road, Peshawar',
       'type': 'Regular',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-01-05', 'type': 'Car Sale', 'details': 'Kia Sportage 2022', 'debit': 9500000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2026-01-05', 'type': 'Car Sale', 'details': 'Kia Sportage 2022', 'debit': 9500000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2026-01-05', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 5000000, 'salesman': 'Faheem Khan'},
         {'date': '2026-02-01', 'type': 'Payment', 'details': 'Bank Transfer - ABL 0077654', 'debit': 0, 'credit': 2500000, 'salesman': 'Faheem Khan'},
       ],
@@ -184,15 +184,15 @@ class CustomersScreenState extends State<CustomersScreen> {
       'address': '88 Gulberg III, Lahore',
       'type': 'VIP',
       'ledger': <Map<String, dynamic>>[
-        {'date': '2026-01-02', 'type': 'Car Sale', 'details': 'Suzuki Alto 2025', 'debit': 3200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true, 'handed': true},
+        {'date': '2026-01-02', 'type': 'Car Sale', 'details': 'Suzuki Alto 2025', 'debit': 3200000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': true, 'plate': true},
         {'date': '2026-01-02', 'type': 'Payment', 'details': 'Cash - Full Payment', 'debit': 0, 'credit': 3200000, 'salesman': 'Inam Khan'},
         // Owed 10L on a second car, paid 20L → 10L credit on us
-        {'date': '2026-02-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 6800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': true, 'handed': true},
+        {'date': '2026-02-10', 'type': 'Car Sale', 'details': 'Changan Alsvin 2024', 'debit': 6800000, 'credit': 0, 'salesman': 'Inam Khan', 'file': true, 'smartCard': false, 'plate': true},
         {'date': '2026-02-10', 'type': 'Payment', 'details': 'Cash Deposit', 'debit': 0, 'credit': 5800000, 'salesman': 'Inam Khan'},
         // Now owes 10L. Pays 20L → gets 10L credit
         {'date': '2026-02-20', 'type': 'Payment', 'details': 'Bank Transfer - HBL 0099887', 'debit': 0, 'credit': 2000000, 'salesman': 'Inam Khan'},
         // Balance is now -10L (credit). Buys 50L car → owes 40L
-        {'date': '2026-03-01', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': false, 'handed': false},
+        {'date': '2026-03-01', 'type': 'Car Sale', 'details': 'MG HS 2024', 'debit': 9800000, 'credit': 0, 'salesman': 'Faheem Khan', 'file': true, 'smartCard': false, 'plate': false},
       ],
     },
   ];
@@ -289,13 +289,13 @@ class CustomersScreenState extends State<CustomersScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
               setState(() {
-                _customers.add({
+                _customers.insert(0, {
                   'name': nameCtrl.text.trim(),
                   'phone': phoneCtrl.text.trim(),
                   'cnic': cnicCtrl.text.trim(),
@@ -308,7 +308,7 @@ class CustomersScreenState extends State<CustomersScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Add Customer", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -359,7 +359,7 @@ class CustomersScreenState extends State<CustomersScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -377,7 +377,7 @@ class CustomersScreenState extends State<CustomersScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -395,7 +395,7 @@ class CustomersScreenState extends State<CustomersScreen> {
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -406,7 +406,7 @@ class CustomersScreenState extends State<CustomersScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -420,6 +420,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     final amountCtrl = TextEditingController();
     String paymentType = 'Cash';
     final accNoCtrl = TextEditingController();
+    final bankNameCtrl = TextEditingController();
     final tradeCarNameCtrl = TextEditingController();
     final tradeAmountCtrl = TextEditingController();
     DateTime txnDate = DateTime.now();
@@ -427,7 +428,6 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool fileHandedOver = false;
     bool smartCardHandedOver = false;
     bool plateHandedOver = false;
-    bool carHanded = false;
 
     showDialog(
       context: context,
@@ -440,12 +440,11 @@ class CustomersScreenState extends State<CustomersScreen> {
               // Transaction Type Selector
               Text("Transaction Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
               const SizedBox(height: 8),
-              Row(children: [
+              Wrap(spacing: 8, runSpacing: 8, children: [
                 _txnTypeChip('Sell Car', FluentIcons.car, txnType, (v) => setDialogState(() { txnType = v; })),
-                const SizedBox(width: 8),
                 _txnTypeChip('Payment', FluentIcons.money, txnType, (v) => setDialogState(() { txnType = v; })),
-                const SizedBox(width: 8),
                 _txnTypeChip('Trade-In', FluentIcons.switch_widget, txnType, (v) => setDialogState(() { txnType = v; })),
+                _txnTypeChip('Credit Refund', FluentIcons.undo, txnType, (v) => setDialogState(() { txnType = v; })),
               ]),
               const SizedBox(height: 20),
 
@@ -453,28 +452,35 @@ class CustomersScreenState extends State<CustomersScreen> {
               if (txnType == 'Sell Car') ...[
                 Text("Select Car from Inventory", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                 const SizedBox(height: 8),
-                ComboBox<String>(
-                  value: selectedCar,
-                  placeholder: const Text("Choose a car...", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                  isExpanded: true,
-                  items: _availableCars.map((car) => ComboBoxItem<String>(
+                AutoSuggestBox<String>(
+                  placeholder: "Type to search car...",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  items: _availableCars.map((car) => AutoSuggestBoxItem<String>(
                     value: car['name'] as String,
-                    child: Row(children: [
-                      Expanded(child: Text(car['name'] as String, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13))),
-                      Text(formatPrice(car['price'] as int), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary)),
-                    ]),
+                    label: '${car['name']} - ${formatFullPrice(car['price'] as int)}',
                   )).toList(),
-                  onChanged: (v) {
-                    if (v != null) {
-                      final car = _availableCars.firstWhere((car) => car['name'] == v);
-                      setDialogState(() {
-                        selectedCar = v;
-                        selectedCarPrice = car['price'] as int;
-                        amountCtrl.text = selectedCarPrice.toString();
-                      });
-                    }
+                  onSelected: (item) {
+                    final car = _availableCars.firstWhere((c) => c['name'] == item.value);
+                    setDialogState(() {
+                      selectedCar = item.value;
+                      selectedCarPrice = car['price'] as int;
+                      amountCtrl.text = selectedCarPrice.toString();
+                    });
                   },
                 ),
+                if (selectedCar != null) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
+                    child: Row(children: [
+                      Icon(FluentIcons.check_mark, size: 12, color: AppTheme.success),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text("Selected: $selectedCar — ${formatFullPrice(selectedCarPrice)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
+                    ]),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 _editField("Sale Price (Rs)", amountCtrl),
                 if (selectedCar != null)
@@ -491,8 +497,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                 // Car Documentation Status
                 Text("Documentation & Handover", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                 const SizedBox(height: 8),
-                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, carHanded, (f, s, p, h) {
-                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; carHanded = h; });
+                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, (f, s, p) {
+                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; });
                 }),
               ],
 
@@ -510,7 +516,24 @@ class CustomersScreenState extends State<CustomersScreen> {
                   _paymentChip('Cheque', paymentType, (v) => setDialogState(() => paymentType = v)),
                 ]),
                 const SizedBox(height: 14),
-                if (paymentType != 'Cash') _editField("Account / Cheque No.", accNoCtrl),
+                if (paymentType != 'Cash') ...[
+                  _editField("Bank Name", bankNameCtrl),
+                  _editField("Account / Cheque No.", accNoCtrl),
+                ],
+              ],
+
+              // ── Credit Refund Fields ──
+              if (txnType == 'Credit Refund') ...[
+                _editField("Refund Amount (Rs)", amountCtrl),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [
+                    Icon(FluentIcons.info, size: 14, color: AppTheme.warning),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text("This amount will be DEBITED (charged) to ${c['name']}'s account to reverse excess credit paid back to customer.", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.warning))),
+                  ]),
+                ),
               ],
 
               // ── Trade-In Fields ──
@@ -529,8 +552,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                 const SizedBox(height: 14),
                 Text("Documentation Received", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                 const SizedBox(height: 8),
-                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, carHanded, (f, s, p, h) {
-                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; carHanded = h; });
+                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, (f, s, p) {
+                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; });
                 }),
               ],
 
@@ -558,7 +581,7 @@ class CustomersScreenState extends State<CustomersScreen> {
             ]),
           ),
           actions: [
-            Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+            Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
             FilledButton(
               style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
               onPressed: () {
@@ -572,7 +595,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   setState(() {
                     (c['ledger'] as List<Map<String, dynamic>>).add({
                       'date': dateStr, 'type': 'Car Sale', 'details': selectedCar, 'debit': price, 'credit': 0,
-                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver, 'handed': carHanded,
+                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver,
                     });
                     // Remove sold car from available inventory
                     _availableCars.removeWhere((car) => car['name'] == selectedCar);
@@ -581,8 +604,11 @@ class CustomersScreenState extends State<CustomersScreen> {
                   final amt = int.tryParse(amountCtrl.text) ?? 0;
                   if (amt <= 0) return;
                   String detail = paymentType;
-                  if (paymentType != 'Cash' && accNoCtrl.text.trim().isNotEmpty) {
-                    detail = '$paymentType - ${accNoCtrl.text.trim()}';
+                  if (paymentType != 'Cash') {
+                    final parts = <String>[];
+                    if (bankNameCtrl.text.trim().isNotEmpty) parts.add(bankNameCtrl.text.trim());
+                    if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
+                    detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                   }
                   setState(() {
                     (c['ledger'] as List<Map<String, dynamic>>).add({
@@ -597,16 +623,25 @@ class CustomersScreenState extends State<CustomersScreen> {
                   setState(() {
                     (c['ledger'] as List<Map<String, dynamic>>).add({
                       'date': dateStr, 'type': 'Trade-In', 'details': '${tradeCarNameCtrl.text.trim()} (Sold Back)', 'debit': 0, 'credit': amt,
-                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver, 'handed': carHanded,
+                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver,
                     });
                     // Add traded-in car back to available inventory
                     _availableCars.add({'name': tradeCarNameCtrl.text.trim(), 'price': amt, 'regNo': 'TBD'});
+                  });
+                } else if (txnType == 'Credit Refund') {
+                  final amt = int.tryParse(amountCtrl.text) ?? 0;
+                  if (amt <= 0) return;
+                  setState(() {
+                    (c['ledger'] as List<Map<String, dynamic>>).add({
+                      'date': dateStr, 'type': 'Credit Refund', 'details': 'Credit Refund - Paid back to customer', 'debit': amt, 'credit': 0,
+                      'salesman': selectedSalesman ?? '',
+                    });
                   });
                 }
                 Navigator.pop(ctx);
               },
               child: const Text("Add Transaction", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-            ),
+            ).withClickCursor,
           ],
         );
       }),
@@ -631,11 +666,11 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool fileHandedOver = entry['file'] == true;
     bool smartCardHandedOver = entry['smartCard'] == true;
     bool plateHandedOver = entry['plate'] == true;
-    bool carHanded = entry['handed'] == true;
 
     // Payment-specific
     String paymentType = 'Cash';
     final accNoCtrl = TextEditingController();
+    final bankNameCtrl = TextEditingController();
     if (originalType == 'Payment') {
       final d = entry['details'] as String? ?? '';
       if (d.startsWith('Bank Transfer')) {
@@ -678,8 +713,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                 const SizedBox(height: 4),
                 Text("Documentation & Handover", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                 const SizedBox(height: 8),
-                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, carHanded, (f, s, p, h) {
-                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; carHanded = h; });
+                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, (f, s, p) {
+                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; });
                 }),
               ],
 
@@ -696,7 +731,14 @@ class CustomersScreenState extends State<CustomersScreen> {
                   _paymentChip('Cheque', paymentType, (v) => setDialogState(() => paymentType = v)),
                 ]),
                 const SizedBox(height: 14),
-                if (paymentType != 'Cash') _editField("Account / Cheque No.", accNoCtrl),
+                if (paymentType != 'Cash') ...[  
+                  _editField("Bank Name", bankNameCtrl),
+                  _editField("Account / Cheque No.", accNoCtrl),
+                ],
+              ],
+
+              if (originalType == 'Credit Refund') ...[  
+                _editField("Refund Amount (Rs)", amountCtrl),
               ],
 
               if (originalType == 'Trade-In') ...[
@@ -705,8 +747,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                 const SizedBox(height: 4),
                 Text("Documentation Received", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                 const SizedBox(height: 8),
-                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, carHanded, (f, s, p, h) {
-                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; carHanded = h; });
+                _buildDocStatusGrid(fileHandedOver, smartCardHandedOver, plateHandedOver, (f, s, p) {
+                  setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; });
                 }),
               ],
 
@@ -730,7 +772,7 @@ class CustomersScreenState extends State<CustomersScreen> {
             ]),
           ),
           actions: [
-            Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+            Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
             FilledButton(
               style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
               onPressed: () {
@@ -742,12 +784,15 @@ class CustomersScreenState extends State<CustomersScreen> {
                   if (originalType == 'Car Sale') {
                     ledger[entryIndex] = {
                       'date': dateStr, 'type': 'Car Sale', 'details': detailsCtrl.text.trim(), 'debit': amt, 'credit': 0,
-                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver, 'handed': carHanded,
+                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver,
                     };
                   } else if (originalType == 'Payment') {
                     String detail = paymentType;
-                    if (paymentType != 'Cash' && accNoCtrl.text.trim().isNotEmpty) {
-                      detail = '$paymentType - ${accNoCtrl.text.trim()}';
+                    if (paymentType != 'Cash') {
+                      final parts = <String>[];
+                      if (bankNameCtrl.text.trim().isNotEmpty) parts.add(bankNameCtrl.text.trim());
+                      if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
+                      detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                     }
                     ledger[entryIndex] = {
                       'date': dateStr, 'type': 'Payment', 'details': detail, 'debit': 0, 'credit': amt,
@@ -756,14 +801,19 @@ class CustomersScreenState extends State<CustomersScreen> {
                   } else if (originalType == 'Trade-In') {
                     ledger[entryIndex] = {
                       'date': dateStr, 'type': 'Trade-In', 'details': detailsCtrl.text.trim(), 'debit': 0, 'credit': amt,
-                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver, 'handed': carHanded,
+                      'salesman': selectedSalesman ?? '', 'file': fileHandedOver, 'smartCard': smartCardHandedOver, 'plate': plateHandedOver,
+                    };
+                  } else if (originalType == 'Credit Refund') {
+                    ledger[entryIndex] = {
+                      'date': dateStr, 'type': 'Credit Refund', 'details': 'Credit Refund - Paid back to customer', 'debit': amt, 'credit': 0,
+                      'salesman': selectedSalesman ?? '',
                     };
                   }
                 });
                 Navigator.pop(ctx);
               },
               child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-            ),
+            ).withClickCursor,
           ],
         );
       }),
@@ -781,7 +831,7 @@ class CustomersScreenState extends State<CustomersScreen> {
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -801,7 +851,7 @@ class CustomersScreenState extends State<CustomersScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Delete", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -885,7 +935,6 @@ class CustomersScreenState extends State<CustomersScreen> {
             pw.SizedBox(height: 3),
             pw.Row(children: [
               pw.Expanded(child: _pdfDocItem("Number Plate", entry['plate'] == true)),
-              pw.Expanded(child: _pdfDocItem("Car Handed", entry['handed'] == true)),
             ]),
             pw.SizedBox(height: 12),
           ],
@@ -1029,7 +1078,6 @@ class CustomersScreenState extends State<CustomersScreen> {
                   if (e['file'] == true) docs.add('F');
                   if (e['smartCard'] == true) docs.add('SC');
                   if (e['plate'] == true) docs.add('P');
-                  if (e['handed'] == true) docs.add('H');
                   if (docs.isNotEmpty) details += '\n[${docs.join(', ')}]';
                 }
                 return [
@@ -1047,7 +1095,7 @@ class CustomersScreenState extends State<CustomersScreen> {
           pw.SizedBox(height: 12),
           // Legend for doc abbreviations
           if (ledger.any((e) => e['type'] == 'Car Sale' || e['type'] == 'Trade-In'))
-            pw.Text("F = File, SC = Smart Card, P = Number Plate, H = Car Handed", style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500)),
+            pw.Text("F = File, SC = Smart Card, P = Number Plate", style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500)),
 
           pw.SizedBox(height: 20),
           pw.Divider(),
@@ -1098,8 +1146,15 @@ class CustomersScreenState extends State<CustomersScreen> {
 
   pw.Widget _pdfDocItem(String label, bool checked) {
     return pw.Row(children: [
-      pw.Text(checked ? '\u2611 ' : '\u2610 ', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: checked ? PdfColors.green : PdfColors.red)),
-      pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
+      pw.Container(
+        width: 10, height: 10,
+        decoration: pw.BoxDecoration(
+          color: checked ? PdfColors.green : PdfColors.red,
+          borderRadius: pw.BorderRadius.circular(2),
+        ),
+      ),
+      pw.SizedBox(width: 4),
+      pw.Text('$label: ${checked ? "Yes" : "No"}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: checked ? PdfColors.green : PdfColors.red)),
     ]);
   }
 
@@ -1121,30 +1176,32 @@ class CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
-  Widget _buildDocStatusGrid(bool file, bool smartCard, bool plate, bool handed, void Function(bool, bool, bool, bool) onChanged) {
+  Widget _buildDocStatusGrid(bool file, bool smartCard, bool plate, void Function(bool, bool, bool) onChanged) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.divider)),
       child: Column(children: [
         Row(children: [
-          Expanded(child: _docToggle("File", FluentIcons.document, file, (v) => onChanged(v, smartCard, plate, handed))),
+          Expanded(child: _docToggle("File", FluentIcons.document, file, (v) => onChanged(v, smartCard, plate))),
           const SizedBox(width: 8),
-          Expanded(child: _docToggle("Smart Card", FluentIcons.contact_card, smartCard, (v) => onChanged(file, v, plate, handed))),
+          Expanded(child: _docToggle("Smart Card", FluentIcons.contact_card, smartCard, (v) => onChanged(file, v, plate))),
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: _docToggle("Number Plate", FluentIcons.number_field, plate, (v) => onChanged(file, smartCard, v, handed))),
+          Expanded(child: _docToggle("Number Plate", FluentIcons.number_field, plate, (v) => onChanged(file, smartCard, v))),
           const SizedBox(width: 8),
-          Expanded(child: _docToggle("Car Handed", FluentIcons.check_mark, handed, (v) => onChanged(file, smartCard, plate, v))),
+          const Expanded(child: SizedBox()),
         ]),
       ]),
     );
   }
 
   Widget _docToggle(String label, IconData icon, bool value, ValueChanged<bool> onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: value ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.cardColor,
@@ -1159,16 +1216,18 @@ class CustomersScreenState extends State<CustomersScreen> {
           Flexible(child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: value ? AppTheme.success : AppTheme.textSecondary))),
         ]),
       ),
+      ),
     );
   }
 
   Widget _txnTypeChip(String label, IconData icon, String current, ValueChanged<String> onTap) {
     final sel = current == label;
-    return Expanded(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => onTap(label),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: sel ? AppTheme.primary : AppTheme.cardColor,
             borderRadius: BorderRadius.circular(8),
@@ -1186,9 +1245,11 @@ class CustomersScreenState extends State<CustomersScreen> {
 
   Widget _paymentChip(String label, String current, ValueChanged<String> onTap) {
     final sel = current == label;
-    return GestureDetector(
-      onTap: () => onTap(label),
-      child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onTap(label),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: sel ? AppTheme.primary : AppTheme.cardColor,
@@ -1196,6 +1257,7 @@ class CustomersScreenState extends State<CustomersScreen> {
           border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider),
         ),
         child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
+      ),
       ),
     );
   }
@@ -1218,7 +1280,7 @@ class CustomersScreenState extends State<CustomersScreen> {
 
   String _balanceText(int balance) {
     if (balance == 0) return 'Settled';
-    return '${formatPrice(balance.abs())} ${balance > 0 ? 'DR' : 'CR'}';
+    return '${formatFullPrice(balance.abs())} ${balance > 0 ? 'DR' : 'CR'}';
   }
 
   IconData _txnIcon(String type) {
@@ -1226,6 +1288,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       case 'Car Sale': return FluentIcons.car;
       case 'Payment': return FluentIcons.money;
       case 'Trade-In': return FluentIcons.switch_widget;
+      case 'Credit Refund': return FluentIcons.undo;
       default: return FluentIcons.document;
     }
   }
@@ -1235,6 +1298,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       case 'Car Sale': return AppTheme.error;
       case 'Payment': return AppTheme.success;
       case 'Trade-In': return AppTheme.info;
+      case 'Credit Refund': return AppTheme.warning;
       default: return AppTheme.textMuted;
     }
   }
@@ -1280,7 +1344,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                 SizedBox(width: 8),
                 Text("Add Customer", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
               ]),
-            ),
+            ).withClickCursor,
           ]),
 
           const SizedBox(height: 24),
@@ -1383,9 +1447,11 @@ class CustomersScreenState extends State<CustomersScreen> {
 
   Widget _buildChip(String label, int count) {
     final sel = _selectedFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = label),
-      child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFilter = label),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(color: sel ? AppTheme.primary : AppTheme.cardColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1397,6 +1463,7 @@ class CustomersScreenState extends State<CustomersScreen> {
             child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
         ]),
+      ),
       ),
     );
   }
@@ -1412,7 +1479,7 @@ class CustomersScreenState extends State<CustomersScreen> {
         SizedBox(width: 110, child: Text("Phone", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 60, child: Text("Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         SizedBox(width: 60, child: Text("Cars", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-        SizedBox(width: 110, child: Text("Balance", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+        SizedBox(width: 140, child: Text("Balance", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
         const SizedBox(width: 140),
       ]),
     );
@@ -1423,7 +1490,11 @@ class CustomersScreenState extends State<CustomersScreen> {
     final balance = _getBalance(c);
     final carCount = _getCarCount(c);
 
-    return Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+      onTap: () => setState(() => _selectedCustomer = c),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.divider)),
@@ -1448,9 +1519,9 @@ class CustomersScreenState extends State<CustomersScreen> {
           child: Text(c['type'], textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: typeColor)),
         )),
         SizedBox(width: 60, child: Text("$carCount", textAlign: TextAlign.center, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary))),
-        SizedBox(width: 110, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        SizedBox(width: 140, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text(
-            balance == 0 ? 'Settled' : formatPrice(balance.abs()),
+            balance == 0 ? 'Settled' : formatFullPrice(balance.abs()),
             style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: _balanceColor(balance)),
           ),
           if (balance > 0)
@@ -1463,14 +1534,16 @@ class CustomersScreenState extends State<CustomersScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-              Tooltip(message: "Print Ledger", child: IconButton(icon: Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary), onPressed: () => _showLedgerPdf(c))),
-              Tooltip(message: "Edit", child: IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.primary), onPressed: () => _showEditCustomerDialog(c))),
-              Tooltip(message: "Remove", child: IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveCustomerDialog(c))),
+              Tooltip(message: "Print Ledger", child: IconButton(icon: Icon(FluentIcons.pdf, size: 14, color: AppTheme.primary), onPressed: () => _showLedgerPdf(c)).withClickCursor),
+              Tooltip(message: "Edit", child: IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.primary), onPressed: () => _showEditCustomerDialog(c)).withClickCursor),
+              Tooltip(message: "Remove", child: IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveCustomerDialog(c)).withClickCursor),
             ]),
             const SizedBox(height: 4),
             GestureDetector(
               onTap: () => setState(() => _selectedCustomer = c),
-              child: Container(
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.primary,
@@ -1482,10 +1555,13 @@ class CustomersScreenState extends State<CustomersScreen> {
                   Icon(FluentIcons.chevron_right_med, size: 14, color: Colors.white),
                 ]),
               ),
+              ),
             ),
           ],
         )),
       ]),
+    ),
+    ),
     );
   }
 
@@ -1494,7 +1570,11 @@ class CustomersScreenState extends State<CustomersScreen> {
     final balance = _getBalance(c);
     final carCount = _getCarCount(c);
 
-    return Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+      onTap: () => setState(() => _selectedCustomer = c),
+      child: Container(
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppTheme.divider)),
@@ -1545,30 +1625,35 @@ class CustomersScreenState extends State<CustomersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: _balanceColor(balance).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
             child: Text(
-              balance == 0 ? 'Settled' : '${balance > 0 ? "Owes " : "Credit "}${formatPrice(balance.abs())}',
+              balance == 0 ? 'Settled' : '${balance > 0 ? "Owes " : "Credit "}${formatFullPrice(balance.abs())}',
               style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: _balanceColor(balance)),
             ),
           ),
         ]),
         const SizedBox(height: 10),
         // Prominent View Statement button
-        GestureDetector(
-          onTap: () => setState(() => _selectedCustomer = c),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: AppTheme.primary,
-              borderRadius: BorderRadius.circular(8),
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedCustomer = c),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text("View Statement of Account", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                SizedBox(width: 8),
+                Icon(FluentIcons.chevron_right_med, size: 16, color: Colors.white),
+              ]),
             ),
-            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text("View Statement of Account", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
-              SizedBox(width: 8),
-              Icon(FluentIcons.chevron_right_med, size: 16, color: Colors.white),
-            ]),
           ),
         ),
       ]),
+    ),
+    ),
     );
   }
 
@@ -1594,7 +1679,7 @@ class CustomersScreenState extends State<CustomersScreen> {
             IconButton(
               icon: Icon(FluentIcons.chrome_back, size: 16, color: AppTheme.textSecondary),
               onPressed: () => setState(() => _selectedCustomer = null),
-            ),
+            ).withClickCursor,
             const SizedBox(width: 8),
             Container(
               width: 42, height: 42,
@@ -1625,7 +1710,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   SizedBox(width: 6),
                   Text("Add Transaction", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
                 ]),
-              ),
+              ).withClickCursor,
               const SizedBox(width: 8),
               Tooltip(
                 message: "Print Ledger PDF",
@@ -1636,7 +1721,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     child: const Icon(FluentIcons.pdf, size: 16, color: AppTheme.primary),
                   ),
                   onPressed: () => _showLedgerPdf(c),
-                ),
+                ).withClickCursor,
               ),
               const SizedBox(width: 4),
               Tooltip(
@@ -1648,7 +1733,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     child: const Icon(FluentIcons.edit, size: 16, color: AppTheme.primary),
                   ),
                   onPressed: () => _showEditCustomerDialog(c),
-                ),
+                ).withClickCursor,
               ),
             ],
           ]),
@@ -1665,11 +1750,11 @@ class CustomersScreenState extends State<CustomersScreen> {
                     SizedBox(width: 6),
                     Text("Add Transaction", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
                   ]),
-                ),
+                ).withClickCursor,
               ),
               const SizedBox(width: 8),
-              IconButton(icon: Icon(FluentIcons.pdf, size: 16, color: AppTheme.primary), onPressed: () => _showLedgerPdf(c)),
-              IconButton(icon: Icon(FluentIcons.edit, size: 16, color: AppTheme.primary), onPressed: () => _showEditCustomerDialog(c)),
+              IconButton(icon: Icon(FluentIcons.pdf, size: 16, color: AppTheme.primary), onPressed: () => _showLedgerPdf(c)).withClickCursor,
+              IconButton(icon: Icon(FluentIcons.edit, size: 16, color: AppTheme.primary), onPressed: () => _showEditCustomerDialog(c)).withClickCursor,
             ]),
           ],
 
@@ -1679,9 +1764,9 @@ class CustomersScreenState extends State<CustomersScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                StatCard(label: "Total Charged", value: formatPrice(totalDebit), icon: FluentIcons.receipt_processing, color: AppTheme.error),
+                StatCard(label: "Total Charged", value: formatFullPrice(totalDebit), icon: FluentIcons.receipt_processing, color: AppTheme.error),
                 const SizedBox(width: 12),
-                StatCard(label: "Total Paid", value: formatPrice(totalCredit), icon: FluentIcons.money, color: AppTheme.success),
+                StatCard(label: "Total Paid", value: formatFullPrice(totalCredit), icon: FluentIcons.money, color: AppTheme.success),
               ]),
               const SizedBox(height: 12),
               Row(children: [
@@ -1692,9 +1777,9 @@ class CustomersScreenState extends State<CustomersScreen> {
             ])
           else
             Row(children: [
-              StatCard(label: "Total Charged", value: formatPrice(totalDebit), icon: FluentIcons.receipt_processing, color: AppTheme.error),
+              StatCard(label: "Total Charged", value: formatFullPrice(totalDebit), icon: FluentIcons.receipt_processing, color: AppTheme.error),
               const SizedBox(width: 16),
-              StatCard(label: "Total Paid / Credited", value: formatPrice(totalCredit), icon: FluentIcons.money, color: AppTheme.success),
+              StatCard(label: "Total Paid / Credited", value: formatFullPrice(totalCredit), icon: FluentIcons.money, color: AppTheme.success),
               const SizedBox(width: 16),
               StatCard(label: "Current Balance", value: _balanceText(balance), icon: FluentIcons.calculator, color: _balanceColor(balance)),
               const SizedBox(width: 16),
@@ -1735,7 +1820,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                 ),
               ])),
               Text(
-                balance == 0 ? '\u2713 Cleared' : '${formatPrice(balance.abs())} ${balance > 0 ? 'DR' : 'CR'}',
+                balance == 0 ? '\u2713 Cleared' : '${formatFullPrice(balance.abs())} ${balance > 0 ? 'DR' : 'CR'}',
                 style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 22, fontWeight: FontWeight.w700, color: _balanceColor(balance)),
               ),
             ]),
@@ -1777,9 +1862,9 @@ class CustomersScreenState extends State<CustomersScreen> {
                 SizedBox(width: 90, child: Text("Date", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 SizedBox(width: 80, child: Text("Type", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 Expanded(child: Text("Details", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-                SizedBox(width: 90, child: Text("Debit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.error))),
-                SizedBox(width: 90, child: Text("Credit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
-                SizedBox(width: 100, child: Text("Balance", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+                SizedBox(width: 120, child: Text("Debit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.error))),
+                SizedBox(width: 120, child: Text("Credit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success))),
+                SizedBox(width: 140, child: Text("Balance", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
                 const SizedBox(width: 110),
               ]),
             ),
@@ -1849,30 +1934,28 @@ class CustomersScreenState extends State<CustomersScreen> {
                   _miniDocBadge("SC", e['smartCard'] == true),
                   const SizedBox(width: 3),
                   _miniDocBadge("P", e['plate'] == true),
-                  const SizedBox(width: 3),
-                  _miniDocBadge("H", e['handed'] == true),
                 ],
               ]),
             ])),
-            SizedBox(width: 90, child: Text(
-              debit > 0 ? formatPrice(debit) : '-',
+            SizedBox(width: 120, child: Text(
+              debit > 0 ? formatFullPrice(debit) : '-',
               textAlign: TextAlign.right,
               style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: debit > 0 ? FontWeight.w600 : FontWeight.normal, color: debit > 0 ? AppTheme.error : AppTheme.textMuted),
             )),
-            SizedBox(width: 90, child: Text(
-              credit > 0 ? formatPrice(credit) : '-',
+            SizedBox(width: 120, child: Text(
+              credit > 0 ? formatFullPrice(credit) : '-',
               textAlign: TextAlign.right,
               style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: credit > 0 ? FontWeight.w600 : FontWeight.normal, color: credit > 0 ? AppTheme.success : AppTheme.textMuted),
             )),
-            SizedBox(width: 100, child: Text(
-              '${formatPrice(runningBalance.abs())}${runningBalance > 0 ? ' DR' : runningBalance < 0 ? ' CR' : ''}',
+            SizedBox(width: 140, child: Text(
+              '${formatFullPrice(runningBalance.abs())}${runningBalance > 0 ? ' DR' : runningBalance < 0 ? ' CR' : ''}',
               textAlign: TextAlign.right,
               style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: runningBalance > 0 ? AppTheme.error : runningBalance < 0 ? AppTheme.success : AppTheme.textMuted),
             )),
             SizedBox(width: 110, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              Tooltip(message: "Edit", child: IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showEditTransactionDialog(customer, i))),
-              Tooltip(message: "Receipt", child: IconButton(icon: Icon(FluentIcons.print, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showTransactionReceipt(customer, i))),
-              Tooltip(message: "Delete", child: IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.5)), onPressed: () => _showDeleteLedgerEntryDialog(customer, i))),
+              Tooltip(message: "Edit", child: IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showEditTransactionDialog(customer, i)).withClickCursor),
+              Tooltip(message: "Receipt", child: IconButton(icon: Icon(FluentIcons.print, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showTransactionReceipt(customer, i)).withClickCursor),
+              Tooltip(message: "Delete", child: IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.5)), onPressed: () => _showDeleteLedgerEntryDialog(customer, i)).withClickCursor),
             ])),
           ]),
         ));
@@ -1914,9 +1997,9 @@ class CustomersScreenState extends State<CustomersScreen> {
             Text(e['details'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textPrimary)),
           ])),
           Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showEditTransactionDialog(customer, index)),
-            IconButton(icon: Icon(FluentIcons.print, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showTransactionReceipt(customer, index)),
-            IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.5)), onPressed: () => _showDeleteLedgerEntryDialog(customer, index)),
+            IconButton(icon: Icon(FluentIcons.edit, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showEditTransactionDialog(customer, index)).withClickCursor,
+            IconButton(icon: Icon(FluentIcons.print, size: 12, color: AppTheme.primary.withValues(alpha: 0.7)), onPressed: () => _showTransactionReceipt(customer, index)).withClickCursor,
+            IconButton(icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.5)), onPressed: () => _showDeleteLedgerEntryDialog(customer, index)).withClickCursor,
           ]),
         ]),
         if (salesman.isNotEmpty || hasDocs) ...[
@@ -1933,8 +2016,6 @@ class CustomersScreenState extends State<CustomersScreen> {
               _miniDocBadge("SC", e['smartCard'] == true),
               const SizedBox(width: 3),
               _miniDocBadge("P", e['plate'] == true),
-              const SizedBox(width: 3),
-              _miniDocBadge("H", e['handed'] == true),
             ]),
           ]),
         ],
@@ -1946,12 +2027,13 @@ class CustomersScreenState extends State<CustomersScreen> {
             Text(e['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
             const Spacer(),
             if (debit > 0)
-              Text("DR: ${formatPrice(debit)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.error)),
+              Text("DR: ${formatFullPrice(debit)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.error)),
             if (credit > 0)
-              Text("CR: ${formatPrice(credit)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success)),
+              Text("CR: ${formatFullPrice(credit)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.success)),
             const SizedBox(width: 12),
             Text(
-              'Bal: ${formatPrice(runningBalance.abs())}${runningBalance > 0 ? ' DR' : runningBalance < 0 ? ' CR' : ''}',
+              'Bal: ${formatFullPrice(runningBalance.abs())}${runningBalance > 0 ? ' DR' : runningBalance < 0 ? ' CR' : ''}',
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w700, color: runningBalance > 0 ? AppTheme.error : runningBalance < 0 ? AppTheme.success : AppTheme.textMuted),
             ),
           ]),

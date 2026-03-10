@@ -93,7 +93,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -110,7 +110,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Save", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -141,7 +141,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -149,7 +149,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -245,7 +245,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                                   });
                                 },
                                 child: Text(val, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isAction ? 16 : 18, fontWeight: FontWeight.w600, color: val == '\u2713' ? Colors.white : AppTheme.textPrimary)),
-                              ),
+                              ).withClickCursor,
                             ),
                           );
                         }(),
@@ -305,7 +305,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                     const SizedBox(width: 6),
                     Text("Lock", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
                   ]),
-                ),
+                ).withClickCursor,
                 FilledButton(
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(AppTheme.primary),
@@ -318,7 +318,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                     SizedBox(width: 8),
                     Text("Add Investor", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
                   ]),
-                ),
+                ).withClickCursor,
               ]),
             ],
           ),
@@ -329,9 +329,9 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                StatCard(valueFontSize: 18, label: "Total Invested", value: formatPrice(_totalInvested), icon: FluentIcons.money, color: AppTheme.primary),
+                StatCard(valueFontSize: 18, label: "Total Invested", value: formatFullPrice(_totalInvested), icon: FluentIcons.money, color: AppTheme.primary),
                 const SizedBox(width: 12),
-                StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_totalProfit), icon: FluentIcons.up, color: AppTheme.success),
+                StatCard(valueFontSize: 18, label: "Net Profit", value: formatFullPrice(_totalProfit), icon: FluentIcons.up, color: AppTheme.success),
               ]),
               const SizedBox(height: 12),
               Row(children: [
@@ -342,9 +342,9 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
             ])
           else
             Row(children: [
-              StatCard(valueFontSize: 18, label: "Total Invested", value: formatPrice(_totalInvested), icon: FluentIcons.money, color: AppTheme.primary),
+              StatCard(valueFontSize: 18, label: "Total Invested", value: formatFullPrice(_totalInvested), icon: FluentIcons.money, color: AppTheme.primary),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "Net Profit", value: formatPrice(_totalProfit), icon: FluentIcons.up, color: AppTheme.success),
+              StatCard(valueFontSize: 18, label: "Net Profit", value: formatFullPrice(_totalProfit), icon: FluentIcons.up, color: AppTheme.success),
               const SizedBox(width: 16),
               StatCard(valueFontSize: 18, label: "Partners", value: "${_investors.length}", icon: FluentIcons.people, color: AppTheme.info),
               const SizedBox(width: 16),
@@ -481,9 +481,9 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
             child: Text(inv['status'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.success)),
           ),
           const SizedBox(width: 8),
-          IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted), onPressed: () => _showEditDialog(index)),
+          IconButton(icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted), onPressed: () => _showEditDialog(index)).withClickCursor,
           const SizedBox(width: 4),
-          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error), onPressed: () => _showRemoveDialog(index)),
+          IconButton(icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error), onPressed: () => _showRemoveDialog(index)).withClickCursor,
         ]),
 
         const SizedBox(height: 16),
@@ -492,8 +492,8 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
         if (isNarrow)
           Column(children: [
             Row(children: [
-              Expanded(child: _buildInvDetail("Invested", formatPrice(inv['invested']))),
-              Expanded(child: _buildInvDetail("Net P&L", formatPrice(netProfit), color: netProfit >= 0 ? AppTheme.success : AppTheme.error)),
+              Expanded(child: _buildInvDetail("Invested", formatFullPrice(inv['invested']))),
+              Expanded(child: _buildInvDetail("Net P&L", formatFullPrice(netProfit), color: netProfit >= 0 ? AppTheme.success : AppTheme.error)),
             ]),
             const SizedBox(height: 10),
             Row(children: [
@@ -503,8 +503,8 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
           ])
         else
           Row(children: [
-            Expanded(child: _buildInvDetail("Invested", formatPrice(inv['invested']))),
-            Expanded(child: _buildInvDetail("Net P&L", formatPrice(netProfit), color: netProfit >= 0 ? AppTheme.success : AppTheme.error)),
+            Expanded(child: _buildInvDetail("Invested", formatFullPrice(inv['invested']))),
+            Expanded(child: _buildInvDetail("Net P&L", formatFullPrice(netProfit), color: netProfit >= 0 ? AppTheme.success : AppTheme.error)),
             Expanded(child: _buildInvDetail("Cars Sold", "$soldCars")),
             Expanded(child: _buildInvDetail("In Stock", "$inStockCars")),
           ]),
@@ -543,11 +543,11 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
             decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6)),
             child: Row(children: [
               Expanded(flex: 3, child: Text("Vehicle", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 80, child: Text("Purchase", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 80, child: Text("Sale", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 70, child: Text("Repairs", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 70, child: Text("Office", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 80, child: Text("Net Profit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+              SizedBox(width: 110, child: Text("Purchase", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+              SizedBox(width: 110, child: Text("Sale", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+              SizedBox(width: 100, child: Text("Repairs", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+              SizedBox(width: 100, child: Text("Office", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
+              SizedBox(width: 110, child: Text("Net Profit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
             ]),
           ),
 
@@ -577,12 +577,12 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
             child: Text(car['status'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 8, fontWeight: FontWeight.w700, color: isSold ? AppTheme.success : AppTheme.warning)),
           ),
         ])),
-        SizedBox(width: 80, child: Text(formatPrice(car['purchasePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
-        SizedBox(width: 80, child: Text(isSold ? formatPrice(car['salePrice']) : '-', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: isSold ? AppTheme.success : AppTheme.textMuted))),
-        SizedBox(width: 70, child: Text(formatPrice(car['repairs']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.warning))),
-        SizedBox(width: 70, child: Text(formatPrice(car['officeExpense']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error))),
-        SizedBox(width: 80, child: Text(
-          isSold ? formatPrice(profit) : 'Pending',
+        SizedBox(width: 110, child: Text(formatFullPrice(car['purchasePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
+        SizedBox(width: 110, child: Text(isSold ? formatFullPrice(car['salePrice']) : '-', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: isSold ? AppTheme.success : AppTheme.textMuted))),
+        SizedBox(width: 100, child: Text(formatFullPrice(car['repairs']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.warning))),
+        SizedBox(width: 100, child: Text(formatFullPrice(car['officeExpense']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error))),
+        SizedBox(width: 110, child: Text(
+          isSold ? formatFullPrice(profit) : 'Pending',
           textAlign: TextAlign.right,
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: isSold ? (profit >= 0 ? AppTheme.success : AppTheme.error) : AppTheme.textMuted),
         )),
@@ -609,19 +609,19 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: _buildMiniStat("Purchase", formatPrice(car['purchasePrice']), AppTheme.primary)),
-          Expanded(child: _buildMiniStat("Sale", isSold ? formatPrice(car['salePrice']) : '-', AppTheme.success)),
+          Expanded(child: _buildMiniStat("Purchase", formatFullPrice(car['purchasePrice']), AppTheme.primary)),
+          Expanded(child: _buildMiniStat("Sale", isSold ? formatFullPrice(car['salePrice']) : '-', AppTheme.success)),
         ]),
         const SizedBox(height: 6),
         Row(children: [
-          Expanded(child: _buildMiniStat("Repairs", formatPrice(car['repairs']), AppTheme.warning)),
-          Expanded(child: _buildMiniStat("Office", formatPrice(car['officeExpense']), AppTheme.error)),
+          Expanded(child: _buildMiniStat("Repairs", formatFullPrice(car['repairs']), AppTheme.warning)),
+          Expanded(child: _buildMiniStat("Office", formatFullPrice(car['officeExpense']), AppTheme.error)),
         ]),
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            isSold ? "Net: ${formatPrice(profit)}" : "Pending",
+            isSold ? "Net: ${formatFullPrice(profit)}" : "Pending",
             style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: isSold ? (profit >= 0 ? AppTheme.success : AppTheme.error) : AppTheme.textMuted),
           ),
         ),

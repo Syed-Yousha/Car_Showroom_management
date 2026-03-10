@@ -139,7 +139,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -160,7 +160,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -232,7 +232,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
             onPressed: () {
@@ -251,7 +251,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       )),
     );
@@ -288,13 +288,13 @@ class ExpensesScreenState extends State<ExpensesScreen> {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(e['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("${formatPrice(e['amount'])} \u2022 ${e['category']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("${formatFullPrice(e['amount'])} \u2022 ${e['category']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
         ]),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))),
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
             onPressed: () {
@@ -302,7 +302,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
               Navigator.pop(ctx);
             },
             child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ],
       ),
     );
@@ -362,7 +362,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
                 SizedBox(width: 8),
                 Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
               ]),
-            ),
+            ).withClickCursor,
           ]),
 
           const SizedBox(height: 24),
@@ -371,26 +371,26 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           if (isNarrow)
             Column(children: [
               Row(children: [
-                StatCard(valueFontSize: 18, label: "Total Expenses", value: formatPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
+                StatCard(valueFontSize: 18, label: "Total Expenses", value: formatFullPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
                 const SizedBox(width: 12),
-                StatCard(valueFontSize: 18, label: "Daily Costs", value: formatPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
+                StatCard(valueFontSize: 18, label: "Daily Costs", value: formatFullPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                StatCard(valueFontSize: 18, label: "Recurring", value: formatPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
+                StatCard(valueFontSize: 18, label: "Recurring", value: formatFullPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
                 const SizedBox(width: 12),
-                StatCard(valueFontSize: 18, label: "One-Time", value: formatPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
+                StatCard(valueFontSize: 18, label: "One-Time", value: formatFullPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
               ]),
             ])
           else
             Row(children: [
-              StatCard(valueFontSize: 18, label: "Total Expenses", value: formatPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
+              StatCard(valueFontSize: 18, label: "Total Expenses", value: formatFullPrice(_totalExpenses), icon: FluentIcons.calculator_addition, color: AppTheme.error),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "Daily Costs", value: formatPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
+              StatCard(valueFontSize: 18, label: "Daily Costs", value: formatFullPrice(_dailyCosts), icon: FluentIcons.cafe, color: const Color(0xFF8B5CF6)),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "Recurring", value: formatPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
+              StatCard(valueFontSize: 18, label: "Recurring", value: formatFullPrice(_monthlyRecurring), icon: FluentIcons.sync_folder, color: AppTheme.warning),
               const SizedBox(width: 16),
-              StatCard(valueFontSize: 18, label: "One-Time", value: formatPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
+              StatCard(valueFontSize: 18, label: "One-Time", value: formatFullPrice(_oneTimeExpenses), icon: FluentIcons.page, color: AppTheme.info),
             ]),
 
           const SizedBox(height: 24),
@@ -437,7 +437,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           const SizedBox(width: 10),
           Text("Daily & Running Costs", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
           const Spacer(),
-          Text(formatPrice(_dailyCosts), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.error)),
+          Text(formatFullPrice(_dailyCosts), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.error)),
         ]),
         const SizedBox(height: 16),
         if (isNarrow)
@@ -477,7 +477,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           Text(category, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ]),
         const SizedBox(height: 10),
-        Text(formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+        Text(formatFullPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
         Text("$count entries", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
       ]),
     );
@@ -524,9 +524,9 @@ class ExpensesScreenState extends State<ExpensesScreen> {
       decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5)))),
       child: Row(children: [
         Expanded(flex: 2, child: Text(m['month'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
-        Expanded(child: Text(formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success))),
-        Expanded(child: Text(formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.error))),
-        Expanded(child: Text(formatPrice(m['net']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error))),
+        Expanded(child: Text(formatFullPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success))),
+        Expanded(child: Text(formatFullPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.error))),
+        Expanded(child: Text(formatFullPrice(m['net']), textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error))),
         SizedBox(
           width: 100,
           child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
@@ -556,15 +556,15 @@ class ExpensesScreenState extends State<ExpensesScreen> {
         Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text("Income", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(formatPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
+            Text(formatFullPrice(m['income']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
           ])),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text("Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(formatPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.error)),
+            Text(formatFullPrice(m['expenses']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.error)),
           ])),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text("Net Profit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
-            Text(formatPrice(m['net']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error)),
+            Text(formatFullPrice(m['net']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: (m['net'] as int) >= 0 ? AppTheme.success : AppTheme.error)),
           ])),
         ]),
       ]),
@@ -595,7 +595,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(cat, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary))),
-                Text(formatPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                Text(formatFullPrice(total), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
               ]),
               const SizedBox(height: 6),
               ClipRRect(
@@ -668,12 +668,12 @@ class ExpensesScreenState extends State<ExpensesScreen> {
         ])),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(formatPrice(e['amount']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.error)),
+          Text(formatFullPrice(e['amount']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.error)),
           Text(e['date'].toString().substring(5), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
         ]),
         const SizedBox(width: 4),
-        IconButton(icon: const Icon(FluentIcons.edit, size: 13, color: AppTheme.primary), onPressed: () => _showEditExpenseDialog(e)),
-        IconButton(icon: Icon(FluentIcons.delete, size: 13, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveExpenseDialog(e)),
+        IconButton(icon: const Icon(FluentIcons.edit, size: 13, color: AppTheme.primary), onPressed: () => _showEditExpenseDialog(e)).withClickCursor,
+        IconButton(icon: Icon(FluentIcons.delete, size: 13, color: AppTheme.error.withValues(alpha: 0.7)), onPressed: () => _showRemoveExpenseDialog(e)).withClickCursor,
       ]),
     );
   }
@@ -694,12 +694,15 @@ class ExpensesScreenState extends State<ExpensesScreen> {
 
   Widget _buildChip(String label, int count) {
     final sel = _selectedCategory == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: sel ? AppTheme.primary : AppTheme.background, borderRadius: BorderRadius.circular(14)),
-        child: Text("$label ($count)", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textSecondary)),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedCategory = label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: sel ? AppTheme.primary : AppTheme.background, borderRadius: BorderRadius.circular(14)),
+          child: Text("$label ($count)", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textSecondary)),
+        ),
       ),
     );
   }

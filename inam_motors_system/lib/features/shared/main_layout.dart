@@ -59,7 +59,7 @@ class _MainLayoutState extends State<MainLayout> {
                         : PaneDisplayMode.open;
                   });
                 },
-              ),
+              ).withClickCursor,
               if (isOpen) ...[
                 const SizedBox(width: 8),
                 Container(
@@ -91,7 +91,7 @@ class _MainLayoutState extends State<MainLayout> {
             IconButton(
               icon: Icon(FluentIcons.ringer, size: 18, color: AppTheme.textSecondary),
               onPressed: () {},
-            ),
+            ).withClickCursor,
             const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

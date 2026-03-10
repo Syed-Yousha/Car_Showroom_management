@@ -1,6 +1,11 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../main.dart';
 
+/// Extension to add hand cursor to any widget on hover.
+extension ClickCursorExt on Widget {
+  Widget get withClickCursor => MouseRegion(cursor: SystemMouseCursors.click, child: this);
+}
+
 class AppTheme {
   static const String fontFamily = 'Inter';
 
