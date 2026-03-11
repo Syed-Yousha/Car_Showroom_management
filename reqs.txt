@@ -1,0 +1,18 @@
+Inventory:
+ Add new car:
+	- Saler name, number cnic
+ -> Pdf to send customer, put our own price
+-> put a lock on inventory
+
+Customer:
+ Add Transaction:
+	-> Manual car entry 
+
+Salesman profit:
+-> Purchase price
+
+investor:
+ -> Remove office expense  from investor
+
+File:
+ ka section alag hojaye.
