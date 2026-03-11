@@ -1,171 +1,1154 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
+import '../shared/widgets.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
 
   @override
-  State<InventoryScreen> createState() => _InventoryScreenState();
+  State<InventoryScreen> createState() => InventoryScreenState();
 }
 
-class _InventoryScreenState extends State<InventoryScreen> {
+class InventoryScreenState extends State<InventoryScreen> {
+  void showAddDialog() => _showAddCarDialog();
+
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isGridView = true;
   String _sortBy = 'Newest';
+  int? _expandedIndex;
 
   final List<Map<String, dynamic>> _cars = [
-    {'name': 'Toyota Grande', 'make': 'Toyota', 'model': 'Grande', 'year': 2024, 'color': 'White', 'price': 8500000, 'status': 'Available', 'mileage': 0, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Honda Civic', 'make': 'Honda', 'model': 'Civic', 'year': 2023, 'color': 'Black', 'price': 7200000, 'status': 'Sold', 'mileage': 12000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Suzuki Alto', 'make': 'Suzuki', 'model': 'Alto', 'year': 2025, 'color': 'Silver', 'price': 3200000, 'status': 'Available', 'mileage': 0, 'fuel': 'Petrol', 'transmission': 'Manual'},
-    {'name': 'Kia Sportage', 'make': 'Kia', 'model': 'Sportage', 'year': 2022, 'color': 'Red', 'price': 9500000, 'status': 'Booked', 'mileage': 25000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Toyota Corolla', 'make': 'Toyota', 'model': 'Corolla', 'year': 2024, 'color': 'Grey', 'price': 6800000, 'status': 'Available', 'mileage': 5000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Honda City', 'make': 'Honda', 'model': 'City', 'year': 2023, 'color': 'White', 'price': 5200000, 'status': 'Available', 'mileage': 8000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Suzuki Cultus', 'make': 'Suzuki', 'model': 'Cultus', 'year': 2024, 'color': 'Blue', 'price': 3800000, 'status': 'Sold', 'mileage': 3000, 'fuel': 'Petrol', 'transmission': 'Manual'},
-    {'name': 'Toyota Yaris', 'make': 'Toyota', 'model': 'Yaris', 'year': 2023, 'color': 'White', 'price': 5500000, 'status': 'Available', 'mileage': 15000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Hyundai Tucson', 'make': 'Hyundai', 'model': 'Tucson', 'year': 2022, 'color': 'Black', 'price': 11000000, 'status': 'Booked', 'mileage': 20000, 'fuel': 'Diesel', 'transmission': 'Automatic'},
-    {'name': 'MG HS', 'make': 'MG', 'model': 'HS', 'year': 2024, 'color': 'Burgundy', 'price': 9800000, 'status': 'Available', 'mileage': 0, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Changan Alsvin', 'make': 'Changan', 'model': 'Alsvin', 'year': 2024, 'color': 'Silver', 'price': 4600000, 'status': 'Sold', 'mileage': 2000, 'fuel': 'Petrol', 'transmission': 'Automatic'},
-    {'name': 'Toyota Fortuner', 'make': 'Toyota', 'model': 'Fortuner', 'year': 2023, 'color': 'White', 'price': 18500000, 'status': 'Available', 'mileage': 10000, 'fuel': 'Diesel', 'transmission': 'Automatic'},
+    {
+      'name': 'Toyota Grande',
+      'make': 'Toyota',
+      'model': 'Grande',
+      'year': 2024,
+      'color': 'White',
+      'price': 8500000,
+      'regNo': 'LEA-7421',
+      'status': 'Available',
+      'buyer': '',
+      'mileage': '12,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'JTDBR32E-860045123',
+      'engineNo': '2ZR-FE-8924561',
+      'investor': 'Muhammad Inam',
+      'fileHandedOver': true,
+      'smartCardHandedOver': false,
+      'numberPlateHandedOver': false,
+      'photos': ['Front', 'Back', 'Interior'],
+      'carExpenses': [
+        {'title': 'Paint Job', 'amount': 35000, 'date': '2026-01-20'},
+        {'title': 'Interior Clean', 'amount': 8000, 'date': '2026-01-22'},
+      ],
+    },
+    {
+      'name': 'Honda Civic',
+      'make': 'Honda',
+      'model': 'Civic',
+      'year': 2023,
+      'color': 'Black',
+      'price': 7200000,
+      'regNo': 'LHR-5532',
+      'status': 'Sold',
+      'buyer': 'Ahmed Khan',
+      'mileage': '25,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'MRHGM66-560089745',
+      'engineNo': 'R18Z1-7756231',
+      'investor': 'Tariq Mehmood',
+      'fileHandedOver': true,
+      'smartCardHandedOver': true,
+      'numberPlateHandedOver': true,
+      'photos': ['Front', 'Back'],
+      'carExpenses': [
+        {'title': 'Engine Repair', 'amount': 85000, 'date': '2026-01-15'},
+      ],
+    },
+    {
+      'name': 'Kia Sportage',
+      'make': 'Kia',
+      'model': 'Sportage Alpha',
+      'year': 2022,
+      'color': 'Red',
+      'price': 9500000,
+      'regNo': 'ISB-3918',
+      'status': 'Booked',
+      'buyer': 'Usman Ali',
+      'mileage': '18,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'KNAPH81-220056789',
+      'engineNo': 'G4FJ-2204587',
+      'investor': 'Muhammad Inam',
+      'fileHandedOver': false,
+      'smartCardHandedOver': false,
+      'numberPlateHandedOver': false,
+      'photos': ['Front', 'Interior'],
+      'carExpenses': [],
+    },
+    {
+      'name': 'Suzuki Cultus',
+      'make': 'Suzuki',
+      'model': 'Cultus VXL',
+      'year': 2024,
+      'color': 'Silver',
+      'price': 3800000,
+      'regNo': 'LEA-1105',
+      'status': 'Available',
+      'buyer': '',
+      'mileage': '5,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Manual',
+      'chassisNo': 'MBJHA36-240012345',
+      'engineNo': 'K10B-2401234',
+      'investor': 'Kashif Ali',
+      'fileHandedOver': true,
+      'smartCardHandedOver': true,
+      'numberPlateHandedOver': true,
+      'photos': ['Front', 'Back', 'Interior'],
+      'carExpenses': [
+        {'title': 'AC Service', 'amount': 5000, 'date': '2026-02-01'},
+      ],
+    },
+    {
+      'name': 'Hyundai Tucson',
+      'make': 'Hyundai',
+      'model': 'Tucson GLS',
+      'year': 2022,
+      'color': 'Grey',
+      'price': 11000000,
+      'regNo': 'LHR-8890',
+      'status': 'Available',
+      'buyer': '',
+      'mileage': '30,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'KMHJN81-220098765',
+      'engineNo': 'G4FP-2209871',
+      'investor': 'Tariq Mehmood',
+      'fileHandedOver': false,
+      'smartCardHandedOver': false,
+      'numberPlateHandedOver': false,
+      'photos': ['Front'],
+      'carExpenses': [
+        {'title': 'Tyre Change', 'amount': 48000, 'date': '2026-01-10'},
+        {'title': 'Bumper Repair', 'amount': 25000, 'date': '2026-01-18'},
+      ],
+    },
+    {
+      'name': 'MG HS',
+      'make': 'MG',
+      'model': 'HS Essence',
+      'year': 2024,
+      'color': 'White',
+      'price': 9800000,
+      'regNo': 'LEA-6677',
+      'status': 'Sold',
+      'buyer': 'Zain ul Abideen',
+      'mileage': '8,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'LSJWB48-240076543',
+      'engineNo': '15S4G-2406543',
+      'investor': 'Muhammad Inam',
+      'fileHandedOver': true,
+      'smartCardHandedOver': true,
+      'numberPlateHandedOver': true,
+      'photos': ['Front', 'Back', 'Interior'],
+      'carExpenses': [],
+    },
+    {
+      'name': 'Changan Alsvin',
+      'make': 'Changan',
+      'model': 'Alsvin Lumiere',
+      'year': 2024,
+      'color': 'Blue',
+      'price': 4600000,
+      'regNo': 'MUL-2243',
+      'status': 'Available',
+      'buyer': '',
+      'mileage': '2,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'LSCGB54-240034567',
+      'engineNo': 'JL473Q5-2403456',
+      'investor': 'Kashif Ali',
+      'fileHandedOver': true,
+      'smartCardHandedOver': false,
+      'numberPlateHandedOver': false,
+      'photos': ['Front', 'Back'],
+      'carExpenses': [
+        {'title': 'Detailing', 'amount': 12000, 'date': '2026-02-03'},
+      ],
+    },
+    {
+      'name': 'Toyota Corolla',
+      'make': 'Toyota',
+      'model': 'Corolla Altis X',
+      'year': 2024,
+      'color': 'Silver',
+      'price': 6800000,
+      'regNo': 'LEA-9034',
+      'status': 'Available',
+      'buyer': '',
+      'mileage': '15,000 km',
+      'fuel': 'Petrol',
+      'transmission': 'Automatic',
+      'chassisNo': 'JTDKR32E-240067890',
+      'engineNo': '1NZ-FE-2406789',
+      'investor': 'Muhammad Inam',
+      'fileHandedOver': false,
+      'smartCardHandedOver': false,
+      'numberPlateHandedOver': false,
+      'photos': ['Front', 'Interior'],
+      'carExpenses': [],
+    },
   ];
 
-  List<Map<String, dynamic>> get _filteredCars {
-    var cars = _cars.where((car) {
-      if (_selectedFilter != 'All' && car['status'] != _selectedFilter) return false;
+  List<Map<String, dynamic>> get _filtered {
+    var list = _cars.where((c) {
+      if (_selectedFilter != 'All' && c['status'] != _selectedFilter) return false;
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
-        return car['name'].toString().toLowerCase().contains(q) ||
-            car['make'].toString().toLowerCase().contains(q) ||
-            car['model'].toString().toLowerCase().contains(q) ||
-            car['color'].toString().toLowerCase().contains(q);
+        return c['name'].toString().toLowerCase().contains(q) ||
+            c['make'].toString().toLowerCase().contains(q) ||
+            c['chassisNo'].toString().toLowerCase().contains(q) ||
+            c['engineNo'].toString().toLowerCase().contains(q) ||
+            c['investor'].toString().toLowerCase().contains(q);
       }
       return true;
     }).toList();
-    return cars;
+
+    if (_sortBy == 'Price: High') list.sort((a, b) => (b['price'] as int).compareTo(a['price'] as int));
+    if (_sortBy == 'Price: Low') list.sort((a, b) => (a['price'] as int).compareTo(b['price'] as int));
+    if (_sortBy == 'Newest') list.sort((a, b) => (b['year'] as int).compareTo(a['year'] as int));
+
+    return list;
   }
 
   int get _availableCount => _cars.where((c) => c['status'] == 'Available').length;
   int get _soldCount => _cars.where((c) => c['status'] == 'Sold').length;
   int get _bookedCount => _cars.where((c) => c['status'] == 'Booked').length;
+  int get _totalCarExpenses => _cars.fold(0, (s, c) => s + ((c['carExpenses'] as List).fold(0, (ss, e) => (ss) + ((e as Map)['amount'] as int))));
 
-  String _formatPrice(int price) {
-    if (price >= 10000000) {
-      return 'Rs ${(price / 10000000).toStringAsFixed(1)}Cr';
-    } else if (price >= 100000) {
-      return 'Rs ${(price / 100000).toStringAsFixed(1)}L';
-    }
-    return 'Rs $price';
+  // ═══════════════════════════════════════════════
+  //  CAR PDF EXPORT
+  // ═══════════════════════════════════════════════
+  Future<void> _showCarPdf(Map<String, dynamic> car) async {
+    final expenses = car['carExpenses'] as List;
+    final totalExpense = expenses.fold(0, (s, e) => s + ((e as Map)['amount'] as int));
+    final statusText = car['status'] as String;
+
+    final pdf = pw.Document();
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(32),
+      build: (pw.Context context) {
+        return [
+          // Header
+          pw.Center(child: pw.Column(children: [
+            pw.Text("INAM MOTORS", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
+            pw.SizedBox(height: 2),
+            pw.Text("Car Showroom & Dealership", style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 2, width: 200, color: PdfColor.fromHex('#6C5DD3')),
+          ])),
+          pw.SizedBox(height: 16),
+
+          // Title & Status
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text("Vehicle Profile", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: pw.BoxDecoration(
+                color: statusText == 'Available' ? PdfColors.green50 : statusText == 'Sold' ? PdfColors.grey200 : PdfColors.orange50,
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(
+                  color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange,
+                  width: 0.5,
+                ),
+              ),
+              child: pw.Text(statusText, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold,
+                color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange)),
+            ),
+          ]),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+
+          // Car Details
+          pw.Text("Car Information", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Name", car['name']),
+          _pdfRow("Make", car['make']),
+          _pdfRow("Model", car['model']),
+          _pdfRow("Year", "${car['year']}"),
+          _pdfRow("Color", car['color']),
+          _pdfRow("Price", formatFullPrice(car['price'])),
+          _pdfRow("Reg Number", car['regNo']),
+          _pdfRow("Mileage", car['mileage']),
+          _pdfRow("Fuel Type", car['fuel']),
+          _pdfRow("Transmission", car['transmission']),
+          _pdfRow("Engine No", car['engineNo']),
+          _pdfRow("Chassis No", car['chassisNo']),
+          pw.SizedBox(height: 14),
+
+          // Investor & Buyer
+          pw.Text("Ownership Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          _pdfRow("Investor", car['investor']),
+          if (car['buyer'] != null && (car['buyer'] as String).isNotEmpty)
+            _pdfRow("Buyer", car['buyer']),
+          pw.SizedBox(height: 14),
+
+          // Document Handover Status
+          pw.Text("Document Handover Status", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.Row(children: [
+            _pdfCheckBox("File", car['fileHandedOver'] == true),
+            pw.SizedBox(width: 20),
+            _pdfCheckBox("Smart Card", car['smartCardHandedOver'] == true),
+            pw.SizedBox(width: 20),
+            _pdfCheckBox("Number Plate", car['numberPlateHandedOver'] == true),
+          ]),
+          pw.SizedBox(height: 14),
+
+          // Car Photos
+          if ((car['photos'] as List?)?.isNotEmpty == true) ...[
+            pw.Text("Car Photos", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 8),
+            pw.Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: (car['photos'] as List).map<pw.Widget>((photo) => pw.Container(
+                width: 120,
+                height: 90,
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                  borderRadius: pw.BorderRadius.circular(6),
+                  color: PdfColors.grey100,
+                ),
+                child: pw.Column(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Container(
+                      width: 24, height: 24,
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromHex('#EBE8FA'),
+                        borderRadius: pw.BorderRadius.circular(12),
+                      ),
+                      child: pw.Center(child: pw.Text("\u{1F4F7}", style: const pw.TextStyle(fontSize: 10))),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Text(photo.toString(), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                    pw.SizedBox(height: 2),
+                    pw.Text("Photo", style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400)),
+                  ],
+                ),
+              )).toList(),
+            ),
+            pw.SizedBox(height: 14),
+          ],
+
+          // Summary Stats
+          pw.Row(children: [
+            _pdfStatBox("Price", formatFullPrice(car['price']), PdfColor.fromHex('#6C5DD3')),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Total Expenses", formatFullPrice(totalExpense), PdfColors.orange),
+            pw.SizedBox(width: 10),
+            _pdfStatBox("Status", statusText, statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange),
+          ]),
+          pw.SizedBox(height: 18),
+
+          // Expenses Table
+          pw.Text("Car Expenses", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          if (expenses.isEmpty)
+            pw.Center(child: pw.Padding(padding: const pw.EdgeInsets.all(16), child: pw.Text("No expenses recorded", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey500))))
+          else
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F0EEFF')),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              headers: ['#', 'Title', 'Date', 'Amount'],
+              data: expenses.asMap().entries.map((entry) {
+                final e = entry.value as Map;
+                return [
+                  '${entry.key + 1}',
+                  e['title'] ?? '',
+                  e['date'] ?? '',
+                  formatFullPrice(e['amount'] as int),
+                ];
+              }).toList(),
+            ),
+
+          pw.SizedBox(height: 30),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(children: [
+              pw.Container(width: 120, height: 0.5, color: PdfColors.grey400),
+              pw.SizedBox(height: 4),
+              pw.Text("Authorized Signature", style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+            ]),
+            pw.Text("Generated by Inam Motors System", style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
+          ]),
+        ];
+      },
+    ));
+
+    final bytes = await pdf.save();
+    await Printing.sharePdf(bytes: bytes, filename: 'Car_${car['name'].toString().replaceAll(' ', '_')}_${car['regNo']}.pdf');
+  }
+
+  pw.Widget _pdfRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 3),
+      child: pw.Row(children: [
+        pw.SizedBox(width: 130, child: pw.Text(label, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
+        pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 11))),
+      ]),
+    );
+  }
+
+  pw.Widget _pdfStatBox(String label, String value, PdfColor color) {
+    return pw.Expanded(child: pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: color, width: 0.5), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Column(children: [
+        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.SizedBox(height: 2),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+      ]),
+    ));
+  }
+
+  pw.Widget _pdfCheckBox(String label, bool checked) {
+    return pw.Row(children: [
+      pw.Container(
+        width: 14, height: 14,
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: checked ? PdfColors.green : PdfColors.red, width: 1),
+          borderRadius: pw.BorderRadius.circular(3),
+          color: checked ? PdfColors.green50 : PdfColors.red50,
+        ),
+        child: pw.Center(
+          child: checked
+            ? pw.CustomPaint(
+                size: const PdfPoint(10, 10),
+                painter: (PdfGraphics canvas, PdfPoint size) {
+                  canvas
+                    ..setStrokeColor(PdfColors.green)
+                    ..setLineWidth(1.5)
+                    ..moveTo(2, 5)
+                    ..lineTo(4.5, 2.5)
+                    ..lineTo(8.5, 7.5)
+                    ..strokePath();
+                },
+              )
+            : pw.CustomPaint(
+                size: const PdfPoint(10, 10),
+                painter: (PdfGraphics canvas, PdfPoint size) {
+                  canvas
+                    ..setStrokeColor(PdfColors.red)
+                    ..setLineWidth(1.5)
+                    ..moveTo(2.5, 7.5)
+                    ..lineTo(7.5, 2.5)
+                    ..strokePath()
+                    ..moveTo(2.5, 2.5)
+                    ..lineTo(7.5, 7.5)
+                    ..strokePath();
+                },
+              ),
+        ),
+      ),
+      pw.SizedBox(width: 4),
+      pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
+    ]);
+  }
+
+  void _showAddCarDialog() {
+    final nameCtrl = TextEditingController();
+    final makeCtrl = TextEditingController();
+    final modelCtrl = TextEditingController();
+    final colorCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    final regNoCtrl = TextEditingController();
+    final mileageCtrl = TextEditingController();
+    final chassisCtrl = TextEditingController();
+    final engineCtrl = TextEditingController();
+    final investorCtrl = TextEditingController();
+    String selectedFuel = 'Petrol';
+    String selectedTransmission = 'Automatic';
+    bool fileHanded = false;
+    bool smartCardHanded = false;
+    bool plateHanded = false;
+    final notesCtrl = TextEditingController();
+    final photoLabelCtrl = TextEditingController();
+    List<String> photos = [];
+    List<Map<String, TextEditingController>> expenseRows = [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: const Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: TextBox(
+                controller: photoLabelCtrl,
+                placeholder: "e.g. Front View, Interior...",
+                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+              )),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                onPressed: () {
+                  if (photoLabelCtrl.text.trim().isNotEmpty) {
+                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
+                    photoLabelCtrl.clear();
+                  }
+                },
+                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+              ).withClickCursor,
+            ]),
+            if (photos.isNotEmpty) ...[  
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
+                  const SizedBox(width: 4),
+                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
+                  const SizedBox(width: 4),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
+                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
+                    ),
+                  ),
+                ]),
+              )).toList()),
+            ],
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: _editField("Car Name", nameCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Make", makeCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Model", modelCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Reg No", regNoCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Color", colorCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Price (Rs)", priceCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Mileage", mileageCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Fuel Type",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedFuel,
+                    isExpanded: true,
+                    items: ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'CNG'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedFuel = v); },
+                  ),
+                ),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Transmission",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedTransmission,
+                    isExpanded: true,
+                    items: ['Automatic', 'Manual'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedTransmission = v); },
+                  ),
+                ),
+              )),
+            ]),
+            _editField("Chassis No", chassisCtrl),
+            _editField("Engine No", engineCtrl),
+            _editField("Investor", investorCtrl),
+            const SizedBox(height: 8),
+            Row(children: [
+              Checkbox(
+                checked: fileHanded,
+                onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
+                content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: smartCardHanded,
+                onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
+                content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: plateHanded,
+                onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
+                content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "File Date & Additional Notes",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  placeholder: "Enter file date, remarks, or any extra details...",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                ),
+              ),
+            ),
+            Row(children: [
+              Text("Car Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const Spacer(),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setDialogState(() {
+                    expenseRows.add({
+                      'title': TextEditingController(),
+                      'amount': TextEditingController(),
+                    });
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(FluentIcons.add, size: 12, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            ...expenseRows.asMap().entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: [
+                Expanded(child: TextBox(
+                  controller: entry.value['title']!,
+                  placeholder: "Expense title",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                SizedBox(width: 120, child: TextBox(
+                  controller: entry.value['amount']!,
+                  placeholder: "Amount",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setDialogState(() => expenseRows.removeAt(entry.key)),
+                    child: Icon(FluentIcons.delete, size: 14, color: AppTheme.error),
+                  ),
+                ),
+              ]),
+            )),
+          ]),
+          ),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              if (nameCtrl.text.isEmpty) return;
+              setState(() {
+                _cars.add({
+                  'name': nameCtrl.text,
+                  'make': makeCtrl.text,
+                  'model': modelCtrl.text,
+                  'year': DateTime.now().year,
+                  'color': colorCtrl.text,
+                  'price': int.tryParse(priceCtrl.text) ?? 0,
+                  'regNo': regNoCtrl.text,
+                  'status': 'Available',
+                  'buyer': '',
+                  'mileage': mileageCtrl.text,
+                  'fuel': selectedFuel,
+                  'transmission': selectedTransmission,
+                  'chassisNo': chassisCtrl.text,
+                  'engineNo': engineCtrl.text,
+                  'investor': investorCtrl.text,
+                  'fileHandedOver': fileHanded,
+                  'smartCardHandedOver': smartCardHanded,
+                  'numberPlateHandedOver': plateHanded,
+                  'photos': photos,
+                  'carExpenses': expenseRows
+                    .where((row) => row['title']!.text.trim().isNotEmpty)
+                    .map((row) => {
+                      'title': row['title']!.text.trim(),
+                      'amount': int.tryParse(row['amount']!.text) ?? 0,
+                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+                    })
+                    .toList(),
+                  'notes': notesCtrl.text,
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Add Car", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      )),
+    );
+  }
+
+  void _showRemoveCarDialog(Map<String, dynamic> car) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text("Remove Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Are you sure you want to remove this car from inventory?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.error.withValues(alpha: 0.2))),
+            child: Row(children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(FluentIcons.car, size: 18, color: AppTheme.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text("${car['name']} (${car['year']})", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatFullPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              ])),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Text("This action cannot be undone.", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+        ]),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () {
+              setState(() => _cars.remove(car));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      ),
+    );
+  }
+
+  void _showEditCarDialog(Map<String, dynamic> car) {
+    final index = _cars.indexOf(car);
+    if (index == -1) return;
+
+    final nameCtrl = TextEditingController(text: car['name']);
+    final makeCtrl = TextEditingController(text: car['make']);
+    final modelCtrl = TextEditingController(text: car['model']);
+    final yearCtrl = TextEditingController(text: car['year'].toString());
+    final colorCtrl = TextEditingController(text: car['color']);
+    final priceCtrl = TextEditingController(text: car['price'].toString());
+    final mileageCtrl = TextEditingController(text: car['mileage']);
+    final chassisCtrl = TextEditingController(text: car['chassisNo']);
+    final engineCtrl = TextEditingController(text: car['engineNo']);
+    final investorCtrl = TextEditingController(text: car['investor']);
+    final regNoCtrl = TextEditingController(text: car['regNo'] ?? '');
+    final buyerCtrl = TextEditingController(text: car['buyer'] ?? '');
+    String selectedStatus = car['status'];
+    String selectedFuel = car['fuel'];
+    String selectedTransmission = car['transmission'];
+    bool fileHanded = car['fileHandedOver'];
+    bool smartCardHanded = car['smartCardHandedOver'] ?? false;
+    bool plateHanded = car['numberPlateHandedOver'];
+    final notesCtrl = TextEditingController(text: car['notes'] ?? '');
+    final photoLabelCtrl = TextEditingController();
+    List<String> photos = List<String>.from(car['photos'] ?? []);
+    List<Map<String, TextEditingController>> expenseRows = ((car['carExpenses'] ?? []) as List).map<Map<String, TextEditingController>>((e) => {
+      'title': TextEditingController(text: e['title'] ?? ''),
+      'amount': TextEditingController(text: (e['amount'] ?? 0).toString()),
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+        title: const Text("Edit Car Details", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: TextBox(
+                controller: photoLabelCtrl,
+                placeholder: "e.g. Front View, Interior...",
+                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+              )),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                onPressed: () {
+                  if (photoLabelCtrl.text.trim().isNotEmpty) {
+                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
+                    photoLabelCtrl.clear();
+                  }
+                },
+                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+              ).withClickCursor,
+            ]),
+            if (photos.isNotEmpty) ...[  
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
+                  const SizedBox(width: 4),
+                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
+                  const SizedBox(width: 4),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
+                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
+                    ),
+                  ),
+                ]),
+              )).toList()),
+            ],
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: _editField("Car Name", nameCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Make", makeCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Model", modelCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Year", yearCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Color", colorCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Price (Rs)", priceCtrl)),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Mileage", mileageCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Status",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedStatus,
+                    isExpanded: true,
+                    items: ['Available', 'Sold', 'Booked'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedStatus = v); },
+                  ),
+                ),
+              )),
+            ]),
+            Row(children: [
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Fuel Type",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedFuel,
+                    isExpanded: true,
+                    items: ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'CNG'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedFuel = v); },
+                  ),
+                ),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InfoLabel(
+                  label: "Transmission",
+                  labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  child: ComboBox<String>(
+                    value: selectedTransmission,
+                    isExpanded: true,
+                    items: ['Automatic', 'Manual'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
+                    onChanged: (v) { if (v != null) setDialogState(() => selectedTransmission = v); },
+                  ),
+                ),
+              )),
+            ]),
+            Row(children: [
+              Expanded(child: _editField("Reg No", regNoCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Investor", investorCtrl)),
+            ]),
+            _editField("Chassis No", chassisCtrl),
+            _editField("Engine No", engineCtrl),
+            if (selectedStatus == 'Sold' || selectedStatus == 'Booked')
+              _editField("Buyer Name", buyerCtrl),
+            const SizedBox(height: 8),
+            Text("Document Tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Checkbox(
+                checked: fileHanded,
+                onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
+                content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: smartCardHanded,
+                onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
+                content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              const SizedBox(width: 16),
+              Checkbox(
+                checked: plateHanded,
+                onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
+                content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "File Date & Additional Notes",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  placeholder: "Enter file date, remarks, or any extra details...",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                ),
+              ),
+            ),
+            Row(children: [
+              Text("Car Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const Spacer(),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setDialogState(() {
+                    expenseRows.add({
+                      'title': TextEditingController(),
+                      'amount': TextEditingController(),
+                    });
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
+                    child: const Icon(FluentIcons.add, size: 12, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            ...expenseRows.asMap().entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: [
+                Expanded(child: TextBox(
+                  controller: entry.value['title']!,
+                  placeholder: "Expense title",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                SizedBox(width: 120, child: TextBox(
+                  controller: entry.value['amount']!,
+                  placeholder: "Amount",
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+                )),
+                const SizedBox(width: 8),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setDialogState(() => expenseRows.removeAt(entry.key)),
+                    child: Icon(FluentIcons.delete, size: 14, color: AppTheme.error),
+                  ),
+                ),
+              ]),
+            )),
+          ]),
+          ),
+        ),
+        actions: [
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () {
+              setState(() {
+                _cars[index] = {
+                  ...car,
+                  'name': nameCtrl.text,
+                  'make': makeCtrl.text,
+                  'model': modelCtrl.text,
+                  'year': int.tryParse(yearCtrl.text) ?? car['year'],
+                  'color': colorCtrl.text,
+                  'price': int.tryParse(priceCtrl.text) ?? car['price'],
+                  'mileage': mileageCtrl.text,
+                  'status': selectedStatus,
+                  'fuel': selectedFuel,
+                  'transmission': selectedTransmission,
+                  'chassisNo': chassisCtrl.text,
+                  'engineNo': engineCtrl.text,
+                  'investor': investorCtrl.text,
+                  'regNo': regNoCtrl.text,
+                  'buyer': buyerCtrl.text,
+                  'fileHandedOver': fileHanded,
+                  'smartCardHandedOver': smartCardHanded,
+                  'numberPlateHandedOver': plateHanded,
+                  'photos': photos,
+                  'carExpenses': expenseRows
+                    .where((row) => row['title']!.text.trim().isNotEmpty)
+                    .map((row) => {
+                      'title': row['title']!.text.trim(),
+                      'amount': int.tryParse(row['amount']!.text) ?? 0,
+                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+                    })
+                    .toList(),
+                  'notes': notesCtrl.text,
+                };
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      )),
+    );
+  }
+
+  Widget _editField(String label, TextEditingController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: InfoLabel(
+        label: label,
+        labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+        child: TextBox(
+          controller: ctrl,
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+          decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 700;
-        final isMedium = constraints.maxWidth < 1000;
+    return LayoutBuilder(builder: (context, constraints) {
+      final isNarrow = constraints.maxWidth < 700;
+      final isMedium = constraints.maxWidth < 1000;
 
-        return ScaffoldPage.scrollable(
-          padding: EdgeInsets.all(isNarrow ? 16 : 28),
-          children: [
-            // HEADER ROW
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Inventory",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: isNarrow ? 22 : 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Manage your car stock and listings",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: isNarrow ? 12 : 14,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                FilledButton(
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                    shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    padding: WidgetStateProperty.all(
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(FluentIcons.add, size: 14, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        "Add New Car",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // SUMMARY STATS
-            if (isNarrow)
-              Column(children: [
-                Row(children: [
-                  _buildMiniStat("Total Cars", "${_cars.length}", FluentIcons.car, AppTheme.primary),
-                  const SizedBox(width: 12),
-                  _buildMiniStat("Available", "$_availableCount", FluentIcons.check_mark, AppTheme.success),
-                ]),
-                const SizedBox(height: 12),
-                Row(children: [
-                  _buildMiniStat("Sold", "$_soldCount", FluentIcons.completed, AppTheme.textMuted),
-                  const SizedBox(width: 12),
-                  _buildMiniStat("Booked", "$_bookedCount", FluentIcons.clock, AppTheme.warning),
-                ]),
-              ])
-            else
-              Row(children: [
-                _buildMiniStat("Total Cars", "${_cars.length}", FluentIcons.car, AppTheme.primary),
-                const SizedBox(width: 16),
-                _buildMiniStat("Available", "$_availableCount", FluentIcons.check_mark, AppTheme.success),
-                const SizedBox(width: 16),
-                _buildMiniStat("Sold", "$_soldCount", FluentIcons.completed, AppTheme.textMuted),
-                const SizedBox(width: 16),
-                _buildMiniStat("Booked", "$_bookedCount", FluentIcons.clock, AppTheme.warning),
+      return ScaffoldPage.scrollable(
+        padding: EdgeInsets.all(isNarrow ? 16 : 28),
+        children: [
+          // HEADER
+          Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text("Inventory", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 22 : 28, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+              const SizedBox(height: 4),
+              Text("Complete car profiles with documents, expenses & tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 12 : 14, color: AppTheme.textSecondary)),
+            ])),
+            FilledButton(
+              style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+                shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+              ),
+              onPressed: () => _showAddCarDialog(),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(FluentIcons.add, size: 14, color: Colors.white),
+                SizedBox(width: 8),
+                Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
               ]),
+            ).withClickCursor,
+          ]),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // SEARCH + FILTERS + VIEW TOGGLE
-            _buildToolbar(isNarrow),
+          // STAT CARDS
+          if (isNarrow)
+            Column(children: [
+              Row(children: [
+                StatCard(label: "Total Cars", value: "${_cars.length}", icon: FluentIcons.car, color: AppTheme.primary),
+                const SizedBox(width: 12),
+                StatCard(label: "Available", value: "$_availableCount", icon: FluentIcons.check_mark, color: AppTheme.success),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
+                const SizedBox(width: 12),
+                StatCard(label: "Car Expenses", value: formatFullPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
+              ]),
+            ])
+          else
+            Row(children: [
+              StatCard(label: "Total Cars", value: "${_cars.length}", icon: FluentIcons.car, color: AppTheme.primary),
+              const SizedBox(width: 16),
+              StatCard(label: "Available", value: "$_availableCount", icon: FluentIcons.check_mark, color: AppTheme.success),
+              const SizedBox(width: 16),
+              StatCard(label: "Sold", value: "$_soldCount", icon: FluentIcons.completed, color: AppTheme.textMuted),
+              const SizedBox(width: 16),
+              StatCard(label: "Car Expenses", value: formatFullPrice(_totalCarExpenses), icon: FluentIcons.repair, color: AppTheme.warning),
+            ]),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
-            // FILTER CHIPS
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
+          // TOOLBAR
+          if (isNarrow)
+            Column(children: [
+              _buildSearchBar(),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
                   _buildFilterChip("All", _cars.length),
                   const SizedBox(width: 8),
                   _buildFilterChip("Available", _availableCount),
@@ -173,651 +1156,522 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   _buildFilterChip("Sold", _soldCount),
                   const SizedBox(width: 8),
                   _buildFilterChip("Booked", _bookedCount),
-                ],
+                ]),
               ),
+            ])
+          else
+            Row(children: [
+              Expanded(flex: 3, child: _buildSearchBar()),
+              const SizedBox(width: 16),
+              _buildFilterChip("All", _cars.length),
+              const SizedBox(width: 8),
+              _buildFilterChip("Available", _availableCount),
+              const SizedBox(width: 8),
+              _buildFilterChip("Sold", _soldCount),
+              const SizedBox(width: 8),
+              _buildFilterChip("Booked", _bookedCount),
+              const SizedBox(width: 12),
+              ComboBox<String>(
+                value: _sortBy,
+                items: ['Newest', 'Price: High', 'Price: Low'].map((s) => ComboBoxItem<String>(value: s, child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _sortBy = v); },
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(_isGridView ? FluentIcons.grid_view_medium : FluentIcons.list, size: 16, color: AppTheme.textSecondary),
+                onPressed: () => setState(() => _isGridView = !_isGridView),
+              ).withClickCursor,
+            ]),
+
+          const SizedBox(height: 12),
+          Text("${_filtered.length} of ${_cars.length} cars", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+          const SizedBox(height: 12),
+
+          // CAR LIST
+          if (_isGridView)
+            _buildGridView(isNarrow, isMedium)
+          else
+            ..._filtered.asMap().entries.map((e) => _buildCarListItem(e.value, e.key, isNarrow)),
+
+          if (_filtered.isEmpty) const EmptyState(message: 'No cars found'),
+
+          const SizedBox(height: 24),
+        ],
+      );
+    });
+  }
+
+  Widget _buildGridView(bool isNarrow, bool isMedium) {
+    final cols = isNarrow ? 1 : (isMedium ? 2 : 3);
+    final items = _filtered;
+
+    return Column(children: [
+      for (int i = 0; i < items.length; i += cols)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (int j = 0; j < cols; j++)
+              if (i + j < items.length)
+                Expanded(child: Padding(
+                  padding: EdgeInsets.only(right: j < cols - 1 ? 14 : 0),
+                  child: _buildCarCard(items[i + j]),
+                ))
+              else
+                const Expanded(child: SizedBox()),
+          ]),
+        ),
+    ]);
+  }
+
+  Widget _buildCarCard(Map<String, dynamic> car) {
+    final statusColor = _statusColor(car['status']);
+    final carExpenses = car['carExpenses'] as List;
+    final totalExpense = carExpenses.fold(0, (s, e) => (s) + ((e as Map)['amount'] as int));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Image placeholder with overlays
+        Container(
+          height: 140,
+          decoration: BoxDecoration(
+            color: AppTheme.divider.withValues(alpha: 0.3),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+          ),
+          child: Stack(children: [
+            Center(child: Icon(FluentIcons.car, size: 40, color: AppTheme.textMuted.withValues(alpha: 0.3))),
+            Positioned(top: 10, left: 10, child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(5)),
+              child: Text("${car['year']}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+            )),
+            Positioned(top: 10, right: 10, child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(5)),
+              child: Text(car['status'], style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+            )),
+            Positioned(bottom: 10, right: 10, child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(5)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(FluentIcons.camera, size: 10, color: Colors.white),
+                const SizedBox(width: 4),
+                Text("${(car['photos'] as List).length}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: Colors.white)),
+              ]),
+            )),
+          ]),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(car['name'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+            const SizedBox(height: 4),
+            Text("${car['model']} \u2022 ${car['color']} \u2022 ${car['transmission']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+            const SizedBox(height: 8),
+
+            // Chassis & Engine
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6)),
+              child: Column(children: [
+                Row(children: [
+                  Icon(FluentIcons.number_field, size: 10, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Text("Chassis: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+                  Flexible(child: Text(car['chassisNo'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textSecondary))),
+                ]),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Icon(FluentIcons.settings, size: 10, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Text("Engine: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+                  Flexible(child: Text(car['engineNo'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textSecondary))),
+                ]),
+              ]),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
-            // RESULTS COUNT
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                "Showing ${_filteredCars.length} of ${_cars.length} cars",
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 12,
-                  color: AppTheme.textMuted,
+            // Investor link
+            Row(children: [
+              Icon(FluentIcons.people, size: 11, color: AppTheme.info),
+              const SizedBox(width: 6),
+              Flexible(child: Text("Investor: ${car['investor']}", overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.info))),
+            ]),
+
+            const SizedBox(height: 8),
+
+            // Document Tracking
+            Row(children: [
+              _buildDocCheckbox("File", car['fileHandedOver']),
+              const SizedBox(width: 10),
+              _buildDocCheckbox("Smart Card", car['smartCardHandedOver'] ?? false),
+              const SizedBox(width: 10),
+              _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
+            ]),
+
+            // Buyer name for Sold cars
+            if (car['status'] == 'Sold' && (car['buyer'] ?? '').toString().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(color: AppTheme.info.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.info.withValues(alpha: 0.15))),
+                child: Row(children: [
+                  Icon(FluentIcons.contact, size: 12, color: AppTheme.info),
+                  const SizedBox(width: 6),
+                  Text("Buyer: ", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                  Flexible(child: Text(car['buyer'], overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.info))),
+                ]),
+              ),
+            ],
+
+            const SizedBox(height: 10),
+
+            // Price + Expense
+            Row(children: [
+              Expanded(child: Text(formatFullPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primary))),
+              if (totalExpense > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(color: AppTheme.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                  child: Text("Exp: ${formatFullPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.warning)),
                 ),
-              ),
-            ),
+            ]),
 
-            // CAR GRID / LIST
-            if (_isGridView)
-              _buildCarGrid(isNarrow, isMedium)
-            else
-              _buildCarList(),
+            const SizedBox(height: 12),
 
-            const SizedBox(height: 24),
-          ],
-        );
-      },
+            // Action buttons
+            Row(children: [
+              Expanded(child: Button(
+                style: ButtonStyle(
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 8)),
+                ),
+                onPressed: () => _showEditCarDialog(car),
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(FluentIcons.edit, size: 12),
+                  SizedBox(width: 6),
+                  Text("Edit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                ]),
+              ).withClickCursor),
+              const SizedBox(width: 6),
+              Expanded(child: Button(
+                style: ButtonStyle(
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 8)),
+                ),
+                onPressed: () => _showRemoveCarDialog(car),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(FluentIcons.delete, size: 12, color: AppTheme.error),
+                  const SizedBox(width: 6),
+                  Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error)),
+                ]),
+              ).withClickCursor),
+              const SizedBox(width: 6),
+              Expanded(child: FilledButton(
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.all(AppTheme.error.withValues(alpha: 0.9)),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 8)),
+                ),
+                onPressed: () => _showCarPdf(car),
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(FluentIcons.pdf, size: 12, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text("PDF", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+                ]),
+              ).withClickCursor),
+            ]),
+          ]),
+        ),
+      ]),
     );
   }
 
-  // ── Toolbar: Search + Sort + View Toggle ──
-  Widget _buildToolbar(bool isNarrow) {
-    if (isNarrow) {
-      return Column(
-        children: [
-          // Search bar full width
-          _buildSearchBar(),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildSortDropdown()),
-              const SizedBox(width: 12),
-              _buildViewToggle(),
+  Widget _buildCarListItem(Map<String, dynamic> car, int index, bool isNarrow) {
+    final statusColor = _statusColor(car['status']);
+    final carExpenses = car['carExpenses'] as List;
+    final totalExpense = carExpenses.fold(0, (s, e) => (s) + ((e as Map)['amount'] as int));
+    final isExpanded = _expandedIndex == index;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isExpanded ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.divider),
+      ),
+      child: Column(children: [
+        // Main row
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            Container(
+              width: 50, height: 50,
+              decoration: BoxDecoration(color: AppTheme.divider.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
+              child: Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(car['name'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
+                  child: Text(car['status'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
+                ),
+              ]),
+              const SizedBox(height: 4),
+              Text("${car['year']} \u2022 ${car['color']} \u2022 ${car['transmission']} \u2022 ${car['mileage']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+              const SizedBox(height: 2),
+              Row(children: [
+                Text("Chassis: ${car['chassisNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textSecondary)),
+                if (car['regNo'] != null && car['regNo'].toString().isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Text("Reg: ${car['regNo']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primary)),
+                ],
+              ]),
+              if (car['status'] == 'Sold' && (car['buyer'] ?? '').toString().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(children: [
+                    Icon(FluentIcons.contact, size: 10, color: AppTheme.info),
+                    const SizedBox(width: 4),
+                    Text("Buyer: ${car['buyer']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.info)),
+                  ]),
+                ),
+            ])),
+            if (!isNarrow) ...[
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(formatFullPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
+                const SizedBox(height: 4),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  _buildDocCheckbox("File", car['fileHandedOver']),
+                  const SizedBox(width: 6),
+                  _buildDocCheckbox("Card", car['smartCardHandedOver'] ?? false),
+                  const SizedBox(width: 6),
+                  _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
+                ]),
+              ]),
+              const SizedBox(width: 8),
             ],
+            Column(children: [
+              IconButton(
+                icon: Icon(isExpanded ? FluentIcons.chevron_up : FluentIcons.chevron_down, size: 12, color: AppTheme.textSecondary),
+                onPressed: () => setState(() => _expandedIndex = isExpanded ? null : index),
+              ).withClickCursor,
+              IconButton(
+                icon: const Icon(FluentIcons.edit, size: 12, color: AppTheme.primary),
+                onPressed: () => _showEditCarDialog(car),
+              ).withClickCursor,
+              IconButton(
+                icon: Icon(FluentIcons.delete, size: 12, color: AppTheme.error.withValues(alpha: 0.7)),
+                onPressed: () => _showRemoveCarDialog(car),
+              ).withClickCursor,
+              IconButton(
+                icon: const Icon(FluentIcons.pdf, size: 12, color: AppTheme.error),
+                onPressed: () => _showCarPdf(car),
+              ).withClickCursor,
+            ]),
+          ]),
+        ),
+
+        // Expanded details
+        if (isExpanded) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              border: Border(top: BorderSide(color: AppTheme.divider)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (isNarrow)
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _buildDetailRow("Engine No", car['engineNo']),
+                  _buildDetailRow("Chassis No", car['chassisNo']),
+                  _buildDetailRow("Investor", car['investor']),
+                  _buildDetailRow("Fuel", car['fuel']),
+                ])
+              else
+                Row(children: [
+                  Expanded(child: _buildDetailRow("Engine No", car['engineNo'])),
+                  Expanded(child: _buildDetailRow("Chassis No", car['chassisNo'])),
+                  Expanded(child: _buildDetailRow("Investor", car['investor'])),
+                  Expanded(child: _buildDetailRow("Fuel", car['fuel'])),
+                ]),
+              const SizedBox(height: 16),
+
+              // Photo Gallery section
+              Text("Photo Gallery", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const SizedBox(height: 8),
+              Row(children: [
+                ...(car['photos'] as List).map((photo) => Container(
+                  width: 80, height: 60,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.divider),
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+                    const SizedBox(height: 4),
+                    Text(photo, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted)),
+                  ]),
+                )),
+                Container(
+                  width: 80, height: 60,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(FluentIcons.add, size: 14, color: AppTheme.primary.withValues(alpha: 0.6)),
+                    Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.primary.withValues(alpha: 0.6))),
+                  ]),
+                ),
+              ]),
+
+              if (carExpenses.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Row(children: [
+                  Text("Car-Specific Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                  const Spacer(),
+                  Text("Total: ${formatFullPrice(totalExpense)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warning)),
+                ]),
+                const SizedBox(height: 8),
+                ...carExpenses.map((exp) => Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    Icon(FluentIcons.repair, size: 12, color: AppTheme.warning),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text((exp as Map)['title'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary))),
+                    Text(formatFullPrice(exp['amount']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning)),
+                    const SizedBox(width: 12),
+                    Text(exp['date'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+                  ]),
+                )),
+              ],
+
+              const SizedBox(height: 16),
+              Text("Document Tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+              const SizedBox(height: 8),
+              Row(children: [
+                _buildDocCheck("File", car['fileHandedOver']),
+                const SizedBox(width: 20),
+                _buildDocCheck("Smart Card", car['smartCardHandedOver'] ?? false),
+                const SizedBox(width: 20),
+                _buildDocCheck("Number Plate", car['numberPlateHandedOver']),
+              ]),
+            ]),
           ),
         ],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(flex: 3, child: _buildSearchBar()),
-        const SizedBox(width: 16),
-        SizedBox(width: 180, child: _buildSortDropdown()),
-        const SizedBox(width: 12),
-        _buildViewToggle(),
-      ],
+      ]),
+    );
+  }
+
+  Widget _buildDocCheck(String label, bool value) {
+    return Row(children: [
+      Container(
+        width: 20, height: 20,
+        decoration: BoxDecoration(
+          color: value ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withValues(alpha: 0.5)),
+        ),
+        child: Icon(value ? FluentIcons.check_mark : FluentIcons.cancel, size: 12, color: value ? AppTheme.success : AppTheme.error),
+      ),
+      const SizedBox(width: 8),
+      Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+      const SizedBox(width: 4),
+      Text(value ? "Yes" : "No", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: value ? AppTheme.success : AppTheme.error)),
+    ]);
+  }
+
+  Widget _buildDocCheckbox(String label, bool value) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 14, height: 14,
+        decoration: BoxDecoration(
+          color: value ? AppTheme.success.withValues(alpha: 0.15) : AppTheme.error.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: value ? AppTheme.success : AppTheme.error.withValues(alpha: 0.5), width: 1),
+        ),
+        child: Icon(value ? FluentIcons.check_mark : FluentIcons.cancel, size: 8, color: value ? AppTheme.success : AppTheme.error),
+      ),
+      const SizedBox(width: 4),
+      Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+    ]);
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textMuted)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+      ]),
     );
   }
 
   Widget _buildSearchBar() {
     return Container(
       height: 38,
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.divider),
-      ),
+      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppTheme.divider)),
       child: TextBox(
-        placeholder: "Search cars by name, make, model, color...",
-        placeholderStyle: TextStyle(
-          fontFamily: AppTheme.fontFamily,
-          fontSize: 13,
-          color: AppTheme.textMuted,
-        ),
-        style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
-          fontSize: 13,
-          color: AppTheme.textPrimary,
-        ),
-        prefix: Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: Icon(FluentIcons.search, size: 14, color: AppTheme.textMuted),
-        ),
-        decoration: WidgetStateProperty.all(BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.transparent),
-        )),
-        onChanged: (value) => setState(() => _searchQuery = value),
+        placeholder: "Search by name, chassis, engine, investor...",
+        placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+        style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+        prefix: Padding(padding: const EdgeInsets.only(left: 10), child: Icon(FluentIcons.search, size: 14, color: AppTheme.textMuted)),
+        decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.transparent))),
+        onChanged: (v) => setState(() => _searchQuery = v),
       ),
     );
   }
 
-  Widget _buildSortDropdown() {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: DropDownButton(
-        title: Text(
-          _sortBy,
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 13,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        items: [
-          MenuFlyoutItem(text: const Text("Newest", style: TextStyle(fontFamily: AppTheme.fontFamily)), onPressed: () => setState(() => _sortBy = 'Newest')),
-          MenuFlyoutItem(text: const Text("Price: Low to High", style: TextStyle(fontFamily: AppTheme.fontFamily)), onPressed: () => setState(() => _sortBy = 'Price: Low to High')),
-          MenuFlyoutItem(text: const Text("Price: High to Low", style: TextStyle(fontFamily: AppTheme.fontFamily)), onPressed: () => setState(() => _sortBy = 'Price: High to Low')),
-          MenuFlyoutItem(text: const Text("Name A-Z", style: TextStyle(fontFamily: AppTheme.fontFamily)), onPressed: () => setState(() => _sortBy = 'Name A-Z')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildViewToggle() {
-    return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToggleBtn(FluentIcons.grid_view_medium, true),
-          Container(width: 1, height: 20, color: AppTheme.divider),
-          _buildToggleBtn(FluentIcons.list, false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleBtn(IconData icon, bool isGrid) {
-    final selected = _isGridView == isGrid;
-    return GestureDetector(
-      onTap: () => setState(() => _isGridView = isGrid),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: selected ? AppTheme.primaryLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(isGrid ? 8 : 0).copyWith(
-            topRight: Radius.circular(isGrid ? 0 : 8),
-            bottomRight: Radius.circular(isGrid ? 0 : 8),
-            topLeft: Radius.circular(isGrid ? 8 : 0),
-            bottomLeft: Radius.circular(isGrid ? 8 : 0),
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: selected ? AppTheme.primary : AppTheme.textMuted,
-        ),
-      ),
-    );
-  }
-
-  // ── Filter Chip ──
   Widget _buildFilterChip(String label, int count) {
-    final isSelected = _selectedFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    final sel = _selectedFilter == label;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFilter = label),
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary : AppTheme.cardColor,
+          color: sel ? AppTheme.primary : AppTheme.cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppTheme.primary : AppTheme.divider,
-          ),
+          border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : AppTheme.background,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                "$count",
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : AppTheme.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Mini Stat Card ──
-  Widget _buildMiniStat(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppTheme.divider),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 11,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Car Grid ──
-  Widget _buildCarGrid(bool isNarrow, bool isMedium) {
-    final cars = _filteredCars;
-    final crossAxisCount = isNarrow ? 1 : (isMedium ? 2 : 3);
-
-    if (cars.isEmpty) return _buildEmptyState();
-
-    final List<Widget> rows = [];
-    for (int i = 0; i < cars.length; i += crossAxisCount) {
-      final rowChildren = <Widget>[];
-      for (int j = 0; j < crossAxisCount; j++) {
-        if (i + j < cars.length) {
-          if (j > 0) rowChildren.add(const SizedBox(width: 16));
-          rowChildren.add(Expanded(child: _buildCarCard(cars[i + j])));
-        } else {
-          if (j > 0) rowChildren.add(const SizedBox(width: 16));
-          rowChildren.add(const Expanded(child: SizedBox()));
-        }
-      }
-      if (rows.isNotEmpty) rows.add(const SizedBox(height: 16));
-      rows.add(Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: rowChildren,
-      ));
-    }
-
-    return Column(children: rows);
-  }
-
-  // ── Car List ──
-  Widget _buildCarList() {
-    final cars = _filteredCars;
-    if (cars.isEmpty) return _buildEmptyState();
-
-    return Column(
-      children: cars.map((car) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: _buildCarListItem(car),
-        );
-      }).toList(),
-    );
-  }
-
-  // ── Car Card (Grid View) ──
-  Widget _buildCarCard(Map<String, dynamic> car) {
-    final statusColor = _statusColor(car['status']);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image placeholder
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
+          const SizedBox(width: 6),
           Container(
-            height: 140,
-            decoration: BoxDecoration(
-              color: AppTheme.background,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Icon(FluentIcons.car, size: 48, color: AppTheme.divider),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      car['status'],
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.textPrimary.withOpacity(0.75),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      "${car['year']}",
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: sel ? Colors.white.withValues(alpha: 0.2) : AppTheme.background, borderRadius: BorderRadius.circular(10)),
+            child: Text("$count", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: sel ? Colors.white : AppTheme.textSecondary)),
           ),
-          // Details
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  car['name'],
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${car['color']} \u2022 ${car['transmission']} \u2022 ${car['fuel']}",
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 11,
-                    color: AppTheme.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _formatPrice(car['price']),
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(FluentIcons.speed_high, size: 12, color: AppTheme.textMuted),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${car['mileage']} km",
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 11,
-                            color: AppTheme.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Button(
-                        style: ButtonStyle(
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text("View", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton(
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                          padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text("Edit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ]),
       ),
-    );
-  }
-
-  // ── Car List Item ──
-  Widget _buildCarListItem(Map<String, dynamic> car) {
-    final statusColor = _statusColor(car['status']);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Row(
-        children: [
-          // Thumbnail
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppTheme.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(FluentIcons.car, size: 24, color: AppTheme.divider),
-          ),
-          const SizedBox(width: 14),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        car['name'],
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        car['status'],
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${car['year']} \u2022 ${car['color']} \u2022 ${car['transmission']} \u2022 ${car['fuel']} \u2022 ${car['mileage']} km",
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 11,
-                    color: AppTheme.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      _formatPrice(car['price']),
-                      style: const TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                    const Spacer(),
-                    Button(
-                      style: ButtonStyle(
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        ),
-                        padding: WidgetStateProperty.all(
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: const Text("View", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11)),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        ),
-                        padding: WidgetStateProperty.all(
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: const Text("Edit", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Empty State ──
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60),
-      child: Center(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(FluentIcons.search, size: 32, color: AppTheme.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "No cars found",
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Try adjusting your search or filters",
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 13,
-                color: AppTheme.textMuted,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'Available':
-        return AppTheme.success;
-      case 'Sold':
-        return AppTheme.textMuted;
-      case 'Booked':
-        return AppTheme.warning;
-      default:
-        return AppTheme.textSecondary;
+      case 'Available': return AppTheme.success;
+      case 'Sold': return AppTheme.textMuted;
+      case 'Booked': return AppTheme.warning;
+      default: return AppTheme.textSecondary;
     }
   }
 }

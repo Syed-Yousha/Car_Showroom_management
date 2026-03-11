@@ -17,6 +17,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _address = '123 GT Road, Lahore';
   String _email = 'info@inammotors.pk';
 
+  // Persistent controllers for editable fields
+  late final TextEditingController _businessNameCtrl;
+  late final TextEditingController _ownerNameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _addressCtrl;
+  late final TextEditingController _emailCtrl;
+
   // Preferences
   bool get _darkMode => InamMotorsApp.isDarkMode.value;
   bool _notifications = true;
@@ -33,6 +40,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyLowStock = true;
 
   int _selectedSection = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _businessNameCtrl = TextEditingController(text: _businessName);
+    _ownerNameCtrl = TextEditingController(text: _ownerName);
+    _phoneCtrl = TextEditingController(text: _phone);
+    _addressCtrl = TextEditingController(text: _address);
+    _emailCtrl = TextEditingController(text: _email);
+  }
+
+  @override
+  void dispose() {
+    _businessNameCtrl.dispose();
+    _ownerNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    _emailCtrl.dispose();
+    super.dispose();
+  }
 
   final _sections = const [
     'Business Profile',
@@ -69,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _sections.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => _buildSectionChip(i),
               ),
             ),
@@ -119,9 +146,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionChip(int i) {
     final sel = _selectedSection == i;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedSection = i),
-      child: Container(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedSection = i),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: sel ? AppTheme.primary : AppTheme.cardColor,
@@ -133,6 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 6),
           Text(_sections[i], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
         ]),
+      ),
       ),
     );
   }
@@ -184,11 +214,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
         ]),
         const SizedBox(height: 28),
-        _editableField("Business Name", _businessName, (v) => setState(() => _businessName = v)),
-        _editableField("Owner Name", _ownerName, (v) => setState(() => _ownerName = v)),
-        _editableField("Phone Number", _phone, (v) => setState(() => _phone = v)),
-        _editableField("Email Address", _email, (v) => setState(() => _email = v)),
-        _editableField("Address", _address, (v) => setState(() => _address = v)),
+        _editableFieldCtrl("Business Name", _businessNameCtrl, (v) => setState(() => _businessName = v)),
+        _editableFieldCtrl("Owner Name", _ownerNameCtrl, (v) => setState(() => _ownerName = v)),
+        _editableFieldCtrl("Phone Number", _phoneCtrl, (v) => setState(() => _phone = v)),
+        _editableFieldCtrl("Email Address", _emailCtrl, (v) => setState(() => _email = v)),
+        _editableFieldCtrl("Address", _addressCtrl, (v) => setState(() => _address = v)),
         const SizedBox(height: 16),
         Align(
           alignment: Alignment.centerRight,
@@ -200,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             onPressed: () => _showSnack("Profile saved"),
             child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
-          ),
+          ).withClickCursor,
         ),
       ]),
     );
@@ -305,9 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.error.withOpacity(0.05),
+              color: AppTheme.error.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.error.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -317,11 +347,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Button(
                 style: ButtonStyle(
                   foregroundColor: WidgetStateProperty.all(AppTheme.error),
-                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: AppTheme.error.withOpacity(0.4)))),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: AppTheme.error.withValues(alpha: 0.4)))),
                 ),
                 onPressed: () {},
                 child: const Text("Reset", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
+              ).withClickCursor,
             ]),
           ),
         ]),
@@ -390,14 +420,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ]);
   }
 
-  Widget _editableField(String label, String value, ValueChanged<String> onChanged) {
+  Widget _editableFieldCtrl(String label, TextEditingController ctrl, ValueChanged<String> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InfoLabel(
         label: label,
         labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
         child: TextBox(
-          controller: TextEditingController(text: value),
+          controller: ctrl,
+          placeholder: label,
+          placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
           onChanged: onChanged,
           style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
           decoration: WidgetStateProperty.all(BoxDecoration(
@@ -454,7 +486,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 6),
           Flexible(child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: color), overflow: TextOverflow.ellipsis)),
         ]),
-      ),
+      ).withClickCursor,
     );
   }
 

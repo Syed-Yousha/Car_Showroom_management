@@ -1,6 +1,11 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../main.dart';
 
+/// Extension to add hand cursor to any widget on hover.
+extension ClickCursorExt on Widget {
+  Widget get withClickCursor => MouseRegion(cursor: SystemMouseCursors.click, child: this);
+}
+
 class AppTheme {
   static const String fontFamily = 'Inter';
 
@@ -9,7 +14,6 @@ class AppTheme {
   // ── Dynamic colors that switch with dark mode ──
   static Color get background => _isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF8F9FB);
   static Color get cardColor => _isDark ? const Color(0xFF222240) : const Color(0xFFFFFFFF);
-  static Color get surfaceColor => _isDark ? const Color(0xFF222240) : const Color(0xFFFFFFFF);
   static Color get divider => _isDark ? const Color(0xFF2E2E4A) : const Color(0xFFEEEFF2);
   static Color get textPrimary => _isDark ? const Color(0xFFE8E8F0) : const Color(0xFF1A1A2E);
   static Color get textSecondary => _isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
@@ -53,9 +57,6 @@ class AppTheme {
       ),
     );
   }
-
-  // Keep backward compat
-  static FluentThemeData get darkTheme => lightTheme;
 
   static FluentThemeData get darkModeTheme {
     return FluentThemeData(
