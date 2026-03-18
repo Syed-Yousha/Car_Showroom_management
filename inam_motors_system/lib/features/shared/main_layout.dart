@@ -6,6 +6,7 @@ import '../customers/customers_screen.dart';
 import '../salesmen/salesmen_screen.dart';
 import '../investors/investors_screen.dart';
 import '../expenses/expenses_screen.dart';
+import '../documents/document_tracking_screen.dart';
 import '../settings/settings_screen.dart';
 
 class MainLayout extends StatefulWidget {
@@ -170,7 +171,7 @@ class _MainLayoutState extends State<MainLayout> {
             body: DashboardScreen(
               onAddCar: () => _openAddDialog(1, _inventoryKey),
               onAddCustomer: () => _openAddDialog(2, _customersKey),
-              onAddExpense: () => _openAddDialog(5, _expensesKey),
+              onAddExpense: () => _openAddDialog(6, _expensesKey),
             ),
           ),
           PaneItem(
@@ -182,6 +183,11 @@ class _MainLayoutState extends State<MainLayout> {
             icon: const Icon(FluentIcons.people),
             title: Text("Customers", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
             body: CustomersScreen(key: _customersKey),
+          ),
+          PaneItem(
+            icon: const Icon(FluentIcons.document_set),
+            title: Text("Docs & Files", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13.5, color: AppTheme.textPrimary)),
+            body: const DocumentTrackingScreen(),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.people_repeat),

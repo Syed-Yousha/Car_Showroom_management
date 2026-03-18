@@ -27,10 +27,10 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
       'joinDate': '2024-01-15',
       'status': 'Active',
       'cars': [
-        {'car': 'Toyota Grande 2024', 'purchasePrice': 7500000, 'salePrice': 8500000, 'repairs': 120000, 'officeExpense': 50000, 'status': 'Sold'},
-        {'car': 'Honda Civic 2023', 'purchasePrice': 6200000, 'salePrice': 7200000, 'repairs': 180000, 'officeExpense': 50000, 'status': 'Sold'},
-        {'car': 'Kia Sportage 2022', 'purchasePrice': 8200000, 'salePrice': 0, 'repairs': 250000, 'officeExpense': 0, 'status': 'In Stock'},
-        {'car': 'Changan Alsvin 2024', 'purchasePrice': 3800000, 'salePrice': 4600000, 'repairs': 60000, 'officeExpense': 50000, 'status': 'Sold'},
+        {'car': 'Toyota Grande 2024', 'purchasePrice': 7500000, 'salePrice': 8500000, 'repairs': 120000, 'status': 'Sold'},
+        {'car': 'Honda Civic 2023', 'purchasePrice': 6200000, 'salePrice': 7200000, 'repairs': 180000, 'status': 'Sold'},
+        {'car': 'Kia Sportage 2022', 'purchasePrice': 8200000, 'salePrice': 0, 'repairs': 250000, 'status': 'In Stock'},
+        {'car': 'Changan Alsvin 2024', 'purchasePrice': 3800000, 'salePrice': 4600000, 'repairs': 60000, 'status': 'Sold'},
       ],
     },
     {
@@ -43,10 +43,10 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
       'joinDate': '2024-01-15',
       'status': 'Active',
       'cars': [
-        {'car': 'MG HS 2024', 'purchasePrice': 8800000, 'salePrice': 9800000, 'repairs': 90000, 'officeExpense': 50000, 'status': 'Sold'},
-        {'car': 'Toyota Corolla 2024', 'purchasePrice': 5800000, 'salePrice': 6800000, 'repairs': 75000, 'officeExpense': 50000, 'status': 'Sold'},
-        {'car': 'Hyundai Tucson 2022', 'purchasePrice': 9500000, 'salePrice': 11000000, 'repairs': 200000, 'officeExpense': 50000, 'status': 'Sold'},
-        {'car': 'Suzuki Cultus 2024', 'purchasePrice': 3200000, 'salePrice': 0, 'repairs': 45000, 'officeExpense': 0, 'status': 'In Stock'},
+        {'car': 'MG HS 2024', 'purchasePrice': 8800000, 'salePrice': 9800000, 'repairs': 90000, 'status': 'Sold'},
+        {'car': 'Toyota Corolla 2024', 'purchasePrice': 5800000, 'salePrice': 6800000, 'repairs': 75000, 'status': 'Sold'},
+        {'car': 'Hyundai Tucson 2022', 'purchasePrice': 9500000, 'salePrice': 11000000, 'repairs': 200000, 'status': 'Sold'},
+        {'car': 'Suzuki Cultus 2024', 'purchasePrice': 3200000, 'salePrice': 0, 'repairs': 45000, 'status': 'In Stock'},
       ],
     },
   ];
@@ -59,7 +59,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
     int total = 0;
     for (final car in (inv['cars'] as List)) {
       if (car['status'] == 'Sold') {
-        total += ((car['salePrice'] as int) - (car['purchasePrice'] as int) - (car['repairs'] as int) - (car['officeExpense'] as int));
+        total += ((car['salePrice'] as int) - (car['purchasePrice'] as int) - (car['repairs'] as int));
       }
     }
     return total;
@@ -67,7 +67,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
 
   int _carNetProfit(Map<String, dynamic> car) {
     if (car['status'] != 'Sold') return 0;
-    return (car['salePrice'] as int) - (car['purchasePrice'] as int) - (car['repairs'] as int) - (car['officeExpense'] as int);
+    return (car['salePrice'] as int) - (car['purchasePrice'] as int) - (car['repairs'] as int);
   }
 
   void _showEditDialog(int index) {
@@ -372,8 +372,6 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                   _buildFormulaItem("Purchase\nPrice", AppTheme.primary),
                   _buildFormulaOp("-"),
                   _buildFormulaItem("Vehicle\nRepairs", AppTheme.warning),
-                  _buildFormulaOp("-"),
-                  _buildFormulaItem("Office\nExpenses", AppTheme.error),
                   _buildFormulaOp("="),
                   _buildFormulaItem("Net\nProfit", const Color(0xFF10B981)),
                 ]),
@@ -546,7 +544,6 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
               SizedBox(width: 110, child: Text("Purchase", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
               SizedBox(width: 110, child: Text("Sale", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
               SizedBox(width: 100, child: Text("Repairs", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
-              SizedBox(width: 100, child: Text("Office", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
               SizedBox(width: 110, child: Text("Net Profit", textAlign: TextAlign.right, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted))),
             ]),
           ),
@@ -580,7 +577,6 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
         SizedBox(width: 110, child: Text(formatFullPrice(car['purchasePrice']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textSecondary))),
         SizedBox(width: 110, child: Text(isSold ? formatFullPrice(car['salePrice']) : '-', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: isSold ? AppTheme.success : AppTheme.textMuted))),
         SizedBox(width: 100, child: Text(formatFullPrice(car['repairs']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.warning))),
-        SizedBox(width: 100, child: Text(formatFullPrice(car['officeExpense']), style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error))),
         SizedBox(width: 110, child: Text(
           isSold ? formatFullPrice(profit) : 'Pending',
           textAlign: TextAlign.right,
@@ -615,7 +611,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
         const SizedBox(height: 6),
         Row(children: [
           Expanded(child: _buildMiniStat("Repairs", formatFullPrice(car['repairs']), AppTheme.warning)),
-          Expanded(child: _buildMiniStat("Office", formatFullPrice(car['officeExpense']), AppTheme.error)),
+          Expanded(child: const SizedBox()), // Empty space to maintain alignment
         ]),
         const SizedBox(height: 8),
         Align(

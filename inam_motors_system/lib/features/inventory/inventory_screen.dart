@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -15,6 +18,55 @@ class InventoryScreen extends StatefulWidget {
 
 class InventoryScreenState extends State<InventoryScreen> {
   void showAddDialog() => _showAddCarDialog();
+
+  Future<List<String>> _pickAndSaveImages() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.image,
+      );
+
+      if (result != null) {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final inamDir = Directory('${docsDir.path}\\InamMotors_Images');
+        if (!await inamDir.exists()) {
+          await inamDir.create(recursive: true);
+        }
+
+        List<String> savedPaths = [];
+        for (var file in result.files) {
+          if (file.path != null) {
+            final fileName = file.name;
+            final newPath = '${inamDir.path}\\${DateTime.now().millisecondsSinceEpoch}_$fileName';
+            final newFile = await File(file.path!).copy(newPath);
+            savedPaths.add(newFile.path);
+          }
+        }
+        return savedPaths;
+      }
+    } catch (e) {
+      debugPrint("Error picking images: $e");
+    }
+    return [];
+  }
+
+  Future<pw.ImageProvider?> _getMemoryImage(String localPath) async {
+    try {
+      final file = File(localPath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        return pw.MemoryImage(bytes);
+      }
+    } catch (e) {
+      debugPrint("Error loading image for PDF: $e");
+    }
+    return null;
+  }
+
+  static const List<String> _defaultInvestors = [
+    'Faheem Khan',
+    'Inam Khan',
+  ];
 
   String _selectedFilter = 'All';
   String _searchQuery = '';
@@ -38,7 +90,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'JTDBR32E-860045123',
       'engineNo': '2ZR-FE-8924561',
-      'investor': 'Muhammad Inam',
+      'investor': 'Faheem Khan',
       'fileHandedOver': true,
       'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
@@ -63,7 +115,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'MRHGM66-560089745',
       'engineNo': 'R18Z1-7756231',
-      'investor': 'Tariq Mehmood',
+      'investor': 'Inam Khan',
       'fileHandedOver': true,
       'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
@@ -87,7 +139,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'KNAPH81-220056789',
       'engineNo': 'G4FJ-2204587',
-      'investor': 'Muhammad Inam',
+      'investor': 'Inam Khan',
       'fileHandedOver': false,
       'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
@@ -109,7 +161,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Manual',
       'chassisNo': 'MBJHA36-240012345',
       'engineNo': 'K10B-2401234',
-      'investor': 'Kashif Ali',
+      'investor': 'Inam Khan',
       'fileHandedOver': true,
       'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
@@ -133,7 +185,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'KMHJN81-220098765',
       'engineNo': 'G4FP-2209871',
-      'investor': 'Tariq Mehmood',
+      'investor': 'Inam Khan',
       'fileHandedOver': false,
       'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
@@ -158,7 +210,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'LSJWB48-240076543',
       'engineNo': '15S4G-2406543',
-      'investor': 'Muhammad Inam',
+      'investor': 'Inam Khan',
       'fileHandedOver': true,
       'smartCardHandedOver': true,
       'numberPlateHandedOver': true,
@@ -180,7 +232,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'LSCGB54-240034567',
       'engineNo': 'JL473Q5-2403456',
-      'investor': 'Kashif Ali',
+      'investor': 'Inam Khan',
       'fileHandedOver': true,
       'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
@@ -204,7 +256,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       'transmission': 'Automatic',
       'chassisNo': 'JTDKR32E-240067890',
       'engineNo': '1NZ-FE-2406789',
-      'investor': 'Muhammad Inam',
+      'investor': 'Faheem Khan',
       'fileHandedOver': false,
       'smartCardHandedOver': false,
       'numberPlateHandedOver': false,
@@ -239,13 +291,112 @@ class InventoryScreenState extends State<InventoryScreen> {
   int get _bookedCount => _cars.where((c) => c['status'] == 'Booked').length;
   int get _totalCarExpenses => _cars.fold(0, (s, c) => s + ((c['carExpenses'] as List).fold(0, (ss, e) => (ss) + ((e as Map)['amount'] as int))));
 
+  List<String> get _investorOptions {
+    final options = {
+      ..._defaultInvestors,
+      ..._cars
+          .map((c) => (c['investor'] ?? '').toString().trim())
+          .where((name) => name.isNotEmpty),
+    }.toList();
+    options.sort();
+    return options;
+  }
+
+  int? _parseAmount(String value) {
+    final normalized = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (normalized.isEmpty) return null;
+    return int.tryParse(normalized);
+  }
+
+  Future<int?> _showDemandPriceDialog(Map<String, dynamic> car) async {
+    final currentDemand = (car['demandPrice'] as int?) ?? (car['price'] as int? ?? 0);
+    final demandCtrl = TextEditingController(text: currentDemand > 0 ? '$currentDemand' : '');
+    String? errorText;
+
+    final demandPrice = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => ContentDialog(
+          title: const Text(
+            'Customer Demand Price',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Set demand price for ${car['name']} PDF. Purchase price stays hidden from customer copy.',
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              TextBox(
+                controller: demandCtrl,
+                placeholder: 'Enter demand price',
+                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                decoration: WidgetStateProperty.all(
+                  BoxDecoration(
+                    color: AppTheme.background,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppTheme.divider),
+                  ),
+                ),
+              ),
+              if (errorText != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  errorText!,
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            Button(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            ).withClickCursor,
+            FilledButton(
+              style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+              onPressed: () {
+                final parsed = _parseAmount(demandCtrl.text);
+                if (parsed == null || parsed <= 0) {
+                  setDialogState(() => errorText = 'Enter a valid demand price');
+                  return;
+                }
+                Navigator.pop(ctx, parsed);
+              },
+              child: const Text('Generate PDF', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            ).withClickCursor,
+          ],
+        ),
+      ),
+    );
+
+    return demandPrice;
+  }
+
   // ═══════════════════════════════════════════════
   //  CAR PDF EXPORT
   // ═══════════════════════════════════════════════
   Future<void> _showCarPdf(Map<String, dynamic> car) async {
-    final expenses = car['carExpenses'] as List;
-    final totalExpense = expenses.fold(0, (s, e) => s + ((e as Map)['amount'] as int));
+    final demandPrice = await _showDemandPriceDialog(car);
+    if (demandPrice == null) return;
+
+    setState(() {
+      car['demandPrice'] = demandPrice;
+    });
+
     final statusText = car['status'] as String;
+
+    List<pw.ImageProvider> loadedImages = [];
+    if (car['photos'] != null) {
+      final photoPaths = car['photos'] as List;
+      final imageFutures = photoPaths.map((path) => _getMemoryImage(path.toString()));
+      final resolvedImages = await Future.wait(imageFutures);
+      loadedImages = resolvedImages.where((img) => img != null).cast<pw.ImageProvider>().toList();
+    }
 
     final pdf = pw.Document();
     pdf.addPage(pw.MultiPage(
@@ -291,7 +442,7 @@ class InventoryScreenState extends State<InventoryScreen> {
           _pdfRow("Model", car['model']),
           _pdfRow("Year", "${car['year']}"),
           _pdfRow("Color", car['color']),
-          _pdfRow("Price", formatFullPrice(car['price'])),
+          _pdfRow("Demand Price", formatFullPrice(demandPrice)),
           _pdfRow("Reg Number", car['regNo']),
           _pdfRow("Mileage", car['mileage']),
           _pdfRow("Fuel Type", car['fuel']),
@@ -304,53 +455,34 @@ class InventoryScreenState extends State<InventoryScreen> {
           pw.Text("Ownership Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           _pdfRow("Investor", car['investor']),
+          if ((car['sellerName'] ?? '').toString().isNotEmpty)
+            _pdfRow("Seller Name", car['sellerName']),
+          if ((car['sellerPhone'] ?? '').toString().isNotEmpty)
+            _pdfRow("Seller Phone", car['sellerPhone']),
+          if ((car['sellerCnic'] ?? '').toString().isNotEmpty)
+            _pdfRow("Seller CNIC", car['sellerCnic']),
           if (car['buyer'] != null && (car['buyer'] as String).isNotEmpty)
             _pdfRow("Buyer", car['buyer']),
           pw.SizedBox(height: 14),
 
-          // Document Handover Status
-          pw.Text("Document Handover Status", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 8),
-          pw.Row(children: [
-            _pdfCheckBox("File", car['fileHandedOver'] == true),
-            pw.SizedBox(width: 20),
-            _pdfCheckBox("Smart Card", car['smartCardHandedOver'] == true),
-            pw.SizedBox(width: 20),
-            _pdfCheckBox("Number Plate", car['numberPlateHandedOver'] == true),
-          ]),
-          pw.SizedBox(height: 14),
-
           // Car Photos
-          if ((car['photos'] as List?)?.isNotEmpty == true) ...[
+          if (loadedImages.isNotEmpty) ...[
             pw.Text("Car Photos", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
             pw.Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: (car['photos'] as List).map<pw.Widget>((photo) => pw.Container(
+              children: loadedImages.map<pw.Widget>((img) => pw.Container(
                 width: 120,
                 height: 90,
                 decoration: pw.BoxDecoration(
                   border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
                   borderRadius: pw.BorderRadius.circular(6),
-                  color: PdfColors.grey100,
                 ),
-                child: pw.Column(
-                  mainAxisAlignment: pw.MainAxisAlignment.center,
-                  children: [
-                    pw.Container(
-                      width: 24, height: 24,
-                      decoration: pw.BoxDecoration(
-                        color: PdfColor.fromHex('#EBE8FA'),
-                        borderRadius: pw.BorderRadius.circular(12),
-                      ),
-                      child: pw.Center(child: pw.Text("\u{1F4F7}", style: const pw.TextStyle(fontSize: 10))),
-                    ),
-                    pw.SizedBox(height: 6),
-                    pw.Text(photo.toString(), style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
-                    pw.SizedBox(height: 2),
-                    pw.Text("Photo", style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400)),
-                  ],
+                child: pw.ClipRRect(
+                  horizontalRadius: 6,
+                  verticalRadius: 6,
+                  child: pw.Image(img, fit: pw.BoxFit.cover),
                 ),
               )).toList(),
             ),
@@ -359,36 +491,10 @@ class InventoryScreenState extends State<InventoryScreen> {
 
           // Summary Stats
           pw.Row(children: [
-            _pdfStatBox("Price", formatFullPrice(car['price']), PdfColor.fromHex('#6C5DD3')),
-            pw.SizedBox(width: 10),
-            _pdfStatBox("Total Expenses", formatFullPrice(totalExpense), PdfColors.orange),
+            _pdfStatBox("Demand Price", formatFullPrice(demandPrice), PdfColor.fromHex('#6C5DD3')),
             pw.SizedBox(width: 10),
             _pdfStatBox("Status", statusText, statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange),
           ]),
-          pw.SizedBox(height: 18),
-
-          // Expenses Table
-          pw.Text("Car Expenses", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 8),
-          if (expenses.isEmpty)
-            pw.Center(child: pw.Padding(padding: const pw.EdgeInsets.all(16), child: pw.Text("No expenses recorded", style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey500))))
-          else
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-              cellStyle: const pw.TextStyle(fontSize: 10),
-              headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#F0EEFF')),
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              headers: ['#', 'Title', 'Date', 'Amount'],
-              data: expenses.asMap().entries.map((entry) {
-                final e = entry.value as Map;
-                return [
-                  '${entry.key + 1}',
-                  e['title'] ?? '',
-                  e['date'] ?? '',
-                  formatFullPrice(e['amount'] as int),
-                ];
-              }).toList(),
-            ),
 
           pw.SizedBox(height: 30),
           pw.Divider(),
@@ -485,15 +591,18 @@ class InventoryScreenState extends State<InventoryScreen> {
     final mileageCtrl = TextEditingController();
     final chassisCtrl = TextEditingController();
     final engineCtrl = TextEditingController();
-    final investorCtrl = TextEditingController();
+    final sellerNameCtrl = TextEditingController();
+    final sellerPhoneCtrl = TextEditingController();
+    final sellerCnicCtrl = TextEditingController();
+    final investors = _investorOptions;
+    String selectedInvestor = investors.first;
     String selectedFuel = 'Petrol';
     String selectedTransmission = 'Automatic';
     bool fileHanded = false;
     bool smartCardHanded = false;
     bool plateHanded = false;
     final notesCtrl = TextEditingController();
-    final photoLabelCtrl = TextEditingController();
-    List<String> photos = [];
+    List<String> selectedImagePaths = [];
     List<Map<String, TextEditingController>> expenseRows = [];
 
     showDialog(
@@ -506,48 +615,111 @@ class InventoryScreenState extends State<InventoryScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: TextBox(
-                controller: photoLabelCtrl,
-                placeholder: "e.g. Front View, Interior...",
-                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
-              )),
-              const SizedBox(width: 8),
-              FilledButton(
-                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-                onPressed: () {
-                  if (photoLabelCtrl.text.trim().isNotEmpty) {
-                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
-                    photoLabelCtrl.clear();
-                  }
-                },
-                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
-              ).withClickCursor,
-            ]),
-            if (photos.isNotEmpty) ...[  
-              const SizedBox(height: 8),
-              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
-                  const SizedBox(width: 4),
-                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
-                  const SizedBox(width: 4),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
-                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
-                    ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Car Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      FilledButton(
+                        style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                        onPressed: () async {
+                          final newPaths = await _pickAndSaveImages();
+                          if (newPaths.isNotEmpty) {
+                            setDialogState(() => selectedImagePaths.addAll(newPaths));
+                          }
+                        },
+                        child: const Text("Upload Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+                      ).withClickCursor,
+                    ],
                   ),
-                ]),
-              )).toList()),
-            ],
+                  if (selectedImagePaths.isNotEmpty) ...[  
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12, 
+                      runSpacing: 12, 
+                      children: selectedImagePaths.asMap().entries.map((entry) {
+                        final path = entry.value;
+                        final fileName = path.split(RegExp(r'[\\/]')).last;
+                        return Container(
+                          width: 100,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardColor, 
+                            borderRadius: BorderRadius.circular(6), 
+                            border: Border.all(color: AppTheme.divider)
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min, 
+                            children: [
+                              Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.file(
+                                      File(path), 
+                                      width: 90, 
+                                      height: 70, 
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => Container(
+                                        width: 90, height: 70, color: AppTheme.background,
+                                        child: const Center(child: Icon(FluentIcons.error, size: 16, color: AppTheme.error)),
+                                      ),
+                                    ),
+                                  ),
+                                  MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: GestureDetector(
+                                      onTap: () => setDialogState(() => selectedImagePaths.removeAt(entry.key)),
+                                      child: Container(
+                                        margin: const EdgeInsets.all(4),
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                        child: Icon(FluentIcons.cancel, size: 10, color: AppTheme.error),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(fileName, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textPrimary)),
+                            ]
+                          ),
+                        );
+                      }).toList()
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardColor,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.divider, style: BorderStyle.none),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(FluentIcons.photo_collection, size: 28, color: AppTheme.textMuted),
+                          const SizedBox(height: 8),
+                          Text("No photos uploaded yet", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
             const SizedBox(height: 14),
             Row(children: [
               Expanded(child: _editField("Car Name", nameCtrl)),
@@ -561,7 +733,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 12),
               Expanded(child: _editField("Color", colorCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _editField("Price (Rs)", priceCtrl)),
+              Expanded(child: _editField("Purchase Price (Hidden from Customer)", priceCtrl)),
             ]),
             Row(children: [
               Expanded(child: _editField("Mileage", mileageCtrl)),
@@ -597,7 +769,32 @@ class InventoryScreenState extends State<InventoryScreen> {
             ]),
             _editField("Chassis No", chassisCtrl),
             _editField("Engine No", engineCtrl),
-            _editField("Investor", investorCtrl),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "Investor",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: ComboBox<String>(
+                  value: selectedInvestor,
+                  isExpanded: true,
+                  items: investors
+                      .map((s) => ComboBoxItem<String>(
+                            value: s,
+                            child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => selectedInvestor = v);
+                  },
+                ),
+              ),
+            ),
+            Row(children: [
+              Expanded(child: _editField("Seller Name", sellerNameCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Seller Phone", sellerPhoneCtrl)),
+            ]),
+            _editField("Seller CNIC", sellerCnicCtrl),
             const SizedBox(height: 8),
             Row(children: [
               Checkbox(
@@ -708,11 +905,15 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'transmission': selectedTransmission,
                   'chassisNo': chassisCtrl.text,
                   'engineNo': engineCtrl.text,
-                  'investor': investorCtrl.text,
+                  'investor': selectedInvestor,
+                  'sellerName': sellerNameCtrl.text,
+                  'sellerPhone': sellerPhoneCtrl.text,
+                  'sellerCnic': sellerCnicCtrl.text,
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
-                  'photos': photos,
+                  'demandPrice': int.tryParse(priceCtrl.text) ?? 0,
+                  'photos': selectedImagePaths,
                   'carExpenses': expenseRows
                     .where((row) => row['title']!.text.trim().isNotEmpty)
                     .map((row) => {
@@ -788,7 +989,14 @@ class InventoryScreenState extends State<InventoryScreen> {
     final mileageCtrl = TextEditingController(text: car['mileage']);
     final chassisCtrl = TextEditingController(text: car['chassisNo']);
     final engineCtrl = TextEditingController(text: car['engineNo']);
-    final investorCtrl = TextEditingController(text: car['investor']);
+    final sellerNameCtrl = TextEditingController(text: car['sellerName'] ?? '');
+    final sellerPhoneCtrl = TextEditingController(text: car['sellerPhone'] ?? '');
+    final sellerCnicCtrl = TextEditingController(text: car['sellerCnic'] ?? '');
+    final investors = _investorOptions;
+    String selectedInvestor = car['investor'];
+    if (!investors.contains(selectedInvestor)) {
+      selectedInvestor = investors.first;
+    }
     final regNoCtrl = TextEditingController(text: car['regNo'] ?? '');
     final buyerCtrl = TextEditingController(text: car['buyer'] ?? '');
     String selectedStatus = car['status'];
@@ -798,8 +1006,7 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool smartCardHanded = car['smartCardHandedOver'] ?? false;
     bool plateHanded = car['numberPlateHandedOver'];
     final notesCtrl = TextEditingController(text: car['notes'] ?? '');
-    final photoLabelCtrl = TextEditingController();
-    List<String> photos = List<String>.from(car['photos'] ?? []);
+    List<String> selectedImagePaths = List<String>.from(car['photos'] ?? []);
     List<Map<String, TextEditingController>> expenseRows = ((car['carExpenses'] ?? []) as List).map<Map<String, TextEditingController>>((e) => {
       'title': TextEditingController(text: e['title'] ?? ''),
       'amount': TextEditingController(text: (e['amount'] ?? 0).toString()),
@@ -815,49 +1022,111 @@ class InventoryScreenState extends State<InventoryScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text("Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: TextBox(
-                controller: photoLabelCtrl,
-                placeholder: "e.g. Front View, Interior...",
-                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
-              )),
-              const SizedBox(width: 8),
-              FilledButton(
-                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-                onPressed: () {
-                  if (photoLabelCtrl.text.trim().isNotEmpty) {
-                    setDialogState(() => photos.add(photoLabelCtrl.text.trim()));
-                    photoLabelCtrl.clear();
-                  }
-                },
-                child: const Text("Upload", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
-              ).withClickCursor,
-            ]),
-            if (photos.isNotEmpty) ...[  
-              const SizedBox(height: 8),
-              Wrap(spacing: 6, runSpacing: 6, children: photos.asMap().entries.map((entry) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(6)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(FluentIcons.camera, size: 12, color: AppTheme.primary),
-                  const SizedBox(width: 4),
-                  Text(entry.value, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
-                  const SizedBox(width: 4),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => setDialogState(() => photos.removeAt(entry.key)),
-                      child: Icon(FluentIcons.chrome_close, size: 10, color: AppTheme.error),
-                    ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Car Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      FilledButton(
+                        style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                        onPressed: () async {
+                          final newPaths = await _pickAndSaveImages();
+                          if (newPaths.isNotEmpty) {
+                            setDialogState(() => selectedImagePaths.addAll(newPaths));
+                          }
+                        },
+                        child: const Text("Upload Photos", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Colors.white)),
+                      ).withClickCursor,
+                    ],
                   ),
-                ]),
-              )).toList()),
-            ],
-            const SizedBox(height: 14),
+                  if (selectedImagePaths.isNotEmpty) ...[  
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12, 
+                      runSpacing: 12, 
+                      children: selectedImagePaths.asMap().entries.map((entry) {
+                        final path = entry.value;
+                        final fileName = path.split(RegExp(r'[\\/]')).last;
+                        return Container(
+                          width: 100,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardColor, 
+                            borderRadius: BorderRadius.circular(6), 
+                            border: Border.all(color: AppTheme.divider)
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min, 
+                            children: [
+                              Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.file(
+                                      File(path), 
+                                      width: 90, 
+                                      height: 70, 
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => Container(
+                                        width: 90, height: 70, color: AppTheme.background,
+                                        child: const Center(child: Icon(FluentIcons.error, size: 16, color: AppTheme.error)),
+                                      ),
+                                    ),
+                                  ),
+                                  MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: GestureDetector(
+                                      onTap: () => setDialogState(() => selectedImagePaths.removeAt(entry.key)),
+                                      child: Container(
+                                        margin: const EdgeInsets.all(4),
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                        child: Icon(FluentIcons.cancel, size: 10, color: AppTheme.error),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(fileName, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: AppTheme.textPrimary)),
+                            ]
+                          ),
+                        );
+                      }).toList()
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardColor,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.divider, style: BorderStyle.none),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(FluentIcons.photo_collection, size: 28, color: AppTheme.textMuted),
+                          const SizedBox(height: 8),
+                          Text("No photos uploaded yet", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
             Row(children: [
               Expanded(child: _editField("Car Name", nameCtrl)),
               const SizedBox(width: 12),
@@ -871,7 +1140,7 @@ class InventoryScreenState extends State<InventoryScreen> {
             Row(children: [
               Expanded(child: _editField("Color", colorCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _editField("Price (Rs)", priceCtrl)),
+              Expanded(child: _editField("Purchase Price (Hidden from Customer)", priceCtrl)),
             ]),
             Row(children: [
               Expanded(child: _editField("Mileage", mileageCtrl)),
@@ -922,8 +1191,35 @@ class InventoryScreenState extends State<InventoryScreen> {
             Row(children: [
               Expanded(child: _editField("Reg No", regNoCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _editField("Investor", investorCtrl)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: InfoLabel(
+                    label: "Investor",
+                    labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                    child: ComboBox<String>(
+                      value: selectedInvestor,
+                      isExpanded: true,
+                      items: investors
+                          .map((s) => ComboBoxItem<String>(
+                                value: s,
+                                child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => selectedInvestor = v);
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ]),
+            Row(children: [
+              Expanded(child: _editField("Seller Name", sellerNameCtrl)),
+              const SizedBox(width: 12),
+              Expanded(child: _editField("Seller Phone", sellerPhoneCtrl)),
+            ]),
+            _editField("Seller CNIC", sellerCnicCtrl),
             _editField("Chassis No", chassisCtrl),
             _editField("Engine No", engineCtrl),
             if (selectedStatus == 'Sold' || selectedStatus == 'Booked')
@@ -1038,13 +1334,17 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'transmission': selectedTransmission,
                   'chassisNo': chassisCtrl.text,
                   'engineNo': engineCtrl.text,
-                  'investor': investorCtrl.text,
+                  'investor': selectedInvestor,
+                  'sellerName': sellerNameCtrl.text,
+                  'sellerPhone': sellerPhoneCtrl.text,
+                  'sellerCnic': sellerCnicCtrl.text,
                   'regNo': regNoCtrl.text,
                   'buyer': buyerCtrl.text,
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
-                  'photos': photos,
+                  'demandPrice': (car['demandPrice'] as int?) ?? (int.tryParse(priceCtrl.text) ?? car['price']),
+                  'photos': selectedImagePaths,
                   'carExpenses': expenseRows
                     .where((row) => row['title']!.text.trim().isNotEmpty)
                     .map((row) => {
