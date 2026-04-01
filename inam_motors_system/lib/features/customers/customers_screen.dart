@@ -595,21 +595,32 @@ class CustomersScreenState extends State<CustomersScreen> {
     Map<String, dynamic>? selectedCar;
     int selectedCarPrice = 0;
 
+    // Shared amount + payment method fields (used by Payment & Credit Refund)
     final amountCtrl = TextEditingController();
-
     String paymentType = 'Cash';
-    final accNoCtrl = TextEditingController();
     final bankNameCtrl = TextEditingController();
+    final accNoCtrl = TextEditingController();
 
-    final tradeCarNameCtrl = TextEditingController();
-    final tradeAmountCtrl = TextEditingController();
-
+    // Sell Car
     final manualCarNameCtrl = TextEditingController();
+    final durationCtrl = TextEditingController();
+
+    // Trade-In — full car detail controllers
+    final tradeMakeCtrl = TextEditingController();
+    final tradeModelCtrl = TextEditingController();
+    final tradeRegNoCtrl = TextEditingController();
+    final tradeColorCtrl = TextEditingController();
+    final tradeMileageCtrl = TextEditingController();
+    final tradeChassisCtrl = TextEditingController();
+    final tradeEngineCtrl = TextEditingController();
+    final tradeAmountCtrl = TextEditingController();
+    String tradeFuelType = 'Petrol';
+    String tradeTransmission = 'Automatic';
+
+    // Salesman — manual text entry (global to dialog)
+    final salesmanCtrl = TextEditingController();
 
     DateTime txnDate = DateTime.now();
-    String? selectedSalesman;
-    if (_salesmen.isNotEmpty) selectedSalesman = _salesmen.first;
-
     bool fileHandedOver = false;
     bool smartCardHandedOver = false;
     bool plateHandedOver = false;
@@ -618,6 +629,7 @@ class CustomersScreenState extends State<CustomersScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
+          // ── Chip builders ─────────────────────────────────────────────
           Widget txnTypeChip(String label) {
             final sel = txnType == label;
             return MouseRegion(
@@ -625,26 +637,13 @@ class CustomersScreenState extends State<CustomersScreen> {
               child: GestureDetector(
                 onTap: () => setDialogState(() => txnType = label),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: sel ? AppTheme.primary : AppTheme.cardColor,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: sel ? AppTheme.primary : AppTheme.divider,
-                    ),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider),
                   ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : AppTheme.textPrimary,
-                    ),
-                  ),
+                  child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
                 ),
               ),
             );
@@ -657,325 +656,221 @@ class CustomersScreenState extends State<CustomersScreen> {
               child: GestureDetector(
                 onTap: () => setDialogState(() => paymentType = label),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: sel ? AppTheme.primary : AppTheme.cardColor,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: sel ? AppTheme.primary : AppTheme.divider,
-                    ),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider),
                   ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : AppTheme.textPrimary,
-                    ),
-                  ),
+                  child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
                 ),
               ),
             );
           }
 
+          // Generic option chip for fuel/transmission selectors
+          Widget optionChip(String label, String current, void Function(String) onSelect) {
+            final sel = current == label;
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => setDialogState(() => onSelect(label)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: sel ? AppTheme.primary : AppTheme.cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: sel ? AppTheme.primary : AppTheme.divider),
+                  ),
+                  child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppTheme.textPrimary)),
+                ),
+              ),
+            );
+          }
+
+          Widget sectionLabel(String text) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(text, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
+          );
+
+          // Shared bank detail fields (Payment & Credit Refund)
+          List<Widget> bankFields() => [
+            const SizedBox(height: 14),
+            _editField("Bank Name", bankNameCtrl),
+            _editField("Account / Cheque No.", accNoCtrl),
+          ];
+
           return ContentDialog(
             title: const Text(
               'Add Transaction',
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700),
             ),
-            constraints: const BoxConstraints(maxWidth: 600),
+            constraints: const BoxConstraints(maxWidth: 620),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Transaction Type',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
+                  // ── Transaction type selector ──────────────────────────
+                  Text('Transaction Type', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      txnTypeChip('Sell Car'),
-                      txnTypeChip('Payment'),
-                      txnTypeChip('Trade-In'),
-                      txnTypeChip('Credit Refund'),
-                    ],
-                  ),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    txnTypeChip('Sell Car'),
+                    txnTypeChip('Payment'),
+                    txnTypeChip('Trade-In'),
+                    txnTypeChip('Credit Refund'),
+                  ]),
                   const SizedBox(height: 20),
 
+                  // ── SELL CAR ───────────────────────────────────────────
                   if (txnType == 'Sell Car') ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all(
-                                !isManualEntry
-                                    ? AppTheme.primary
-                                    : AppTheme.cardColor,
-                              ),
-                            ),
-                            onPressed: () => setDialogState(() {
-                              isManualEntry = false;
-                            }),
-                            child: Text(
-                              'Select from Inventory',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 12,
-                                color: !isManualEntry
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                              ),
-                            ),
-                          ).withClickCursor,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: FilledButton(
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all(
-                                isManualEntry
-                                    ? AppTheme.primary
-                                    : AppTheme.cardColor,
-                              ),
-                            ),
-                            onPressed: () =>
-                                setDialogState(() => isManualEntry = true),
-                            child: Text(
-                              'Manual Entry',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 12,
-                                color: isManualEntry
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                              ),
-                            ),
-                          ).withClickCursor,
-                        ),
-                      ],
-                    ),
+                    Row(children: [
+                      Expanded(
+                        child: FilledButton(
+                          style: ButtonStyle(backgroundColor: WidgetStateProperty.all(!isManualEntry ? AppTheme.primary : AppTheme.cardColor)),
+                          onPressed: () => setDialogState(() => isManualEntry = false),
+                          child: Text('Select from Inventory', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: !isManualEntry ? Colors.white : AppTheme.textPrimary)),
+                        ).withClickCursor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton(
+                          style: ButtonStyle(backgroundColor: WidgetStateProperty.all(isManualEntry ? AppTheme.primary : AppTheme.cardColor)),
+                          onPressed: () => setDialogState(() => isManualEntry = true),
+                          child: Text('Manual Entry', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: isManualEntry ? Colors.white : AppTheme.textPrimary)),
+                        ).withClickCursor,
+                      ),
+                    ]),
                     const SizedBox(height: 12),
-
                     if (!isManualEntry)
                       InfoLabel(
                         label: 'Select Car',
-                        labelStyle: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondary,
-                        ),
+                        labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
                         child: AutoSuggestBox<Map<String, dynamic>>(
-                          items: _availableCars
-                              .map(
-                                (c) => AutoSuggestBoxItem<Map<String, dynamic>>(
-                                  value: c,
-                                  label:
-                                      '${c['name']} - ${formatFullPrice(c['price'])}',
-                                ),
-                              )
-                              .toList(),
-                          onSelected: (item) {
-                            setDialogState(() {
-                              selectedCar = item.value;
-                              selectedCarPrice = item.value?['price'] ?? 0;
-                              amountCtrl.text = selectedCarPrice.toString();
-                            });
-                          },
+                          items: _availableCars.map((c) => AutoSuggestBoxItem<Map<String, dynamic>>(
+                            value: c,
+                            label: '${c['name']} - ${formatFullPrice(c['price'])}',
+                          )).toList(),
+                          onSelected: (item) => setDialogState(() {
+                            selectedCar = item.value;
+                            selectedCarPrice = item.value?['price'] ?? 0;
+                            amountCtrl.text = selectedCarPrice.toString();
+                          }),
                         ),
                       )
                     else
-                      _editField("Manual Car Name/Details", manualCarNameCtrl),
-
+                      _editField("Manual Car Name / Details", manualCarNameCtrl),
                     const SizedBox(height: 12),
                     _editField("Final Sale Price (Rs)", amountCtrl),
-
-                    const SizedBox(height: 12),
-                    Text(
-                      "Documentation Handover",
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    _editField("Time Period / Duration (e.g., 6 months, Full Payment)", durationCtrl),
+                    sectionLabel("Documentation Handover"),
                     _buildDocStatusGrid(
-                      fileHandedOver,
-                      smartCardHandedOver,
-                      plateHandedOver,
-                      (f, s, p) => setDialogState(() {
-                        fileHandedOver = f;
-                        smartCardHandedOver = s;
-                        plateHandedOver = p;
-                      }),
+                      fileHandedOver, smartCardHandedOver, plateHandedOver,
+                      (f, s, p) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; }),
                     ),
                   ],
 
+                  // ── PAYMENT ────────────────────────────────────────────
                   if (txnType == 'Payment') ...[
                     _editField("Payment Amount (Rs)", amountCtrl),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Payment Method",
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        paymentChip('Cash'),
-                        const SizedBox(width: 8),
-                        paymentChip('Bank Transfer'),
-                        const SizedBox(width: 8),
-                        paymentChip('Cheque'),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    if (paymentType != 'Cash') ...[
-                      _editField("Bank Name", bankNameCtrl),
-                      const SizedBox(height: 12),
-                      _editField("Account / Cheque No.", accNoCtrl),
-                    ],
+                    sectionLabel("Payment Method"),
+                    Row(children: [
+                      paymentChip('Cash'),
+                      const SizedBox(width: 8),
+                      paymentChip('Bank Transfer'),
+                      const SizedBox(width: 8),
+                      paymentChip('Cheque'),
+                    ]),
+                    if (paymentType != 'Cash') ...bankFields(),
                   ],
 
+                  // ── TRADE-IN ───────────────────────────────────────────
                   if (txnType == 'Trade-In') ...[
-                    _editField("Car Name", tradeCarNameCtrl),
-                    const SizedBox(height: 12),
-                    _editField("Trade-In Value (Rs)", tradeAmountCtrl),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Documentation Received",
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(child: _editField("Make", tradeMakeCtrl)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _editField("Model", tradeModelCtrl)),
+                    ]),
+                    Row(children: [
+                      Expanded(child: _editField("Reg. No.", tradeRegNoCtrl)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _editField("Color", tradeColorCtrl)),
+                    ]),
+                    Row(children: [
+                      Expanded(child: _editField("Mileage (e.g., 45,000 km)", tradeMileageCtrl)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _editField("Trade-In Value (Rs)", tradeAmountCtrl)),
+                    ]),
+                    Row(children: [
+                      Expanded(child: _editField("Chassis No.", tradeChassisCtrl)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _editField("Engine No.", tradeEngineCtrl)),
+                    ]),
+                    sectionLabel("Fuel Type"),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      optionChip('Petrol',  tradeFuelType, (v) => tradeFuelType = v),
+                      optionChip('Diesel',  tradeFuelType, (v) => tradeFuelType = v),
+                      optionChip('Hybrid',  tradeFuelType, (v) => tradeFuelType = v),
+                      optionChip('EV',      tradeFuelType, (v) => tradeFuelType = v),
+                    ]),
+                    const SizedBox(height: 14),
+                    sectionLabel("Transmission"),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      optionChip('Automatic', tradeTransmission, (v) => tradeTransmission = v),
+                      optionChip('Manual',    tradeTransmission, (v) => tradeTransmission = v),
+                    ]),
+                    const SizedBox(height: 14),
+                    sectionLabel("Documentation Received"),
                     _buildDocStatusGrid(
-                      fileHandedOver,
-                      smartCardHandedOver,
-                      plateHandedOver,
-                      (f, s, p) => setDialogState(() {
-                        fileHandedOver = f;
-                        smartCardHandedOver = s;
-                        plateHandedOver = p;
-                      }),
+                      fileHandedOver, smartCardHandedOver, plateHandedOver,
+                      (f, s, p) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; }),
                     ),
                   ],
 
+                  // ── CREDIT REFUND ──────────────────────────────────────
                   if (txnType == 'Credit Refund') ...[
                     _editField("Refund Amount (Rs)", amountCtrl),
+                    sectionLabel("Refund Method"),
+                    Row(children: [
+                      paymentChip('Cash'),
+                      const SizedBox(width: 8),
+                      paymentChip('Bank Transfer'),
+                      const SizedBox(width: 8),
+                      paymentChip('Cheque'),
+                    ]),
+                    if (paymentType != 'Cash') ...bankFields(),
                   ],
 
+                  // ── SALESMAN + DATE (global footer) ────────────────────
                   const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InfoLabel(
-                          label: 'Salesman',
-                          labelStyle: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textSecondary,
-                          ),
-                          child: ComboBox<String>(
-                            value: selectedSalesman,
-                            isExpanded: true,
-                            items: _salesmen
-                                .map(
-                                  (s) => ComboBoxItem<String>(
-                                    value: s,
-                                    child: Text(
-                                      s,
-                                      style: const TextStyle(
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (v) {
-                              if (v != null)
-                                setDialogState(() => selectedSalesman = v);
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Transaction Date",
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            DatePicker(
-                              selected: txnDate,
-                              onChanged: (d) =>
-                                  setDialogState(() => txnDate = d),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  Row(children: [
+                    Expanded(child: _editField("Salesman Name", salesmanCtrl)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text("Transaction Date", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
+                        const SizedBox(height: 6),
+                        DatePicker(selected: txnDate, onChanged: (d) => setDialogState(() => txnDate = d)),
+                      ]),
+                    ),
+                  ]),
                 ],
               ),
             ),
             actions: [
               Button(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(fontFamily: AppTheme.fontFamily),
-                ),
+                child: const Text('Cancel', style: TextStyle(fontFamily: AppTheme.fontFamily)),
               ).withClickCursor,
               FilledButton(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                ),
+                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
                 onPressed: () {
-                  final dateStr =
-                      '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}-${txnDate.day.toString().padLeft(2, '0')}';
-                  final ledger =
-                      customer['ledger'] as List<Map<String, dynamic>>;
+                  final dateStr = '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}-${txnDate.day.toString().padLeft(2, '0')}';
+                  final ledger = customer['ledger'] as List<Map<String, dynamic>>;
+                  final salesman = salesmanCtrl.text.trim();
 
                   if (txnType == 'Sell Car') {
-                    final amt =
-                        int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
+                    final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
                     String detail = '';
                     if (isManualEntry) {
                       detail = manualCarNameCtrl.text.trim();
@@ -985,7 +880,6 @@ class CustomersScreenState extends State<CustomersScreen> {
                       detail = selectedCar!['name'] as String;
                       if (amt <= 0) return;
                     }
-
                     setState(() {
                       ledger.add({
                         'date': dateStr,
@@ -993,7 +887,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'details': detail,
                         'debit': amt,
                         'credit': 0,
-                        'salesman': selectedSalesman ?? '',
+                        'salesman': salesman,
+                        'duration': durationCtrl.text.trim(),
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
@@ -1002,42 +897,27 @@ class CustomersScreenState extends State<CustomersScreen> {
                         _availableCars.remove(selectedCar);
                       }
                     });
-                  } else if (txnType == 'Payment') {
-                    final amt =
-                        int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
-                    if (amt <= 0) return;
 
+                  } else if (txnType == 'Payment') {
+                    final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
+                    if (amt <= 0) return;
                     String detail = paymentType;
                     if (paymentType != 'Cash') {
                       final parts = <String>[];
-                      if (bankNameCtrl.text.trim().isNotEmpty)
-                        parts.add(bankNameCtrl.text.trim());
-                      if (accNoCtrl.text.trim().isNotEmpty)
-                        parts.add(accNoCtrl.text.trim());
-                      detail = parts.isNotEmpty
-                          ? '$paymentType - ${parts.join(' / ')}'
-                          : paymentType;
+                      if (bankNameCtrl.text.trim().isNotEmpty) parts.add(bankNameCtrl.text.trim());
+                      if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
+                      detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                     }
-
                     setState(() {
-                      ledger.add({
-                        'date': dateStr,
-                        'type': 'Payment',
-                        'details': detail,
-                        'debit': 0,
-                        'credit': amt,
-                        'salesman': selectedSalesman ?? '',
-                      });
+                      ledger.add({'date': dateStr, 'type': 'Payment', 'details': detail, 'debit': 0, 'credit': amt, 'salesman': salesman});
                     });
-                  } else if (txnType == 'Trade-In') {
-                    final amt =
-                        int.tryParse(
-                          tradeAmountCtrl.text.replaceAll(',', ''),
-                        ) ??
-                        0;
-                    final detail = tradeCarNameCtrl.text.trim();
-                    if (amt <= 0 || detail.isEmpty) return;
 
+                  } else if (txnType == 'Trade-In') {
+                    final amt = int.tryParse(tradeAmountCtrl.text.replaceAll(',', '')) ?? 0;
+                    final make = tradeMakeCtrl.text.trim();
+                    final model = tradeModelCtrl.text.trim();
+                    if (amt <= 0 || make.isEmpty) return;
+                    final detail = model.isNotEmpty ? '$make $model' : make;
                     setState(() {
                       ledger.add({
                         'date': dateStr,
@@ -1045,38 +925,40 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'details': detail,
                         'debit': 0,
                         'credit': amt,
-                        'salesman': selectedSalesman ?? '',
+                        'salesman': salesman,
+                        'tradeCarMake': make,
+                        'tradeCarModel': model,
+                        'tradeCarRegNo': tradeRegNoCtrl.text.trim(),
+                        'tradeCarColor': tradeColorCtrl.text.trim(),
+                        'tradeCarMileage': tradeMileageCtrl.text.trim(),
+                        'tradeCarChassis': tradeChassisCtrl.text.trim(),
+                        'tradeCarEngine': tradeEngineCtrl.text.trim(),
+                        'tradeCarFuel': tradeFuelType,
+                        'tradeCarTransmission': tradeTransmission,
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
                       });
                     });
-                  } else if (txnType == 'Credit Refund') {
-                    final amt =
-                        int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
-                    if (amt <= 0) return;
 
+                  } else if (txnType == 'Credit Refund') {
+                    final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
+                    if (amt <= 0) return;
+                    String detail = 'Credit Refund - $paymentType';
+                    if (paymentType != 'Cash') {
+                      final parts = <String>[];
+                      if (bankNameCtrl.text.trim().isNotEmpty) parts.add(bankNameCtrl.text.trim());
+                      if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
+                      if (parts.isNotEmpty) detail = 'Credit Refund - $paymentType / ${parts.join(' / ')}';
+                    }
                     setState(() {
-                      ledger.add({
-                        'date': dateStr,
-                        'type': 'Credit Refund',
-                        'details': 'Credit Refund - Paid back to customer',
-                        'debit': amt,
-                        'credit': 0,
-                        'salesman': selectedSalesman ?? '',
-                      });
+                      ledger.add({'date': dateStr, 'type': 'Credit Refund', 'details': detail, 'debit': amt, 'credit': 0, 'salesman': salesman});
                     });
                   }
 
                   Navigator.pop(ctx);
                 },
-                child: const Text(
-                  'Add Transaction',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    color: Colors.white,
-                  ),
-                ),
+                child: const Text('Add Transaction', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
               ).withClickCursor,
             ],
           );

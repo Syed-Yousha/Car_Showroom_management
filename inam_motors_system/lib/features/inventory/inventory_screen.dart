@@ -308,48 +308,62 @@ class InventoryScreenState extends State<InventoryScreen> {
     return int.tryParse(normalized);
   }
 
-  Future<int?> _showDemandPriceDialog(Map<String, dynamic> car) async {
+  Future<(int, String)?> _showDemandPriceDialog(Map<String, dynamic> car) async {
     final currentDemand = (car['demandPrice'] as int?) ?? (car['price'] as int? ?? 0);
     final demandCtrl = TextEditingController(text: currentDemand > 0 ? '$currentDemand' : '');
+    final notesCtrl = TextEditingController();
     String? errorText;
 
-    final demandPrice = await showDialog<int>(
+    final result = await showDialog<(int, String)>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => ContentDialog(
           title: const Text(
-            'Customer Demand Price',
+            'Generate Customer PDF',
             style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700),
           ),
+          constraints: const BoxConstraints(maxWidth: 480),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Set demand price for ${car['name']} PDF. Purchase price stays hidden from customer copy.',
+                'Set the demand price for ${car['name']}. Purchase price stays hidden from the customer copy.',
                 style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 10),
-              TextBox(
-                controller: demandCtrl,
-                placeholder: 'Enter demand price',
-                placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                decoration: WidgetStateProperty.all(
-                  BoxDecoration(
-                    color: AppTheme.background,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.divider),
+              const SizedBox(height: 14),
+              InfoLabel(
+                label: 'Demand Price (Rs)',
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: demandCtrl,
+                  placeholder: 'Enter demand price',
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(
+                    BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider)),
                   ),
                 ),
               ),
               if (errorText != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  errorText!,
-                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error),
-                ),
+                const SizedBox(height: 4),
+                Text(errorText!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
               ],
+              const SizedBox(height: 14),
+              InfoLabel(
+                label: 'Additional Notes (printed on PDF)',
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: TextBox(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  placeholder: 'e.g. Payment terms, condition remarks, special instructions...',
+                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+                  decoration: WidgetStateProperty.all(
+                    BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider)),
+                  ),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -365,7 +379,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   setDialogState(() => errorText = 'Enter a valid demand price');
                   return;
                 }
-                Navigator.pop(ctx, parsed);
+                Navigator.pop(ctx, (parsed, notesCtrl.text.trim()));
               },
               child: const Text('Generate PDF', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
             ).withClickCursor,
@@ -374,21 +388,21 @@ class InventoryScreenState extends State<InventoryScreen> {
       ),
     );
 
-    return demandPrice;
+    return result;
   }
 
   // ═══════════════════════════════════════════════
   //  CAR PDF EXPORT
   // ═══════════════════════════════════════════════
   Future<void> _showCarPdf(Map<String, dynamic> car) async {
-    final demandPrice = await _showDemandPriceDialog(car);
-    if (demandPrice == null) return;
+    final result = await _showDemandPriceDialog(car);
+    if (result == null) return;
+
+    final (demandPrice, additionalNotes) = result;
 
     setState(() {
       car['demandPrice'] = demandPrice;
     });
-
-    final statusText = car['status'] as String;
 
     List<pw.ImageProvider> loadedImages = [];
     if (car['photos'] != null) {
@@ -404,7 +418,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       margin: const pw.EdgeInsets.all(32),
       build: (pw.Context context) {
         return [
-          // Header
+          // ── Header ──────────────────────────────────────────────────
           pw.Center(child: pw.Column(children: [
             pw.Text("INAM MOTORS", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
             pw.SizedBox(height: 2),
@@ -414,58 +428,44 @@ class InventoryScreenState extends State<InventoryScreen> {
           ])),
           pw.SizedBox(height: 16),
 
-          // Title & Status
-          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text("Vehicle Profile", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: pw.BoxDecoration(
-                color: statusText == 'Available' ? PdfColors.green50 : statusText == 'Sold' ? PdfColors.grey200 : PdfColors.orange50,
-                borderRadius: pw.BorderRadius.circular(4),
-                border: pw.Border.all(
-                  color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange,
-                  width: 0.5,
-                ),
-              ),
-              child: pw.Text(statusText, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold,
-                color: statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange)),
-            ),
-          ]),
+          // ── Title ────────────────────────────────────────────────────
+          pw.Text("Vehicle Profile", style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
           pw.Divider(),
           pw.SizedBox(height: 8),
 
-          // Car Details
+          // ── Car Information (customer-facing only) ───────────────────
           pw.Text("Car Information", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
-          _pdfRow("Name", car['name']),
-          _pdfRow("Make", car['make']),
-          _pdfRow("Model", car['model']),
-          _pdfRow("Year", "${car['year']}"),
-          _pdfRow("Color", car['color']),
-          _pdfRow("Demand Price", formatFullPrice(demandPrice)),
-          _pdfRow("Reg Number", car['regNo']),
-          _pdfRow("Mileage", car['mileage']),
-          _pdfRow("Fuel Type", car['fuel']),
-          _pdfRow("Transmission", car['transmission']),
-          _pdfRow("Engine No", car['engineNo']),
-          _pdfRow("Chassis No", car['chassisNo']),
+          _pdfRow("Name",         car['name']?.toString() ?? ''),
+          _pdfRow("Make",         car['make']?.toString() ?? ''),
+          _pdfRow("Model",        car['model']?.toString() ?? ''),
+          _pdfRow("Year",         "${car['year'] ?? ''}"),
+          _pdfRow("Color",        car['color']?.toString() ?? ''),
+          _pdfRow("Reg No",       car['regNo']?.toString() ?? ''),
+          _pdfRow("Mileage",      car['mileage']?.toString() ?? ''),
+          _pdfRow("Fuel Type",    car['fuel']?.toString() ?? ''),
+          _pdfRow("Transmission", car['transmission']?.toString() ?? ''),
+          _pdfRow("Engine No",    car['engineNo']?.toString() ?? ''),
+          _pdfRow("Chassis No",   car['chassisNo']?.toString() ?? ''),
           pw.SizedBox(height: 14),
 
-          // Investor & Buyer
-          pw.Text("Ownership Details", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 6),
-          _pdfRow("Investor", car['investor']),
-          if ((car['sellerName'] ?? '').toString().isNotEmpty)
-            _pdfRow("Seller Name", car['sellerName']),
-          if ((car['sellerPhone'] ?? '').toString().isNotEmpty)
-            _pdfRow("Seller Phone", car['sellerPhone']),
-          if ((car['sellerCnic'] ?? '').toString().isNotEmpty)
-            _pdfRow("Seller CNIC", car['sellerCnic']),
-          if (car['buyer'] != null && (car['buyer'] as String).isNotEmpty)
-            _pdfRow("Buyer", car['buyer']),
+          // ── Demand Price highlight ───────────────────────────────────
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('#F5F3FF'),
+              borderRadius: pw.BorderRadius.circular(8),
+              border: pw.Border.all(color: PdfColor.fromHex('#6C5DD3'), width: 0.8),
+            ),
+            child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Text("Demand Price", style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+              pw.Text(formatFullPrice(demandPrice), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#6C5DD3'))),
+            ]),
+          ),
           pw.SizedBox(height: 14),
 
-          // Car Photos
+          // ── Car Photos ───────────────────────────────────────────────
           if (loadedImages.isNotEmpty) ...[
             pw.Text("Car Photos", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
@@ -489,14 +489,25 @@ class InventoryScreenState extends State<InventoryScreen> {
             pw.SizedBox(height: 14),
           ],
 
-          // Summary Stats
-          pw.Row(children: [
-            _pdfStatBox("Demand Price", formatFullPrice(demandPrice), PdfColor.fromHex('#6C5DD3')),
-            pw.SizedBox(width: 10),
-            _pdfStatBox("Status", statusText, statusText == 'Available' ? PdfColors.green : statusText == 'Sold' ? PdfColors.grey : PdfColors.orange),
-          ]),
+          // ── Additional Notes ─────────────────────────────────────────
+          if (additionalNotes.isNotEmpty) ...[
+            pw.Text("Notes", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 6),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey50,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+              ),
+              child: pw.Text(additionalNotes, style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey800)),
+            ),
+            pw.SizedBox(height: 14),
+          ],
 
-          pw.SizedBox(height: 30),
+          // ── Signature footer ─────────────────────────────────────────
+          pw.SizedBox(height: 20),
           pw.Divider(),
           pw.SizedBox(height: 8),
           pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
@@ -525,17 +536,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  pw.Widget _pdfStatBox(String label, String value, PdfColor color) {
-    return pw.Expanded(child: pw.Container(
-      padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(border: pw.Border.all(color: color, width: 0.5), borderRadius: pw.BorderRadius.circular(6)),
-      child: pw.Column(children: [
-        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: color)),
-        pw.SizedBox(height: 2),
-        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
-      ]),
-    ));
-  }
 
   pw.Widget _pdfCheckBox(String label, bool checked) {
     return pw.Row(children: [
@@ -594,8 +594,7 @@ class InventoryScreenState extends State<InventoryScreen> {
     final sellerNameCtrl = TextEditingController();
     final sellerPhoneCtrl = TextEditingController();
     final sellerCnicCtrl = TextEditingController();
-    final investors = _investorOptions;
-    String selectedInvestor = investors.first;
+    final investorCtrl = TextEditingController();
     String selectedFuel = 'Petrol';
     String selectedTransmission = 'Automatic';
     bool fileHanded = false;
@@ -603,7 +602,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool plateHanded = false;
     final notesCtrl = TextEditingController();
     List<String> selectedImagePaths = [];
-    List<Map<String, TextEditingController>> expenseRows = [];
 
     showDialog(
       context: context,
@@ -769,26 +767,7 @@ class InventoryScreenState extends State<InventoryScreen> {
             ]),
             _editField("Chassis No", chassisCtrl),
             _editField("Engine No", engineCtrl),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: InfoLabel(
-                label: "Investor",
-                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                child: ComboBox<String>(
-                  value: selectedInvestor,
-                  isExpanded: true,
-                  items: investors
-                      .map((s) => ComboBoxItem<String>(
-                            value: s,
-                            child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setDialogState(() => selectedInvestor = v);
-                  },
-                ),
-              ),
-            ),
+            _editField("Investor", investorCtrl),
             Row(children: [
               Expanded(child: _editField("Seller Name", sellerNameCtrl)),
               const SizedBox(width: 12),
@@ -831,55 +810,6 @@ class InventoryScreenState extends State<InventoryScreen> {
                 ),
               ),
             ),
-            Row(children: [
-              Text("Car Expenses", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const Spacer(),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => setDialogState(() {
-                    expenseRows.add({
-                      'title': TextEditingController(),
-                      'amount': TextEditingController(),
-                    });
-                  }),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
-                    child: const Icon(FluentIcons.add, size: 12, color: Colors.white),
-                  ),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 8),
-            ...expenseRows.asMap().entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(children: [
-                Expanded(child: TextBox(
-                  controller: entry.value['title']!,
-                  placeholder: "Expense title",
-                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
-                )),
-                const SizedBox(width: 8),
-                SizedBox(width: 120, child: TextBox(
-                  controller: entry.value['amount']!,
-                  placeholder: "Amount",
-                  placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                  decoration: WidgetStateProperty.all(BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppTheme.divider))),
-                )),
-                const SizedBox(width: 8),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => setDialogState(() => expenseRows.removeAt(entry.key)),
-                    child: Icon(FluentIcons.delete, size: 14, color: AppTheme.error),
-                  ),
-                ),
-              ]),
-            )),
           ]),
           ),
         ),
@@ -905,7 +835,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'transmission': selectedTransmission,
                   'chassisNo': chassisCtrl.text,
                   'engineNo': engineCtrl.text,
-                  'investor': selectedInvestor,
+                  'investor': investorCtrl.text,
                   'sellerName': sellerNameCtrl.text,
                   'sellerPhone': sellerPhoneCtrl.text,
                   'sellerCnic': sellerCnicCtrl.text,
@@ -914,14 +844,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'numberPlateHandedOver': plateHanded,
                   'demandPrice': int.tryParse(priceCtrl.text) ?? 0,
                   'photos': selectedImagePaths,
-                  'carExpenses': expenseRows
-                    .where((row) => row['title']!.text.trim().isNotEmpty)
-                    .map((row) => {
-                      'title': row['title']!.text.trim(),
-                      'amount': int.tryParse(row['amount']!.text) ?? 0,
-                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
-                    })
-                    .toList(),
+                  'carExpenses': <Map<String, dynamic>>[],
                   'notes': notesCtrl.text,
                 });
               });
