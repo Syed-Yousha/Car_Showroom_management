@@ -252,6 +252,27 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    FilledButton(
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+                        shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                        padding: WidgetStateProperty.all(
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
+                      ),
+                      onPressed: () => _showAddDocumentDialog(),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(FluentIcons.add, size: 14, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('Add Document Entry',
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: Colors.white)),
+                      ]),
+                    ).withClickCursor,
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -279,70 +300,81 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
               color: AppTheme.cardColor,
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                // Add Document Entry
-                FilledButton(
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                    shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
-                  ),
-                  onPressed: () => _showAddDocumentDialog(),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(FluentIcons.add, size: 14, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Add Document Entry', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
-                  ]),
-                ).withClickCursor,
-                // Search
-                SizedBox(
-                  width: 250,
-                  child: TextBox(
-                    placeholder: "Search by Car Name, Chassis No, Engine No...",
-                    placeholderStyle: TextStyle(
-                        fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                    style: TextStyle(
-                        fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
-                    prefix: Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Icon(FluentIcons.search, size: 14, color: AppTheme.textMuted),
-                    ),
-                    decoration: WidgetStateProperty.all(BoxDecoration(
-                      color: AppTheme.background,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.divider),
-                    )),
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                  ),
-                ),
-                // Filter chips
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _filterChip('All'),
-                    _filterChip('Pending'),
-                    _filterChip('Cleared'),
-                    _filterChip('Not Received'),
-                  ],
-                ),
-                Text(
-                  "${filtered.length} vehicle${filtered.length == 1 ? '' : 's'}",
-                  style: TextStyle(
-                      fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 700;
+                return wide
+                    ? Row(
+                        children: [
+                          // Search
+                          Flexible(
+                            flex: 3,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: _searchBox(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Filter chips
+                          Flexible(
+                            flex: 5,
+                            child: Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                _filterChip('All'),
+                                _filterChip('Pending'),
+                                _filterChip('Cleared'),
+                                _filterChip('Not Received'),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${filtered.length} vehicle${filtered.length == 1 ? '' : 's'}",
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 12,
+                                color: AppTheme.textMuted),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _searchBox(),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _filterChip('All'),
+                              _filterChip('Pending'),
+                              _filterChip('Cleared'),
+                              _filterChip('Not Received'),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "${filtered.length} vehicle${filtered.length == 1 ? '' : 's'}",
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 12,
+                                color: AppTheme.textMuted),
+                          ),
+                        ],
+                      );
+              },
             ),
           ),
 
-          // ── Table ────────────────────────────────────────────────────────
+          // ── Table / Cards ─────────────────────────────────────────────────
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
+            child: LayoutBuilder(
+              builder: (context, outerConstraints) {
+                // ── Empty state ──────────────────────────────────────────────
+                if (filtered.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -355,194 +387,360 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                 color: AppTheme.textMuted)),
                       ],
                     ),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(28, 20, 28, 28),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: constraints.maxWidth < 1100 ? 1100 : constraints.maxWidth,
-                              maxWidth: constraints.maxWidth < 1100 ? 1100 : constraints.maxWidth,
-                            ),
-                            child: Column(
-                              children: [
-                                // Table header
-                                Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryLight,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(children: [
-                            _headerCell("Car Details", flex: 3),
-                            _headerCell("Chassis / Engine", flex: 3),
-                            _headerCell("File", flex: 2),
-                            _headerCell("Smart Card", flex: 2),
-                            _headerCell("Number Plate", flex: 2),
-                            _headerCell("Remote / Key", flex: 2),
-                            _headerCell("Actions", flex: 2),
-                          ]),
+                  );
+                }
+
+                // ── Narrow → Card layout (no horizontal overflow possible) ──
+                if (outerConstraints.maxWidth < 850) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, i) {
+                      final r = filtered[i];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardColor,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.divider),
                         ),
-                        // Table rows
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppTheme.cardColor,
-                            borderRadius:
-                                const BorderRadius.vertical(bottom: Radius.circular(10)),
-                            border: Border.all(color: AppTheme.divider),
-                          ),
-                          child: Column(
-                            children: filtered.asMap().entries.map((entry) {
-                              final i = entry.key;
-                              final r = entry.value;
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: i.isEven
-                                      ? AppTheme.cardColor
-                                      : AppTheme.background.withValues(alpha: 0.5),
-                                  border: i < filtered.length - 1
-                                      ? Border(
-                                          bottom: BorderSide(color: AppTheme.divider))
-                                      : null,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                                child: Row(children: [
-                                  // Car Details
-                                  Expanded(
-                                    flex: 3,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Wrap(
-                                          crossAxisAlignment: WrapCrossAlignment.center,
-                                          spacing: 8,
-                                          runSpacing: 4,
-                                          children: [
-                                            Text(
-                                              "${r['carName']} ${r['year']}",
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ── Top: car info + action buttons ───────────
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Wrap(
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: [
+                                          Text(
+                                            "${r['carName']} ${r['year']}",
+                                            style: TextStyle(
+                                                fontFamily: AppTheme.fontFamily,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppTheme.textPrimary),
+                                          ),
+                                          _statusBadge(r['carStatus'] as String),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        r['regNo'] as String,
+                                        style: TextStyle(
+                                            fontFamily: AppTheme.fontFamily,
+                                            fontSize: 11,
+                                            color: AppTheme.textMuted),
+                                      ),
+                                      if (r['buyer'] != null) ...[
+                                        const SizedBox(height: 2),
+                                        Row(children: [
+                                          Icon(FluentIcons.contact,
+                                              size: 10, color: AppTheme.primary),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              r['buyer'] as String,
                                               style: TextStyle(
                                                   fontFamily: AppTheme.fontFamily,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppTheme.textPrimary),
+                                                  fontSize: 11,
+                                                  color: AppTheme.primary,
+                                                  fontWeight: FontWeight.w500),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            _statusBadge(r['carStatus'] as String),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          r['regNo'] as String,
-                                          style: TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 11,
-                                              color: AppTheme.textMuted),
-                                        ),
-                                        if (r['buyer'] != null) ...[
-                                          const SizedBox(height: 2),
-                                          Row(children: [
-                                            Icon(FluentIcons.contact,
-                                                size: 10, color: AppTheme.primary),
-                                            const SizedBox(width: 3),
-                                            Expanded(
-                                              child: Text(
-                                                r['buyer'] as String,
+                                          ),
+                                        ]),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                // Actions
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Tooltip(
+                                      message: "Handover Slip",
+                                      child: IconButton(
+                                        icon: Icon(FluentIcons.print,
+                                            size: 14, color: AppTheme.primary),
+                                        onPressed: () => _showHandoverSlipPdf(r),
+                                      ).withClickCursor,
+                                    ),
+                                    Tooltip(
+                                      message: "Edit",
+                                      child: IconButton(
+                                        icon: Icon(FluentIcons.edit,
+                                            size: 14, color: AppTheme.textMuted),
+                                        onPressed: () => _showEditDocDialog(r),
+                                      ).withClickCursor,
+                                    ),
+                                    Tooltip(
+                                      message: "Remove",
+                                      child: IconButton(
+                                        icon: Icon(FluentIcons.delete,
+                                            size: 14,
+                                            color: AppTheme.error.withValues(alpha: 0.7)),
+                                        onPressed: () =>
+                                            setState(() => _records.remove(r)),
+                                      ).withClickCursor,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            // ── Middle: Chassis / Engine ─────────────────
+                            const SizedBox(height: 6),
+                            Text(
+                              r['chassisNo'] as String,
+                              style: TextStyle(
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textPrimary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              r['engineNo'] as String,
+                              style: TextStyle(
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 11,
+                                  color: AppTheme.textMuted),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            // ── Bottom: Doc status chips ─────────────────
+                            const SizedBox(height: 10),
+                            Container(height: 1, color: AppTheme.divider),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _docMiniChip('File', r['file'] as Map<String, dynamic>),
+                                _docMiniChip('Smart Card', r['smartCard'] as Map<String, dynamic>),
+                                _docMiniChip('Number Plate', r['plate'] as Map<String, dynamic>),
+                                if (r['remoteKey'] != null)
+                                  _docMiniChip('Remote / Key', r['remoteKey'] as Map<String, dynamic>),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                // ── Wide → horizontal-scrollable table ───────────────────────
+                // Content width = at least 1000 px; grows to fill larger screens.
+                final double tableWidth = outerConstraints.maxWidth > 1056
+                    ? outerConstraints.maxWidth - 56
+                    : 1000.0;
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 20, bottom: 28),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: tableWidth,
+                        child: Column(
+                          children: [
+                            // Header
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryLight,
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(10)),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              child: Row(children: [
+                                _headerCell("Car Details", flex: 3),
+                                _headerCell("Chassis / Engine", flex: 3),
+                                _headerCell("File", flex: 2),
+                                _headerCell("Smart Card", flex: 2),
+                                _headerCell("Number Plate", flex: 2),
+                                _headerCell("Remote / Key", flex: 2),
+                                _headerCell("Actions", flex: 2),
+                              ]),
+                            ),
+                            // Rows
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.cardColor,
+                                borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(10)),
+                                border: Border.all(color: AppTheme.divider),
+                              ),
+                              child: Column(
+                                children: filtered.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final r = entry.value;
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: i.isEven
+                                          ? AppTheme.cardColor
+                                          : AppTheme.background.withValues(alpha: 0.5),
+                                      border: i < filtered.length - 1
+                                          ? Border(bottom: BorderSide(color: AppTheme.divider))
+                                          : null,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 14),
+                                    child: Row(children: [
+                                      // Car Details
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Wrap(
+                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                              spacing: 8,
+                                              runSpacing: 4,
+                                              children: [
+                                                Text(
+                                                  "${r['carName']} ${r['year']}",
+                                                  style: TextStyle(
+                                                      fontFamily: AppTheme.fontFamily,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppTheme.textPrimary),
+                                                ),
+                                                _statusBadge(r['carStatus'] as String),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(r['regNo'] as String,
                                                 style: TextStyle(
                                                     fontFamily: AppTheme.fontFamily,
                                                     fontSize: 11,
-                                                    color: AppTheme.primary,
-                                                    fontWeight: FontWeight.w500),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                                    color: AppTheme.textMuted)),
+                                            if (r['buyer'] != null) ...[
+                                              const SizedBox(height: 2),
+                                              Row(children: [
+                                                Icon(FluentIcons.contact,
+                                                    size: 10, color: AppTheme.primary),
+                                                const SizedBox(width: 3),
+                                                Expanded(
+                                                  child: Text(r['buyer'] as String,
+                                                      style: TextStyle(
+                                                          fontFamily: AppTheme.fontFamily,
+                                                          fontSize: 11,
+                                                          color: AppTheme.primary,
+                                                          fontWeight: FontWeight.w500),
+                                                      overflow: TextOverflow.ellipsis),
+                                                ),
+                                              ]),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      // Chassis / Engine
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(r['chassisNo'] as String,
+                                                style: TextStyle(
+                                                    fontFamily: AppTheme.fontFamily,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: AppTheme.textPrimary),
+                                                overflow: TextOverflow.ellipsis),
+                                            const SizedBox(height: 3),
+                                            Text(r['engineNo'] as String,
+                                                style: TextStyle(
+                                                    fontFamily: AppTheme.fontFamily,
+                                                    fontSize: 11,
+                                                    color: AppTheme.textMuted),
+                                                overflow: TextOverflow.ellipsis),
+                                          ],
+                                        ),
+                                      ),
+                                      // File
+                                      Expanded(flex: 2, child: _docStatusWidget(r['file'] as Map<String, dynamic>)),
+                                      // Smart Card
+                                      Expanded(flex: 2, child: _docStatusWidget(r['smartCard'] as Map<String, dynamic>)),
+                                      // Number Plate
+                                      Expanded(flex: 2, child: _docStatusWidget(r['plate'] as Map<String, dynamic>)),
+                                      // Remote / Key
+                                      Expanded(flex: 2, child: r['remoteKey'] != null ? _docStatusWidget(r['remoteKey'] as Map<String, dynamic>) : const SizedBox()),
+                                      // Actions
+                                      Expanded(
+                                        flex: 2,
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            Tooltip(
+                                              message: "Handover Slip",
+                                              child: IconButton(
+                                                icon: Icon(FluentIcons.print, size: 14, color: AppTheme.primary),
+                                                onPressed: () => _showHandoverSlipPdf(r),
+                                              ).withClickCursor,
                                             ),
-                                          ]),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  // Chassis / Engine
-                                  Expanded(
-                                    flex: 3,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          r['chassisNo'] as String,
-                                          style: TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w500,
-                                              color: AppTheme.textPrimary),
-                                          overflow: TextOverflow.ellipsis,
+                                            Tooltip(
+                                              message: "Edit",
+                                              child: IconButton(
+                                                icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted),
+                                                onPressed: () => _showEditDocDialog(r),
+                                              ).withClickCursor,
+                                            ),
+                                            Tooltip(
+                                              message: "Remove",
+                                              child: IconButton(
+                                                icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)),
+                                                onPressed: () => setState(() => _records.remove(r)),
+                                              ).withClickCursor,
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          r['engineNo'] as String,
-                                          style: TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 11,
-                                              color: AppTheme.textMuted),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // File
-                                  Expanded(flex: 2, child: _docStatusWidget(r['file'] as Map<String, dynamic>)),
-                                  // Smart Card
-                                  Expanded(flex: 2, child: _docStatusWidget(r['smartCard'] as Map<String, dynamic>)),
-                                  // Plate
-                                  Expanded(flex: 2, child: _docStatusWidget(r['plate'] as Map<String, dynamic>)),
-                                  // Remote / Key
-                                  Expanded(flex: 2, child: r['remoteKey'] != null ? _docStatusWidget(r['remoteKey'] as Map<String, dynamic>) : const SizedBox()),
-                                  // Actions
-                                  Expanded(
-                                    flex: 2,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Tooltip(
-                                          message: "Handover Slip",
-                                          child: IconButton(
-                                            icon: Icon(FluentIcons.print, size: 14, color: AppTheme.primary),
-                                            onPressed: () => _showHandoverSlipPdf(r),
-                                          ).withClickCursor,
-                                        ),
-                                        Tooltip(
-                                          message: "Edit",
-                                          child: IconButton(
-                                            icon: Icon(FluentIcons.edit, size: 14, color: AppTheme.textMuted),
-                                            onPressed: () => _showEditDocDialog(r),
-                                          ).withClickCursor,
-                                        ),
-                                        Tooltip(
-                                          message: "Remove",
-                                          child: IconButton(
-                                            icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)),
-                                            onPressed: () => setState(() => _records.remove(r)),
-                                          ).withClickCursor,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ]),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
+                                      ),
+                                    ]),
+                                  );
+                                }).toList(),
+                              ),
                             ),
-                          ),
-                        );
-                      }
+                          ],
+                        ),
+                      ),
                     ),
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _searchBox() {
+    return TextBox(
+      placeholder: "Search by Car Name, Chassis No, Engine No...",
+      placeholderStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+      style: TextStyle(
+          fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+      prefix: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Icon(FluentIcons.search, size: 14, color: AppTheme.textMuted),
+      ),
+      decoration: WidgetStateProperty.all(BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.divider),
+      )),
+      onChanged: (v) => setState(() => _searchQuery = v),
     );
   }
 
@@ -768,6 +966,48 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _docMiniChip(String label, Map<String, dynamic> doc) {
+    final isHandedOver  = doc['status'] == 'handedOver';
+    final isNotReceived = doc['status'] == 'notReceived';
+    final Color color   = isHandedOver
+        ? const Color(0xFFF59E0B)
+        : isNotReceived
+            ? AppTheme.error
+            : AppTheme.success;
+    final String statusText = isHandedOver
+        ? 'Handed Over'
+        : isNotReceived
+            ? 'Not Received'
+            : 'In Office';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 10,
+                  color: AppTheme.textMuted)),
+          const SizedBox(height: 2),
+          Text(statusText,
+              style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color)),
+        ],
       ),
     );
   }
@@ -1181,7 +1421,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                         style: pw.TextStyle(
                             fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
                     pw.SizedBox(height: 4),
-                    pw.Text('Inam Motors — Official Document Transfer Record',
+                    pw.Text('Inam Motors  Official Document Transfer Record',
                         style: const pw.TextStyle(fontSize: 10, color: PdfColor(0.867, 0.839, 0.996))),
                   ],
                 ),
