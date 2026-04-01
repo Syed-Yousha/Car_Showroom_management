@@ -173,13 +173,9 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                   Text("Investors", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 22 : 28, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(FluentIcons.lock, size: 10, color: AppTheme.success),
-                      const SizedBox(width: 4),
-                      Text("Secured", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.success)),
-                    ]),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                    child: Text("${_investors.length} Partners", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.primary)),
                   ),
                 ]),
                 const SizedBox(height: 4),

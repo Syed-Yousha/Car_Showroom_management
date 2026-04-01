@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -15,6 +18,31 @@ class CustomersScreen extends StatefulWidget {
 
 class CustomersScreenState extends State<CustomersScreen> {
   void showAddDialog() => _showAddCustomerDialog();
+
+  Future<List<String>> _pickAndSaveImages() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.image,
+      );
+      if (result != null) {
+        final docsDir = await getApplicationDocumentsDirectory();
+        final savedPaths = <String>[];
+        for (final file in result.files) {
+          if (file.path != null) {
+            final newFile = await File(file.path!).copy(
+              '${docsDir.path}/${DateTime.now().millisecondsSinceEpoch}_${file.name}',
+            );
+            savedPaths.add(newFile.path);
+          }
+        }
+        return savedPaths;
+      }
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+    }
+    return [];
+  }
 
   String _searchQuery = '';
   String _selectedFilter = 'All';
@@ -606,6 +634,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     final durationCtrl = TextEditingController();
 
     // Trade-In — full car detail controllers
+    final tradeCarNameCtrl = TextEditingController();
     final tradeMakeCtrl = TextEditingController();
     final tradeModelCtrl = TextEditingController();
     final tradeRegNoCtrl = TextEditingController();
@@ -616,6 +645,10 @@ class CustomersScreenState extends State<CustomersScreen> {
     final tradeAmountCtrl = TextEditingController();
     String tradeFuelType = 'Petrol';
     String tradeTransmission = 'Automatic';
+    List<String> tradeImagePaths = [];
+
+    // Additional notes (shared — one type active at a time)
+    final notesCtrl = TextEditingController();
 
     // Salesman — manual text entry (global to dialog)
     final salesmanCtrl = TextEditingController();
@@ -769,6 +802,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                       fileHandedOver, smartCardHandedOver, plateHandedOver, remoteKeyHandedOver,
                       (f, s, p, r) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; remoteKeyHandedOver = r; }),
                     ),
+                    _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
                   // ── PAYMENT ────────────────────────────────────────────
@@ -783,10 +817,13 @@ class CustomersScreenState extends State<CustomersScreen> {
                       paymentChip('Cheque'),
                     ]),
                     if (paymentType != 'Cash') ...bankFields(),
+                    const SizedBox(height: 14),
+                    _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
                   // ── TRADE-IN ───────────────────────────────────────────
                   if (txnType == 'Trade-In') ...[
+                    _editField("Car Name", tradeCarNameCtrl),
                     Row(children: [
                       Expanded(child: _editField("Make", tradeMakeCtrl)),
                       const SizedBox(width: 12),
@@ -821,11 +858,157 @@ class CustomersScreenState extends State<CustomersScreen> {
                       optionChip('Manual',    tradeTransmission, (v) => tradeTransmission = v),
                     ]),
                     const SizedBox(height: 14),
+                    // ── Car Photos ──────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.background,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Car Photos",
+                                  style: TextStyle(
+                                      fontFamily: AppTheme.fontFamily,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary)),
+                              FilledButton(
+                                style: ButtonStyle(
+                                    backgroundColor:
+                                        WidgetStateProperty.all(AppTheme.primary)),
+                                onPressed: () async {
+                                  final newPaths = await _pickAndSaveImages();
+                                  if (newPaths.isNotEmpty) {
+                                    setDialogState(
+                                        () => tradeImagePaths.addAll(newPaths));
+                                  }
+                                },
+                                child: const Text("Upload Photos",
+                                    style: TextStyle(
+                                        fontFamily: AppTheme.fontFamily,
+                                        fontSize: 12,
+                                        color: Colors.white)),
+                              ).withClickCursor,
+                            ],
+                          ),
+                          if (tradeImagePaths.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: tradeImagePaths.asMap().entries.map((entry) {
+                                final path = entry.value;
+                                final fileName =
+                                    path.split(RegExp(r'[\\/]')).last;
+                                return Container(
+                                  width: 100,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.cardColor,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppTheme.divider),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            child: Image.file(
+                                              File(path),
+                                              width: 90,
+                                              height: 70,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (ctx, err, stack) =>
+                                                  Container(
+                                                width: 90,
+                                                height: 70,
+                                                color: AppTheme.background,
+                                                child: const Center(
+                                                    child: Icon(
+                                                        FluentIcons.error,
+                                                        size: 16,
+                                                        color: AppTheme.error)),
+                                              ),
+                                            ),
+                                          ),
+                                          MouseRegion(
+                                            cursor: SystemMouseCursors.click,
+                                            child: GestureDetector(
+                                              onTap: () => setDialogState(() =>
+                                                  tradeImagePaths
+                                                      .removeAt(entry.key)),
+                                              child: Container(
+                                                margin: const EdgeInsets.all(4),
+                                                padding:
+                                                    const EdgeInsets.all(3),
+                                                decoration: const BoxDecoration(
+                                                    color: Colors.white,
+                                                    shape: BoxShape.circle),
+                                                child: Icon(FluentIcons.cancel,
+                                                    size: 10,
+                                                    color: AppTheme.error),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(fileName,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              fontFamily: AppTheme.fontFamily,
+                                              fontSize: 10,
+                                              color: AppTheme.textPrimary)),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                color: AppTheme.cardColor,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: AppTheme.divider),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(FluentIcons.photo_collection,
+                                      size: 28, color: AppTheme.textMuted),
+                                  const SizedBox(height: 8),
+                                  Text("No photos uploaded yet",
+                                      style: TextStyle(
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 12,
+                                          color: AppTheme.textMuted)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     sectionLabel("Documentation Received"),
                     _buildDocStatusGrid(
                       fileHandedOver, smartCardHandedOver, plateHandedOver, remoteKeyHandedOver,
                       (f, s, p, r) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; remoteKeyHandedOver = r; }),
                     ),
+                    _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
                   // ── CREDIT REFUND ──────────────────────────────────────
@@ -840,6 +1023,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                       paymentChip('Cheque'),
                     ]),
                     if (paymentType != 'Cash') ...bankFields(),
+                    const SizedBox(height: 14),
+                    _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
                   // ── SALESMAN + DATE (global footer) ────────────────────
@@ -893,6 +1078,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
+                        'notes': notesCtrl.text.trim(),
                         'remoteKey': remoteKeyHandedOver,
                       });
                       if (!isManualEntry && selectedCar != null) {
@@ -911,15 +1097,16 @@ class CustomersScreenState extends State<CustomersScreen> {
                       detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                     }
                     setState(() {
-                      ledger.add({'date': dateStr, 'type': 'Payment', 'details': detail, 'debit': 0, 'credit': amt, 'salesman': salesman});
+                      ledger.add({'date': dateStr, 'type': 'Payment', 'details': detail, 'debit': 0, 'credit': amt, 'salesman': salesman, 'notes': notesCtrl.text.trim()});
                     });
 
                   } else if (txnType == 'Trade-In') {
                     final amt = int.tryParse(tradeAmountCtrl.text.replaceAll(',', '')) ?? 0;
+                    final carName = tradeCarNameCtrl.text.trim();
                     final make = tradeMakeCtrl.text.trim();
                     final model = tradeModelCtrl.text.trim();
                     if (amt <= 0 || make.isEmpty) return;
-                    final detail = model.isNotEmpty ? '$make $model' : make;
+                    final detail = carName.isNotEmpty ? carName : (model.isNotEmpty ? '$make $model' : make);
                     setState(() {
                       ledger.add({
                         'date': dateStr,
@@ -928,6 +1115,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'debit': 0,
                         'credit': amt,
                         'salesman': salesman,
+                        'tradeCarName': carName,
                         'tradeCarMake': make,
                         'tradeCarModel': model,
                         'tradeCarRegNo': tradeRegNoCtrl.text.trim(),
@@ -937,10 +1125,12 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'tradeCarEngine': tradeEngineCtrl.text.trim(),
                         'tradeCarFuel': tradeFuelType,
                         'tradeCarTransmission': tradeTransmission,
+                        'tradeCarPhotos': List<String>.from(tradeImagePaths),
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
                         'remoteKey': remoteKeyHandedOver,
+                        'notes': notesCtrl.text.trim(),
                       });
                     });
 
@@ -955,7 +1145,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                       if (parts.isNotEmpty) detail = 'Credit Refund - $paymentType / ${parts.join(' / ')}';
                     }
                     setState(() {
-                      ledger.add({'date': dateStr, 'type': 'Credit Refund', 'details': detail, 'debit': amt, 'credit': 0, 'salesman': salesman});
+                      ledger.add({'date': dateStr, 'type': 'Credit Refund', 'details': detail, 'debit': amt, 'credit': 0, 'salesman': salesman, 'notes': notesCtrl.text.trim()});
                     });
                   }
 
@@ -976,6 +1166,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     final cnicCtrl = TextEditingController();
     final cityCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
     String selectedType = 'New';
 
     showDialog(
@@ -1046,6 +1237,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   ],
                 ),
                 _editField("Address", addressCtrl),
+                _editFieldMultiline("Additional Notes (optional)", notesCtrl),
               ],
             ),
           ),
@@ -1071,6 +1263,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     'city': cityCtrl.text.trim(),
                     'address': addressCtrl.text.trim(),
                     'type': selectedType,
+                    'notes': notesCtrl.text.trim(),
                     'ledger': <Map<String, dynamic>>[],
                   });
                 });
@@ -1878,6 +2071,33 @@ class CustomersScreenState extends State<CustomersScreen> {
                 pw.SizedBox(height: 12),
               ],
 
+              // Notes (only shown when present)
+              if ((entry['notes'] as String? ?? '').isNotEmpty) ...[
+                pw.Text(
+                  "NOTES",
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromHex('#FFFBEB'),
+                    border: pw.Border.all(color: PdfColor.fromHex('#FDE68A')),
+                    borderRadius: pw.BorderRadius.circular(5),
+                  ),
+                  child: pw.Text(
+                    entry['notes'] as String,
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+              ],
+
               // Balance Summary
               pw.Container(
                 padding: const pw.EdgeInsets.all(12),
@@ -2361,6 +2581,37 @@ class CustomersScreenState extends State<CustomersScreen> {
         ),
         child: TextBox(
           controller: ctrl,
+          style: TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 13,
+            color: AppTheme.textPrimary,
+          ),
+          decoration: WidgetStateProperty.all(
+            BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.divider),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _editFieldMultiline(String label, TextEditingController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: InfoLabel(
+        label: label,
+        labelStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textSecondary,
+        ),
+        child: TextBox(
+          controller: ctrl,
+          maxLines: 3,
           style: TextStyle(
             fontFamily: AppTheme.fontFamily,
             fontSize: 13,

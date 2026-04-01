@@ -208,98 +208,81 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     final filtered = _filtered;
 
     return ScaffoldPage(
-      padding: EdgeInsets.zero,
+      padding:  EdgeInsets.zero,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              border: Border(bottom: BorderSide(color: AppTheme.divider)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 54, 28, 0),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(FluentIcons.document_set, size: 20, color: AppTheme.primary),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Docs & File Tracking",
-                              style: TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textPrimary)),
-                          Text("Track File, Smart Card and Number Plate handover status for all vehicles",
-                              style: TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 12,
-                                  color: AppTheme.textMuted)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    FilledButton(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(AppTheme.primary),
-                        shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                        padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
-                      ),
-                      onPressed: () => _showAddDocumentDialog(),
-                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(FluentIcons.add, size: 14, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('Add Document Entry',
-                            style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Colors.white)),
-                      ]),
-                    ).withClickCursor,
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Docs & File Tracking",
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary)),
+                      const SizedBox(height: 4),
+                      Text("Track File, Smart Card and Number Plate handover status for all vehicles",
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 14,
+                              color: AppTheme.textSecondary)),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
-                // ── Stat chips ──────────────────────────────────────────
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _statChip("Total Vehicles", "${_records.length}", AppTheme.primary, FluentIcons.car),
-                    _statChip("Docs In Office", "$_inOfficeCount", AppTheme.success, FluentIcons.office_store_logo),
-                    _statChip("Handed Over", "$_clearedCount", const Color(0xFFF59E0B), FluentIcons.check_mark),
-                    _statChip("Pending (Sold)", "$_pendingCount", AppTheme.error, FluentIcons.clock),
-                    _statChip("Not Received", "$_notReceivedCount", AppTheme.error, FluentIcons.error),
-                  ],
-                ),
+                FilledButton(
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+                    shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                    padding: WidgetStateProperty.all(
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                  ),
+                  onPressed: () => _showAddDocumentDialog(),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(FluentIcons.add, size: 14, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Add Document Entry',
+                        style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Colors.white)),
+                  ]),
+                ).withClickCursor,
               ],
             ),
           ),
 
-          // ── Toolbar ─────────────────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              border: Border(bottom: BorderSide(color: AppTheme.divider)),
+          const SizedBox(height: 24),
+
+          // ── Stat chips ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _statChip("Total Vehicles", "${_records.length}", AppTheme.primary, FluentIcons.car),
+                _statChip("Docs In Office", "$_inOfficeCount", AppTheme.success, FluentIcons.office_store_logo),
+                _statChip("Handed Over", "$_clearedCount", const Color(0xFFF59E0B), FluentIcons.check_mark),
+                _statChip("Pending (Sold)", "$_pendingCount", AppTheme.error, FluentIcons.clock),
+                _statChip("Not Received", "$_notReceivedCount", AppTheme.error, FluentIcons.error),
+              ],
             ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Toolbar ─────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 700;
@@ -367,6 +350,8 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
               },
             ),
           ),
+
+          const SizedBox(height: 16),
 
           // ── Table / Cards ─────────────────────────────────────────────────
           Expanded(
@@ -556,7 +541,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                             // Header
                             Container(
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryLight,
+                                color: AppTheme.background,
                                 borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(10)),
                               ),
@@ -813,7 +798,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
           fontFamily: AppTheme.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppTheme.primary,
+          color: AppTheme.textMuted,
         ),
       ),
     );
