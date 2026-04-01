@@ -624,6 +624,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool fileHandedOver = false;
     bool smartCardHandedOver = false;
     bool plateHandedOver = false;
+    bool remoteKeyHandedOver = false;
 
     showDialog(
       context: context,
@@ -765,8 +766,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                     _editField("Time Period / Duration (e.g., 6 months, Full Payment)", durationCtrl),
                     sectionLabel("Documentation Handover"),
                     _buildDocStatusGrid(
-                      fileHandedOver, smartCardHandedOver, plateHandedOver,
-                      (f, s, p) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; }),
+                      fileHandedOver, smartCardHandedOver, plateHandedOver, remoteKeyHandedOver,
+                      (f, s, p, r) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; remoteKeyHandedOver = r; }),
                     ),
                   ],
 
@@ -822,8 +823,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                     const SizedBox(height: 14),
                     sectionLabel("Documentation Received"),
                     _buildDocStatusGrid(
-                      fileHandedOver, smartCardHandedOver, plateHandedOver,
-                      (f, s, p) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; }),
+                      fileHandedOver, smartCardHandedOver, plateHandedOver, remoteKeyHandedOver,
+                      (f, s, p, r) => setDialogState(() { fileHandedOver = f; smartCardHandedOver = s; plateHandedOver = p; remoteKeyHandedOver = r; }),
                     ),
                   ],
 
@@ -892,6 +893,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
+                        'remoteKey': remoteKeyHandedOver,
                       });
                       if (!isManualEntry && selectedCar != null) {
                         _availableCars.remove(selectedCar);
@@ -938,6 +940,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
+                        'remoteKey': remoteKeyHandedOver,
                       });
                     });
 
@@ -1288,6 +1291,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool fileHandedOver = entry['file'] == true;
     bool smartCardHandedOver = entry['smartCard'] == true;
     bool plateHandedOver = entry['plate'] == true;
+    bool remoteKeyHandedOver = entry['remoteKey'] == true;
 
     // Payment-specific
     String paymentType = 'Cash';
@@ -1388,11 +1392,13 @@ class CustomersScreenState extends State<CustomersScreen> {
                       fileHandedOver,
                       smartCardHandedOver,
                       plateHandedOver,
-                      (f, s, p) {
+                      remoteKeyHandedOver,
+                      (f, s, p, r) {
                         setDialogState(() {
                           fileHandedOver = f;
                           smartCardHandedOver = s;
                           plateHandedOver = p;
+                          remoteKeyHandedOver = r;
                         });
                       },
                     ),
@@ -1461,11 +1467,13 @@ class CustomersScreenState extends State<CustomersScreen> {
                       fileHandedOver,
                       smartCardHandedOver,
                       plateHandedOver,
-                      (f, s, p) {
+                      remoteKeyHandedOver,
+                      (f, s, p, r) {
                         setDialogState(() {
                           fileHandedOver = f;
                           smartCardHandedOver = s;
                           plateHandedOver = p;
+                          remoteKeyHandedOver = r;
                         });
                       },
                     ),
@@ -2374,7 +2382,8 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool file,
     bool smartCard,
     bool plate,
-    void Function(bool, bool, bool) onChanged,
+    bool remoteKey,
+    void Function(bool, bool, bool, bool) onChanged,
   ) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -2392,7 +2401,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   "File",
                   FluentIcons.document,
                   file,
-                  (v) => onChanged(v, smartCard, plate),
+                  (v) => onChanged(v, smartCard, plate, remoteKey),
                 ),
               ),
               const SizedBox(width: 8),
@@ -2401,7 +2410,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   "Smart Card",
                   FluentIcons.contact_card,
                   smartCard,
-                  (v) => onChanged(file, v, plate),
+                  (v) => onChanged(file, v, plate, remoteKey),
                 ),
               ),
             ],
@@ -2414,11 +2423,18 @@ class CustomersScreenState extends State<CustomersScreen> {
                   "Number Plate",
                   FluentIcons.number_field,
                   plate,
-                  (v) => onChanged(file, smartCard, v),
+                  (v) => onChanged(file, smartCard, v, remoteKey),
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(child: SizedBox()),
+              Expanded(
+                child: _docToggle(
+                  "Remote / Key",
+                  FluentIcons.lock,
+                  remoteKey,
+                  (v) => onChanged(file, smartCard, plate, v),
+                ),
+              ),
             ],
           ),
         ],

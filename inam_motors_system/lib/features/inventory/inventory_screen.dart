@@ -600,6 +600,7 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool fileHanded = false;
     bool smartCardHanded = false;
     bool plateHanded = false;
+    bool remoteKeyHanded = false;
     final notesCtrl = TextEditingController();
     List<String> selectedImagePaths = [];
 
@@ -775,23 +776,26 @@ class InventoryScreenState extends State<InventoryScreen> {
             ]),
             _editField("Seller CNIC", sellerCnicCtrl),
             const SizedBox(height: 8),
-            Row(children: [
+            Wrap(spacing: 16, runSpacing: 8, children: [
               Checkbox(
                 checked: fileHanded,
                 onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
                 content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
-              const SizedBox(width: 16),
               Checkbox(
                 checked: smartCardHanded,
                 onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
                 content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
-              const SizedBox(width: 16),
               Checkbox(
                 checked: plateHanded,
                 onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
                 content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              Checkbox(
+                checked: remoteKeyHanded,
+                onChanged: (v) => setDialogState(() => remoteKeyHanded = v ?? false),
+                content: Text("Remote / Key", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
             ]),
             const SizedBox(height: 14),
@@ -842,6 +846,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
+                  'remoteKeyHandedOver': remoteKeyHanded,
                   'demandPrice': int.tryParse(priceCtrl.text) ?? 0,
                   'photos': selectedImagePaths,
                   'carExpenses': <Map<String, dynamic>>[],
@@ -928,6 +933,7 @@ class InventoryScreenState extends State<InventoryScreen> {
     bool fileHanded = car['fileHandedOver'];
     bool smartCardHanded = car['smartCardHandedOver'] ?? false;
     bool plateHanded = car['numberPlateHandedOver'];
+    bool remoteKeyHanded = car['remoteKeyHandedOver'] ?? false;
     final notesCtrl = TextEditingController(text: car['notes'] ?? '');
     List<String> selectedImagePaths = List<String>.from(car['photos'] ?? []);
     List<Map<String, TextEditingController>> expenseRows = ((car['carExpenses'] ?? []) as List).map<Map<String, TextEditingController>>((e) => {
@@ -1150,23 +1156,26 @@ class InventoryScreenState extends State<InventoryScreen> {
             const SizedBox(height: 8),
             Text("Document Tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             const SizedBox(height: 8),
-            Row(children: [
+            Wrap(spacing: 16, runSpacing: 8, children: [
               Checkbox(
                 checked: fileHanded,
                 onChanged: (v) => setDialogState(() => fileHanded = v ?? false),
                 content: Text("File", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
-              const SizedBox(width: 16),
               Checkbox(
                 checked: smartCardHanded,
                 onChanged: (v) => setDialogState(() => smartCardHanded = v ?? false),
                 content: Text("Smart Card", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
-              const SizedBox(width: 16),
               Checkbox(
                 checked: plateHanded,
                 onChanged: (v) => setDialogState(() => plateHanded = v ?? false),
                 content: Text("Number Plate", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
+              ),
+              Checkbox(
+                checked: remoteKeyHanded,
+                onChanged: (v) => setDialogState(() => remoteKeyHanded = v ?? false),
+                content: Text("Remote / Key", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textPrimary)),
               ),
             ]),
             const SizedBox(height: 14),
@@ -1266,6 +1275,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                   'fileHandedOver': fileHanded,
                   'smartCardHandedOver': smartCardHanded,
                   'numberPlateHandedOver': plateHanded,
+                  'remoteKeyHandedOver': remoteKeyHanded,
                   'demandPrice': (car['demandPrice'] as int?) ?? (int.tryParse(priceCtrl.text) ?? car['price']),
                   'photos': selectedImagePaths,
                   'carExpenses': expenseRows
