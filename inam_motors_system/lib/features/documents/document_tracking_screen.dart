@@ -554,7 +554,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                 _headerCell("Smart Card", flex: 2),
                                 _headerCell("Number Plate", flex: 2),
                                 _headerCell("Remote / Key", flex: 2),
-                                _headerCell("Actions", flex: 2),
+                                _headerCell("Actions", flex: 2, textAlign: TextAlign.end),
                               ]),
                             ),
                             // Rows
@@ -789,11 +789,12 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     );
   }
 
-  Widget _headerCell(String label, {int flex = 1}) {
+  Widget _headerCell(String label, {int flex = 1, TextAlign textAlign = TextAlign.left}) {
     return Expanded(
       flex: flex,
       child: Text(
         label,
+        textAlign: textAlign,
         style: TextStyle(
           fontFamily: AppTheme.fontFamily,
           fontSize: 12,
