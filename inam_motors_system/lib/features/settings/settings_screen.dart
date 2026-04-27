@@ -39,6 +39,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyInvestor = true;
   bool _notifyLowStock = true;
 
+  // Security
+  String _currentPasswordHash = 'admin123';
+  final _currentPwCtrl = TextEditingController();
+  final _newPwCtrl = TextEditingController();
+  final _confirmPwCtrl = TextEditingController();
+  bool _showCurrentPw = false;
+  bool _showNewPw = false;
+  bool _showConfirmPw = false;
+
   int _selectedSection = 0;
 
   @override
@@ -58,6 +67,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
     _emailCtrl.dispose();
+    _currentPwCtrl.dispose();
+    _newPwCtrl.dispose();
+    _confirmPwCtrl.dispose();
     super.dispose();
   }
 
@@ -65,6 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'Business Profile',
     'Preferences',
     'Notifications',
+    'Security',
     'Data & Backup',
     'About',
   ];
@@ -73,6 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     FluentIcons.build_definition,
     FluentIcons.color,
     FluentIcons.ringer,
+    FluentIcons.lock,
     FluentIcons.database,
     FluentIcons.info,
   ];
@@ -185,8 +199,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 0: return _buildProfileSection();
       case 1: return _buildPreferencesSection();
       case 2: return _buildNotificationsSection();
-      case 3: return _buildDataSection();
-      case 4: return _buildAboutSection();
+      case 3: return _buildSecuritySection();
+      case 4: return _buildDataSection();
+      case 5: return _buildAboutSection();
       default: return const SizedBox();
     }
   }
@@ -298,7 +313,144 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ═══════════════════════════════════════════════════
-  // SECTION 4: Data & Backup
+  // SECTION 4: Security (Change Password)
+  // ═══════════════════════════════════════════════════
+  Widget _buildSecuritySection() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader("Change Password", "Update the password used to access this account"),
+          const SizedBox(height: 24),
+          _passwordField(
+            "Current Password",
+            _currentPwCtrl,
+            _showCurrentPw,
+            () => setState(() => _showCurrentPw = !_showCurrentPw),
+          ),
+          _passwordField(
+            "New Password",
+            _newPwCtrl,
+            _showNewPw,
+            () => setState(() => _showNewPw = !_showNewPw),
+          ),
+          _passwordField(
+            "Confirm New Password",
+            _confirmPwCtrl,
+            _showConfirmPw,
+            () => setState(() => _showConfirmPw = !_showConfirmPw),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.18)),
+            ),
+            child: Row(children: [
+              Icon(FluentIcons.info, size: 14, color: AppTheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Use at least 6 characters. Avoid reusing old passwords.",
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 18),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+                shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
+              ),
+              onPressed: _submitPasswordChange,
+              child: const Text("Update Password", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
+            ).withClickCursor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _passwordField(String label, TextEditingController ctrl, bool show, VoidCallback onToggle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InfoLabel(
+        label: label,
+        labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+        child: TextBox(
+          controller: ctrl,
+          obscureText: !show,
+          placeholder: label,
+          placeholderStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted),
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textPrimary),
+          decoration: WidgetStateProperty.all(BoxDecoration(
+            color: AppTheme.background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppTheme.divider),
+          )),
+          suffix: IconButton(
+            icon: Icon(
+              show ? FluentIcons.hide3 : FluentIcons.red_eye,
+              size: 14,
+              color: AppTheme.textMuted,
+            ),
+            onPressed: onToggle,
+          ).withClickCursor,
+        ),
+      ),
+    );
+  }
+
+  void _submitPasswordChange() {
+    final current = _currentPwCtrl.text;
+    final newPw = _newPwCtrl.text;
+    final confirm = _confirmPwCtrl.text;
+
+    if (current.isEmpty || newPw.isEmpty || confirm.isEmpty) {
+      _showError("All password fields are required.");
+      return;
+    }
+    if (current != _currentPasswordHash) {
+      _showError("Current password is incorrect.");
+      return;
+    }
+    if (newPw.length < 6) {
+      _showError("New password must be at least 6 characters.");
+      return;
+    }
+    if (newPw != confirm) {
+      _showError("New password and confirmation do not match.");
+      return;
+    }
+    if (newPw == current) {
+      _showError("New password must be different from the current one.");
+      return;
+    }
+    setState(() {
+      _currentPasswordHash = newPw;
+      _currentPwCtrl.clear();
+      _newPwCtrl.clear();
+      _confirmPwCtrl.clear();
+    });
+    _showSnack("Password updated successfully");
+  }
+
+  void _showError(String msg) {
+    displayInfoBar(context, builder: (context, close) {
+      return InfoBar(
+        title: Text(msg, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+        severity: InfoBarSeverity.error,
+      );
+    });
+  }
+
+  // ═══════════════════════════════════════════════════
+  // SECTION 5: Data & Backup
   // ═══════════════════════════════════════════════════
   Widget _buildDataSection() {
     return Column(children: [

@@ -862,6 +862,52 @@ class InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  void _showNoteDialog(Map<String, dynamic> car) {
+    final note = (car['notes'] as String? ?? '').trim();
+    if (note.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: Row(
+          children: [
+            Icon(FluentIcons.quick_note, size: 16, color: AppTheme.primary),
+            const SizedBox(width: 8),
+            const Text(
+              "Car Note",
+              style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 460),
+        content: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE082)),
+          ),
+          child: SelectableText(
+            note,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              height: 1.5,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close",
+                style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      ),
+    );
+  }
+
   void _showRemoveCarDialog(Map<String, dynamic> car) {
     showDialog(
       context: context,
@@ -1581,6 +1627,16 @@ class InventoryScreenState extends State<InventoryScreen> {
 
             // Action buttons
             Row(children: [
+              if ((car['notes'] as String? ?? '').trim().isNotEmpty) ...[
+                Tooltip(
+                  message: "Note Entered",
+                  child: IconButton(
+                    icon: Icon(FluentIcons.quick_note, size: 14, color: const Color(0xFFF59E0B)),
+                    onPressed: () => _showNoteDialog(car),
+                  ).withClickCursor,
+                ),
+                const SizedBox(width: 6),
+              ],
               Expanded(child: Button(
                 style: ButtonStyle(
                   shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
@@ -1700,6 +1756,14 @@ class InventoryScreenState extends State<InventoryScreen> {
                 icon: Icon(isExpanded ? FluentIcons.chevron_up : FluentIcons.chevron_down, size: 12, color: AppTheme.textSecondary),
                 onPressed: () => setState(() => _expandedIndex = isExpanded ? null : index),
               ).withClickCursor,
+              if ((car['notes'] as String? ?? '').trim().isNotEmpty)
+                Tooltip(
+                  message: "Note Entered",
+                  child: IconButton(
+                    icon: Icon(FluentIcons.quick_note, size: 12, color: const Color(0xFFF59E0B)),
+                    onPressed: () => _showNoteDialog(car),
+                  ).withClickCursor,
+                ),
               IconButton(
                 icon: const Icon(FluentIcons.edit, size: 12, color: AppTheme.primary),
                 onPressed: () => _showEditCarDialog(car),

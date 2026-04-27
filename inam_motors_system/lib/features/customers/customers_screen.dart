@@ -1030,7 +1030,14 @@ class CustomersScreenState extends State<CustomersScreen> {
                   // ── SALESMAN + DATE (global footer) ────────────────────
                   const SizedBox(height: 24),
                   Row(children: [
-                    Expanded(child: _editField("Salesman Name", salesmanCtrl)),
+                    Expanded(child: _editField(
+                      txnType == 'Payment'
+                          ? "Received by"
+                          : txnType == 'Credit Refund'
+                              ? "Given by"
+                              : "Salesman Name",
+                      salesmanCtrl,
+                    )),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1292,6 +1299,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     final cnicCtrl = TextEditingController(text: c['cnic']);
     final cityCtrl = TextEditingController(text: c['city']);
     final addressCtrl = TextEditingController(text: c['address'] ?? '');
+    final customerNotesCtrl = TextEditingController(text: c['notes'] as String? ?? '');
     String selectedType = c['type'];
 
     showDialog(
@@ -1362,6 +1370,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   ],
                 ),
                 _editField("Address", addressCtrl),
+                _editFieldMultiline("Additional Notes (optional)", customerNotesCtrl),
               ],
             ),
           ),
@@ -1387,6 +1396,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     'city': cityCtrl.text,
                     'address': addressCtrl.text,
                     'type': selectedType,
+                    'notes': customerNotesCtrl.text.trim(),
                   };
                 });
                 Navigator.pop(ctx);
@@ -1462,6 +1472,114 @@ class CustomersScreenState extends State<CustomersScreen> {
   // ───── Add Transaction Dialog ─────
 
   // ───── Edit Transaction Dialog ─────
+  void _showCustomerNoteDialog(Map<String, dynamic> customer) {
+    final note = (customer['notes'] as String? ?? '').trim();
+    if (note.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: Row(
+          children: [
+            Icon(FluentIcons.quick_note, size: 16, color: AppTheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              "Customer Note",
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 460),
+        content: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE082)),
+          ),
+          child: SelectableText(
+            note,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              height: 1.5,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "Close",
+              style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white),
+            ),
+          ).withClickCursor,
+        ],
+      ),
+    );
+  }
+
+  void _showNoteDialog(Map<String, dynamic> entry) {
+    final note = (entry['notes'] as String? ?? '').trim();
+    if (note.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: Row(
+          children: [
+            Icon(FluentIcons.quick_note, size: 16, color: AppTheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              "Transaction Note",
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 460),
+        content: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE082)),
+          ),
+          child: SelectableText(
+            note,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              height: 1.5,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(AppTheme.primary),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "Close",
+              style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white),
+            ),
+          ).withClickCursor,
+        ],
+      ),
+    );
+  }
+
   void _showEditTransactionDialog(
     Map<String, dynamic> customer,
     int entryIndex,
@@ -1476,6 +1594,8 @@ class CustomersScreenState extends State<CustomersScreen> {
           : (entry['debit'] as int).toString(),
     );
     final detailsCtrl = TextEditingController(text: entry['details'] ?? '');
+    final notesCtrl = TextEditingController(text: entry['notes'] as String? ?? '');
+    final durationCtrl = TextEditingController(text: entry['duration'] as String? ?? '');
     DateTime txnDate = DateTime.tryParse(entry['date'] ?? '') ?? DateTime.now();
     String? selectedSalesman = entry['salesman'] as String?;
     if (selectedSalesman != null && selectedSalesman.isEmpty) {
@@ -1570,6 +1690,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   if (originalType == 'Car Sale') ...[
                     _editField("Car Details", detailsCtrl),
                     _editField("Sale Price (Rs)", amountCtrl),
+                    _editField("Time Period / Duration (e.g., 6 months, Full Payment)", durationCtrl),
                     const SizedBox(height: 4),
                     Text(
                       "Documentation & Handover",
@@ -1674,7 +1795,11 @@ class CustomersScreenState extends State<CustomersScreen> {
 
                   const SizedBox(height: 14),
                   Text(
-                    "Salesman",
+                    originalType == 'Payment'
+                        ? "Received by"
+                        : originalType == 'Credit Refund'
+                            ? "Given by"
+                            : "Salesman",
                     style: TextStyle(
                       fontFamily: AppTheme.fontFamily,
                       fontSize: 12,
@@ -1685,9 +1810,13 @@ class CustomersScreenState extends State<CustomersScreen> {
                   const SizedBox(height: 8),
                   ComboBox<String>(
                     value: selectedSalesman,
-                    placeholder: const Text(
-                      "Select Salesman...",
-                      style: TextStyle(
+                    placeholder: Text(
+                      originalType == 'Payment'
+                          ? "Select receiver..."
+                          : originalType == 'Credit Refund'
+                              ? "Select giver..."
+                              : "Select Salesman...",
+                      style: const TextStyle(
                         fontFamily: AppTheme.fontFamily,
                         fontSize: 13,
                       ),
@@ -1725,6 +1854,8 @@ class CustomersScreenState extends State<CustomersScreen> {
                     selected: txnDate,
                     onChanged: (d) => setDialogState(() => txnDate = d),
                   ),
+                  const SizedBox(height: 14),
+                  _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                 ],
               ),
             ),
@@ -1745,6 +1876,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                       '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}-${txnDate.day.toString().padLeft(2, '0')}';
                   final amt = int.tryParse(amountCtrl.text) ?? 0;
                   if (amt <= 0) return;
+                  final notes = notesCtrl.text.trim();
 
                   setState(() {
                     if (originalType == 'Car Sale') {
@@ -1755,9 +1887,12 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'debit': amt,
                         'credit': 0,
                         'salesman': selectedSalesman ?? '',
+                        'duration': durationCtrl.text.trim(),
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
+                        'notes': notes,
+                        if (entry['remoteKey'] != null) 'remoteKey': entry['remoteKey'],
                       };
                     } else if (originalType == 'Payment') {
                       String detail = paymentType;
@@ -1780,6 +1915,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'debit': 0,
                         'credit': amt,
                         'salesman': selectedSalesman ?? '',
+                        'notes': notes,
                       };
                     } else if (originalType == 'Trade-In') {
                       ledger[entryIndex] = {
@@ -1792,6 +1928,9 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'file': fileHandedOver,
                         'smartCard': smartCardHandedOver,
                         'plate': plateHandedOver,
+                        'notes': notes,
+                        if (entry['tradeCarName'] != null) 'tradeCarName': entry['tradeCarName'],
+                        if (entry['tradeCarPhotos'] != null) 'tradeCarPhotos': entry['tradeCarPhotos'],
                       };
                     } else if (originalType == 'Credit Refund') {
                       ledger[entryIndex] = {
@@ -1801,6 +1940,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                         'debit': amt,
                         'credit': 0,
                         'salesman': selectedSalesman ?? '',
+                        'notes': notes,
                       };
                     }
                   });
@@ -2030,7 +2170,16 @@ class CustomersScreenState extends State<CustomersScreen> {
               ),
               if (entry['salesman'] != null &&
                   (entry['salesman'] as String).isNotEmpty)
-                _pdfRow("Salesman", entry['salesman']),
+                _pdfRow(
+                  type == 'Payment'
+                      ? "Received by"
+                      : type == 'Credit Refund'
+                          ? "Given by"
+                          : "Salesman",
+                  entry['salesman'],
+                ),
+              if ((entry['duration'] as String? ?? '').trim().isNotEmpty)
+                _pdfRow("Time Period / Duration", entry['duration'] as String),
               pw.SizedBox(height: 12),
 
               // Documentation Status (for Car Sale & Trade-In)
@@ -2383,6 +2532,11 @@ class CustomersScreenState extends State<CustomersScreen> {
                 data: ledger.map((e) {
                   runBal += (e['debit'] as int) - (e['credit'] as int);
                   String details = e['details'] as String;
+                  // Append duration if present
+                  final duration = (e['duration'] as String? ?? '').trim();
+                  if (duration.isNotEmpty) {
+                    details += '\nDuration: $duration';
+                  }
                   // Append doc status for car-related entries
                   if (e['type'] == 'Car Sale' || e['type'] == 'Trade-In') {
                     final docs = <String>[];
@@ -3421,6 +3575,18 @@ class CustomersScreenState extends State<CustomersScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if ((c['notes'] as String? ?? '').trim().isNotEmpty)
+                          Tooltip(
+                            message: "Note Entered",
+                            child: IconButton(
+                              icon: Icon(
+                                FluentIcons.quick_note,
+                                size: 14,
+                                color: const Color(0xFFF59E0B),
+                              ),
+                              onPressed: () => _showCustomerNoteDialog(c),
+                            ).withClickCursor,
+                          ),
                         Tooltip(
                           message: "Print Ledger",
                           child: IconButton(
@@ -3569,6 +3735,20 @@ class CustomersScreenState extends State<CustomersScreen> {
                       ],
                     ),
                   ),
+                  if ((c['notes'] as String? ?? '').trim().isNotEmpty) ...[
+                    Tooltip(
+                      message: "Note Entered",
+                      child: IconButton(
+                        icon: Icon(
+                          FluentIcons.quick_note,
+                          size: 14,
+                          color: const Color(0xFFF59E0B),
+                        ),
+                        onPressed: () => _showCustomerNoteDialog(c),
+                      ).withClickCursor,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -3890,6 +4070,28 @@ class CustomersScreenState extends State<CustomersScreen> {
                     ).withClickCursor,
                   ),
                   const SizedBox(width: 4),
+                  if ((c['notes'] as String? ?? '').trim().isNotEmpty) ...[
+                    Tooltip(
+                      message: "Note Entered",
+                      child: IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF8E1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFFFE082)),
+                          ),
+                          child: Icon(
+                            FluentIcons.quick_note,
+                            size: 16,
+                            color: const Color(0xFFF59E0B),
+                          ),
+                        ),
+                        onPressed: () => _showCustomerNoteDialog(c),
+                      ).withClickCursor,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   Tooltip(
                     message: "Edit Customer",
                     child: IconButton(
@@ -3961,6 +4163,18 @@ class CustomersScreenState extends State<CustomersScreen> {
                     ),
                     onPressed: () => _showLedgerPdf(c),
                   ).withClickCursor,
+                  if ((c['notes'] as String? ?? '').trim().isNotEmpty)
+                    Tooltip(
+                      message: "Note Entered",
+                      child: IconButton(
+                        icon: Icon(
+                          FluentIcons.quick_note,
+                          size: 16,
+                          color: const Color(0xFFF59E0B),
+                        ),
+                        onPressed: () => _showCustomerNoteDialog(c),
+                      ).withClickCursor,
+                    ),
                   IconButton(
                     icon: Icon(
                       FluentIcons.edit,
@@ -4285,7 +4499,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 110),
+                      const SizedBox(width: 140),
                     ],
                   ),
                 ),
@@ -4400,6 +4614,32 @@ class CustomersScreenState extends State<CustomersScreen> {
                           color: AppTheme.textPrimary,
                         ),
                       ),
+                      if ((e['duration'] as String? ?? '').trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Row(
+                            children: [
+                              Icon(
+                                FluentIcons.clock,
+                                size: 10,
+                                color: AppTheme.primary,
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  e['duration'] as String,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       Row(
                         children: [
                           if (salesman.isNotEmpty) ...[
@@ -4484,10 +4724,22 @@ class CustomersScreenState extends State<CustomersScreen> {
                   ),
                 ),
                 SizedBox(
-                  width: 110,
+                  width: 140,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      if ((e['notes'] as String? ?? '').trim().isNotEmpty)
+                        Tooltip(
+                          message: "Note Entered",
+                          child: IconButton(
+                            icon: Icon(
+                              FluentIcons.quick_note,
+                              size: 12,
+                              color: const Color(0xFFF59E0B),
+                            ),
+                            onPressed: () => _showNoteDialog(e),
+                          ).withClickCursor,
+                        ),
                       Tooltip(
                         message: "Edit",
                         child: IconButton(
@@ -4621,6 +4873,18 @@ class CustomersScreenState extends State<CustomersScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if ((e['notes'] as String? ?? '').trim().isNotEmpty)
+                    Tooltip(
+                      message: "Note Entered",
+                      child: IconButton(
+                        icon: Icon(
+                          FluentIcons.quick_note,
+                          size: 12,
+                          color: const Color(0xFFF59E0B),
+                        ),
+                        onPressed: () => _showNoteDialog(e),
+                      ).withClickCursor,
+                    ),
                   IconButton(
                     icon: Icon(
                       FluentIcons.edit,
@@ -4651,12 +4915,33 @@ class CustomersScreenState extends State<CustomersScreen> {
               ),
             ],
           ),
-          if (salesman.isNotEmpty || hasDocs) ...[
+          if (salesman.isNotEmpty || hasDocs || (e['duration'] as String? ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: 6),
             Wrap(
               spacing: 8,
               runSpacing: 4,
               children: [
+                if ((e['duration'] as String? ?? '').trim().isNotEmpty)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        FluentIcons.clock,
+                        size: 10,
+                        color: AppTheme.primary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        e['duration'] as String,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 if (salesman.isNotEmpty)
                   Row(
                     mainAxisSize: MainAxisSize.min,

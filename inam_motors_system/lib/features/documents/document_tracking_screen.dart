@@ -150,7 +150,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
           allDocs.any((d) => d['status'] == 'inOffice');
     }
     if (_docFilter == 'Cleared') {
-      return allDocs.every((d) => d['status'] == 'handedOver');
+      return allDocs.every((d) => d['status'] == 'handedOver' || d['status'] == 'notAvailable');
     }
     if (_docFilter == 'Not Received') {
       return allDocs.any((d) => d['status'] == 'notReceived');
@@ -179,11 +179,14 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
       .length;
 
   int get _clearedCount => _records
-      .where((r) =>
-          (r['file'] as Map)['status'] == 'handedOver' &&
-          (r['smartCard'] as Map)['status'] == 'handedOver' &&
-          (r['plate'] as Map)['status'] == 'handedOver' &&
-          (r['remoteKey'] as Map?)?['status'] == 'handedOver')
+      .where((r) {
+        bool done(Map? d) =>
+            d == null || d['status'] == 'handedOver' || d['status'] == 'notAvailable';
+        return done(r['file'] as Map?) &&
+            done(r['smartCard'] as Map?) &&
+            done(r['plate'] as Map?) &&
+            done(r['remoteKey'] as Map?);
+      })
       .length;
 
   int get _pendingCount => _records
@@ -451,6 +454,15 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    if ((r['extraNotes'] as String? ?? '').trim().isNotEmpty)
+                                      Tooltip(
+                                        message: "Note Entered",
+                                        child: IconButton(
+                                          icon: Icon(FluentIcons.quick_note,
+                                              size: 14, color: const Color(0xFFF59E0B)),
+                                          onPressed: () => _showExtraNoteDialog(r),
+                                        ).withClickCursor,
+                                      ),
                                     Tooltip(
                                       message: "Handover Slip",
                                       child: IconButton(
@@ -657,7 +669,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                       // Smart Card
                                       Expanded(flex: 2, child: _docStatusWidget(r['smartCard'] as Map<String, dynamic>)),
                                       // Number Plate
-                                      Expanded(flex: 2, child: _docStatusWidget(r['plate'] as Map<String, dynamic>)),
+                                      Expanded(flex: 2, child: _docStatusWidget(r['plate'] as Map<String, dynamic>, isPlate: true)),
                                       // Remote / Key
                                       Expanded(flex: 2, child: r['remoteKey'] != null ? _docStatusWidget(r['remoteKey'] as Map<String, dynamic>) : const SizedBox()),
                                       // Actions
@@ -666,6 +678,15 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [
+                                            if ((r['extraNotes'] as String? ?? '').trim().isNotEmpty)
+                                              Tooltip(
+                                                message: "Note Entered",
+                                                child: IconButton(
+                                                  icon: Icon(FluentIcons.quick_note,
+                                                      size: 14, color: const Color(0xFFF59E0B)),
+                                                  onPressed: () => _showExtraNoteDialog(r),
+                                                ).withClickCursor,
+                                              ),
                                             Tooltip(
                                               message: "Handover Slip",
                                               child: IconButton(
@@ -835,6 +856,52 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     );
   }
 
+  void _showExtraNoteDialog(Map<String, dynamic> record) {
+    final note = (record['extraNotes'] as String? ?? '').trim();
+    if (note.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: Row(
+          children: [
+            Icon(FluentIcons.quick_note, size: 16, color: AppTheme.primary),
+            const SizedBox(width: 8),
+            const Text(
+              "Document Note",
+              style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        constraints: const BoxConstraints(maxWidth: 460),
+        content: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFE082)),
+          ),
+          child: SelectableText(
+            note,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              height: 1.5,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close",
+                style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      ),
+    );
+  }
+
   void _showEditDocDialog(Map<String, dynamic> record) {
     Map<String, dynamic> fileDoc = Map.from(record['file']);
     Map<String, dynamic> smartCardDoc = Map.from(record['smartCard']);
@@ -858,6 +925,8 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     String remoteKeyStatus = remoteKeyDoc['status'];
     String remoteKeyTo = remoteKeyDoc['to'] ?? record['buyer'] ?? '';
     String remoteKeyDate = remoteKeyDoc['date'] ?? DateTime.now().toString().split(' ')[0];
+
+    final extraNotesCtrl = TextEditingController(text: (record['extraNotes'] as String?) ?? '');
 
     showDialog(
       context: context,
@@ -920,6 +989,15 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                   buildDocSection('Remote / Key', remoteKeyStatus, remoteKeyTo, remoteKeyDate,
                     (v) => setDialogState(() => remoteKeyStatus = v!),
                     (v) => remoteKeyTo = v, (v) => remoteKeyDate = v),
+                  const SizedBox(height: 4),
+                  InfoLabel(
+                    label: 'Additional Notes (optional)',
+                    child: TextBox(
+                      controller: extraNotesCtrl,
+                      maxLines: 3,
+                      placeholder: 'Anything else to remember about this vehicle’s documents...',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -944,6 +1022,8 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                     record['remoteKey'] ??= {'status': 'inOffice', 'to': null, 'date': null};
                     record['remoteKey']['status'] = remoteKeyStatus;
                     if (remoteKeyStatus == 'handedOver') { record['remoteKey']['to'] = remoteKeyTo; record['remoteKey']['date'] = remoteKeyDate; }
+
+                    record['extraNotes'] = extraNotesCtrl.text.trim();
                   });
                   Navigator.pop(ctx);
                 },
@@ -957,18 +1037,24 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
   }
 
   Widget _docMiniChip(String label, Map<String, dynamic> doc) {
-    final isHandedOver  = doc['status'] == 'handedOver';
-    final isNotReceived = doc['status'] == 'notReceived';
-    final Color color   = isHandedOver
+    final isHandedOver   = doc['status'] == 'handedOver';
+    final isNotReceived  = doc['status'] == 'notReceived';
+    final isNotAvailable = doc['status'] == 'notAvailable';
+    final bool isPlate   = label.toLowerCase().contains('plate');
+    final Color color    = isHandedOver
         ? const Color(0xFFF59E0B)
         : isNotReceived
             ? AppTheme.error
-            : AppTheme.success;
+            : isNotAvailable
+                ? AppTheme.textMuted
+                : AppTheme.success;
     final String statusText = isHandedOver
         ? 'Handed Over'
         : isNotReceived
             ? 'Not Received'
-            : 'In Office';
+            : isNotAvailable
+                ? (isPlate ? 'Not Issued' : 'Not Available')
+                : 'In Office';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -999,6 +1085,8 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
   }
 
   Widget _docStatusDropdown(String label, String value, ValueChanged<String?> onChanged) {
+    final bool isPlate = label.toLowerCase().contains('plate');
+    final String unavailableLabel = isPlate ? 'Not Issued' : 'Not Available';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InfoLabel(
@@ -1006,10 +1094,11 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
         child: ComboBox<String>(
           value: value,
           isExpanded: true,
-          items: const [
-            ComboBoxItem(value: 'inOffice', child: Text('In Office')),
-            ComboBoxItem(value: 'handedOver', child: Text('Handed Over')),
-            ComboBoxItem(value: 'notReceived', child: Text('Not Received')),
+          items: [
+            const ComboBoxItem(value: 'inOffice', child: Text('In Office')),
+            const ComboBoxItem(value: 'handedOver', child: Text('Handed Over')),
+            const ComboBoxItem(value: 'notReceived', child: Text('Not Received')),
+            ComboBoxItem(value: 'notAvailable', child: Text(unavailableLabel)),
           ],
           onChanged: onChanged,
         ),
@@ -1017,14 +1106,15 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     );
   }
 
-  Widget _docStatusWidget(Map<String, dynamic> doc) {
+  Widget _docStatusWidget(Map<String, dynamic> doc, {bool isPlate = false}) {
     final isHandedOver = doc['status'] == 'handedOver';
     final isNotReceived = doc['status'] == 'notReceived';
-    
+    final isNotAvailable = doc['status'] == 'notAvailable';
+
     Color color;
     IconData icon;
     String labelText;
-    
+
     if (isHandedOver) {
       color = const Color(0xFFF59E0B);
       icon = FluentIcons.send;
@@ -1033,6 +1123,10 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
       color = AppTheme.error;
       icon = FluentIcons.error;
       labelText = "Not Received";
+    } else if (isNotAvailable) {
+      color = AppTheme.textMuted;
+      icon = FluentIcons.blocked2;
+      labelText = isPlate ? "Not Issued" : "Not Available";
     } else {
       color = AppTheme.success;
       icon = FluentIcons.office_store_logo;
@@ -1323,12 +1417,20 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     );
 
     pw.Widget docItem(String label, String status) {
-      final isHandedOver  = status == 'handedOver';
-      final isNotReceived = status == 'notReceived';
-      final statusLabel   = isHandedOver ? 'Handed Over' : isNotReceived ? 'Not Received' : 'In Office';
-      final itemFill  = isHandedOver ? greenFill  : isNotReceived ? redFill  : primaryLight;
-      final itemText  = isHandedOver ? greenText  : isNotReceived ? redText  : textGray;
-      final itemBorder= isHandedOver ? greenText  : isNotReceived ? redText  : borderGray;
+      final isHandedOver   = status == 'handedOver';
+      final isNotReceived  = status == 'notReceived';
+      final isNotAvailable = status == 'notAvailable';
+      final isPlate        = label.toLowerCase().contains('plate');
+      final statusLabel    = isHandedOver
+          ? 'Handed Over'
+          : isNotReceived
+              ? 'Not Received'
+              : isNotAvailable
+                  ? (isPlate ? 'Not Issued' : 'Not Available')
+                  : 'In Office';
+      final itemFill   = isHandedOver ? greenFill : isNotReceived ? redFill : isNotAvailable ? primaryLight : primaryLight;
+      final itemText   = isHandedOver ? greenText : isNotReceived ? redText : isNotAvailable ? textGray    : textGray;
+      final itemBorder = isHandedOver ? greenText : isNotReceived ? redText : isNotAvailable ? borderGray  : borderGray;
 
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 5),

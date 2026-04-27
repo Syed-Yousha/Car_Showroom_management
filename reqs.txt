@@ -1,26 +1,7 @@
-Customer:
--> Add transaction:
-	-> Trade-in form should be exactly like add car form(in inventory), it should as for the same details of car.
-	-> Credit Refund, it should ask about transaction methods, cash, bank, cheque. 
-	-> in sell car, there should be time period duration in form. 	
-	->  Salesman name should be manual.
-inventory:
--> Add new car, Remove expense from add new car, and add it while sellling
--> in pdf, Also print additional note in pdf
--> pdf is for customer, so ownership details should not be in details, only cars details should be there.
--> investor should be manual in add new car form.
+-> Data loss prevention
 
--> Whole system should be locked.
+-> live krni hai web app. 
 
+-> try to make a web app out of it.
 
--> There should be 4 boxes in system, File, smartcard, number plate, remote/key
-
--> Docs & File Tracking:
-	-> There should add document option in Docs & File Tracking
-	-> Remote/key option should also be there
-
--> in docs section: registration num, registration name, car color, car model, file details(-)+handover, car name, customer name to which we are giving file, handover slip owner signal and customer signal and customer number, handover date, add extra note.
-
--> remove Salesman & profit section
-
--> if a new investor will come, wo inam kay sath 50 50 mai hou        
+ 
