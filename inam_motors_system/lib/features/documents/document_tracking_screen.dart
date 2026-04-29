@@ -1710,7 +1710,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     const noteBorder  = PdfColor(0.992, 0.906, 0.541);    // #FDE68A
 
     pw.Widget sectionTitle(String title) => pw.Container(
-      margin: const pw.EdgeInsets.only(top: 16, bottom: 8),
+      margin: const pw.EdgeInsets.only(top: 10, bottom: 6),
       padding: const pw.EdgeInsets.only(bottom: 6),
       decoration: const pw.BoxDecoration(
         border: pw.Border(bottom: pw.BorderSide(color: primary, width: 1.5)),
@@ -1720,7 +1720,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     );
 
     pw.Widget slipRow(String label, String value) => pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 3),
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -1798,7 +1798,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
       );
     }
 
-    pw.Widget docItem(String label, String status, String? toPerson) {
+    pw.Widget docItem(String label, String status, String? toPerson, String? phone, String? date) {
       final isHandedOver   = status == 'handedOver';
       final isNotReceived  = status == 'notReceived';
       final isNotAvailable = status == 'notAvailable';
@@ -1837,14 +1837,16 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
       final pillFill   = isHandedOver ? greenFill : isNotReceived ? redFill : primaryLight;
       final pillText   = isHandedOver ? greenText : isNotReceived ? redText : textGray;
 
-      final personLine = (isHandedOver &&
-              toPerson != null &&
-              toPerson.trim().isNotEmpty)
-          ? toPerson.trim()
-          : '';
+      final receiverParts = <String>[];
+      if (isHandedOver) {
+        if (toPerson != null && toPerson.trim().isNotEmpty) receiverParts.add(toPerson.trim());
+        if (phone != null && phone.trim().isNotEmpty) receiverParts.add(phone.trim());
+        if (date != null && date.trim().isNotEmpty) receiverParts.add(date.trim());
+      }
+      final receiverLine = receiverParts.join('  ·  ');
 
       return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 5),
+        padding: const pw.EdgeInsets.symmetric(vertical: 3),
         child: pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
@@ -1869,10 +1871,10 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                           fontSize: 10,
                           fontWeight: pw.FontWeight.bold,
                           color: textDark)),
-                  if (personLine.isNotEmpty)
+                  if (receiverLine.isNotEmpty)
                     pw.Padding(
                       padding: const pw.EdgeInsets.only(top: 2),
-                      child: pw.Text('Handed to: $personLine',
+                      child: pw.Text(receiverLine,
                           style: const pw.TextStyle(
                               fontSize: 9, color: textGray)),
                     ),
@@ -1930,57 +1932,14 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
         remoteKeyDate ??
         DateTime.now().toString().split(' ')[0];
 
-    // Build a per-document Receiver Details block (only emitted if status is
-    // 'handedOver').
-    pw.Widget perDocReceiver(
-      String label,
-      String status,
-      String? to,
-      String? phone,
-      String? date,
-    ) {
-      if (status != 'handedOver') return pw.SizedBox();
-      return pw.Container(
-        margin: const pw.EdgeInsets.only(bottom: 8),
-        padding: const pw.EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: pw.BoxDecoration(
-          color: primaryLight,
-          border: pw.Border.all(color: borderGray),
-          borderRadius: pw.BorderRadius.circular(6),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(label,
-                style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: primary)),
-            pw.SizedBox(height: 6),
-            slipRow('Customer / Buyer',
-                (to == null || to.trim().isEmpty) ? 'N/A' : to),
-            slipRow('Phone',
-                (phone == null || phone.trim().isEmpty) ? 'N/A' : phone),
-            slipRow('Handover Date',
-                (date == null || date.trim().isEmpty) ? 'N/A' : date),
-          ],
-        ),
-      );
-    }
-
-    final anyHandedOver = fileStatus == 'handedOver' ||
-        smartCardStatus == 'handedOver' ||
-        plateStatus == 'handedOver' ||
-        remoteKeyStatus == 'handedOver';
-
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
+        margin: const pw.EdgeInsets.all(28),
         build: (context) => [
           // ── Header ──────────────────────────────────────────────────
           pw.Container(
-            padding: const pw.EdgeInsets.all(20),
+            padding: const pw.EdgeInsets.all(12),
             decoration: pw.BoxDecoration(
               color: primary,
               borderRadius: pw.BorderRadius.circular(8),
@@ -1993,10 +1952,10 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                   children: [
                     pw.Text('DOCUMENT HANDOVER RECEIPT',
                         style: pw.TextStyle(
-                            fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.SizedBox(height: 4),
+                            fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.SizedBox(height: 3),
                     pw.Text('Inam Motors  Official Document Transfer Record',
-                        style: const pw.TextStyle(fontSize: 10, color: PdfColor(0.867, 0.839, 0.996))),
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColor(0.867, 0.839, 0.996))),
                   ],
                 ),
                 pw.Column(
@@ -2004,8 +1963,8 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                   children: [
                     pw.Text('Inam Motors',
                         style: pw.TextStyle(
-                            fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.SizedBox(height: 4),
+                            fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.SizedBox(height: 3),
                     pw.Text('Date: $handoverDate',
                         style: const pw.TextStyle(fontSize: 9, color: PdfColor(0.867, 0.839, 0.996))),
                   ],
@@ -2013,7 +1972,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
               ],
             ),
           ),
-          pw.SizedBox(height: 6),
+          pw.SizedBox(height: 3),
 
           // ── Vehicle Details ──────────────────────────────────────────
           sectionTitle('Vehicle Details'),
@@ -2029,25 +1988,6 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
           slipRow('Owner Phone', buyerPhone.isEmpty || buyerPhone == '-' ? 'N/A' : buyerPhone),
           slipRow('Owner Name', buyer == '-' ? 'N/A' : buyer),
 
-          // ── Per-Document Receiver Details ────────────────────────────
-          if (anyHandedOver) sectionTitle('Receiver Details (per Document)'),
-          if (anyHandedOver)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 4),
-              child: pw.Column(
-                children: [
-                  perDocReceiver('Vehicle File (Registration Book)',
-                      fileStatus, fileTo, filePhone, fileDate),
-                  perDocReceiver('Smart Card', smartCardStatus, smartCardTo,
-                      smartCardPhone, smartCardDate),
-                  perDocReceiver('Number Plate', plateStatus, plateTo,
-                      platePhone, plateDate),
-                  perDocReceiver('Remote / Key', remoteKeyStatus, remoteKeyTo,
-                      remoteKeyPhone, remoteKeyDate),
-                ],
-              ),
-            ),
-
           // ── Document Checklist ───────────────────────────────────────
           sectionTitle('Document Handover Checklist'),
           pw.Container(
@@ -2059,13 +1999,13 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ),
             child: pw.Column(
               children: [
-                docItem('Vehicle File (Registration Book)', fileStatus, fileTo),
+                docItem('Vehicle File (Registration Book)', fileStatus, fileTo, filePhone, fileDate),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Smart Card', smartCardStatus, smartCardTo),
+                docItem('Smart Card', smartCardStatus, smartCardTo, smartCardPhone, smartCardDate),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Number Plate', plateStatus, plateTo),
+                docItem('Number Plate', plateStatus, plateTo, platePhone, plateDate),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Remote / Key', remoteKeyStatus, remoteKeyTo),
+                docItem('Remote / Key', remoteKeyStatus, remoteKeyTo, remoteKeyPhone, remoteKeyDate),
               ],
             ),
           ),
@@ -2086,7 +2026,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ),
           ],
 
-          pw.SizedBox(height: 50),
+          pw.SizedBox(height: 20),
 
           // ── Signature lines ──────────────────────────────────────────
           pw.Row(
@@ -2117,7 +2057,7 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ],
           ),
 
-          pw.SizedBox(height: 24),
+          pw.SizedBox(height: 10),
           pw.Center(
             child: pw.Text(
               'This document is generated by Inam Motors Management System',
