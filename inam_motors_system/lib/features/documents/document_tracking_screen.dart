@@ -903,6 +903,19 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
   }
 
   void _showEditDocDialog(Map<String, dynamic> record) {
+    // Car Details
+    final carModelCtrl  = TextEditingController(text: record['carName'] ?? '');
+    final yearCtrl      = TextEditingController(text: record['year']?.toString() ?? '');
+    final regNoCtrl     = TextEditingController(text: record['regNo'] ?? '');
+    final regNameCtrl   = TextEditingController(text: record['regName'] ?? '');
+    final carColorCtrl  = TextEditingController(text: record['carColor'] ?? '');
+    final chassisNoCtrl = TextEditingController(
+        text: (record['chassisNo'] == '-' ? '' : (record['chassisNo'] ?? '')));
+    final engineNoCtrl  = TextEditingController(
+        text: (record['engineNo'] == '-' ? '' : (record['engineNo'] ?? '')));
+    String carStatus = record['carStatus'] ?? 'Available';
+
+    // Document statuses + per-doc handover details
     Map<String, dynamic> fileDoc = Map.from(record['file']);
     Map<String, dynamic> smartCardDoc = Map.from(record['smartCard']);
     Map<String, dynamic> plateDoc = Map.from(record['plate']);
@@ -911,91 +924,204 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
         : {'status': 'inOffice', 'to': null, 'date': null};
 
     String fileStatus = fileDoc['status'];
-    String fileTo = fileDoc['to'] ?? record['buyer'] ?? '';
-    String fileDate = fileDoc['date'] ?? DateTime.now().toString().split(' ')[0];
+    final fileToCtrl = TextEditingController(
+        text: fileDoc['to'] ?? record['buyer'] ?? '');
+    final filePhoneCtrl = TextEditingController(
+        text: fileDoc['phone'] ?? record['buyerPhone'] ?? '');
+    DateTime? fileDate = DateTime.tryParse(fileDoc['date'] ?? '');
 
     String smartCardStatus = smartCardDoc['status'];
-    String smartCardTo = smartCardDoc['to'] ?? record['buyer'] ?? '';
-    String smartCardDate = smartCardDoc['date'] ?? DateTime.now().toString().split(' ')[0];
+    final smartCardToCtrl = TextEditingController(
+        text: smartCardDoc['to'] ?? record['buyer'] ?? '');
+    final smartCardPhoneCtrl = TextEditingController(
+        text: smartCardDoc['phone'] ?? record['buyerPhone'] ?? '');
+    DateTime? smartCardDate = DateTime.tryParse(smartCardDoc['date'] ?? '');
 
     String plateStatus = plateDoc['status'];
-    String plateTo = plateDoc['to'] ?? record['buyer'] ?? '';
-    String plateDate = plateDoc['date'] ?? DateTime.now().toString().split(' ')[0];
+    final plateToCtrl = TextEditingController(
+        text: plateDoc['to'] ?? record['buyer'] ?? '');
+    final platePhoneCtrl = TextEditingController(
+        text: plateDoc['phone'] ?? record['buyerPhone'] ?? '');
+    DateTime? plateDate = DateTime.tryParse(plateDoc['date'] ?? '');
 
     String remoteKeyStatus = remoteKeyDoc['status'];
-    String remoteKeyTo = remoteKeyDoc['to'] ?? record['buyer'] ?? '';
-    String remoteKeyDate = remoteKeyDoc['date'] ?? DateTime.now().toString().split(' ')[0];
+    final remoteKeyToCtrl = TextEditingController(
+        text: remoteKeyDoc['to'] ?? record['buyer'] ?? '');
+    final remoteKeyPhoneCtrl = TextEditingController(
+        text: remoteKeyDoc['phone'] ?? record['buyerPhone'] ?? '');
+    DateTime? remoteKeyDate = DateTime.tryParse(remoteKeyDoc['date'] ?? '');
 
-    final extraNotesCtrl = TextEditingController(text: (record['extraNotes'] as String?) ?? '');
+    final extraNotesCtrl = TextEditingController(
+        text: (record['extraNotes'] as String?) ?? '');
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          Widget buildDocSection(
-            String label,
-            String status,
-            String to,
-            String date,
-            ValueChanged<String?> onStatusChanged,
-            ValueChanged<String> onToChanged,
-            ValueChanged<String> onDateChanged,
-          ) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _docStatusDropdown(label, status, onStatusChanged),
-                if (status == 'handedOver') ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextBox(
-                      placeholder: 'To (Customer/Buyer)',
-                      controller: TextEditingController(text: to)..selection = TextSelection.collapsed(offset: to.length),
-                      onChanged: onToChanged,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: TextBox(
-                      placeholder: 'Date (YYYY-MM-DD)',
-                      controller: TextEditingController(text: date)..selection = TextSelection.collapsed(offset: date.length),
-                      onChanged: onDateChanged,
-                    ),
-                  ),
-                ],
-              ],
-            );
-          }
-
           return ContentDialog(
-            title: Text("Edit Documents for ${record['carName']}",
+            title: Text("Edit Document Entry — ${record['carName']}",
                 style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 680),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildDocSection('File', fileStatus, fileTo, fileDate,
+                  // ── Car Details ────────────────────────────────────────
+                  Text('Car Details',
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppTheme.primary)),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                        child: InfoLabel(
+                            label: 'Car Model *',
+                            child: TextBox(
+                                controller: carModelCtrl,
+                                placeholder: 'e.g. Toyota Corolla',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                        width: 100,
+                        child: InfoLabel(
+                            label: 'Year',
+                            child: TextBox(
+                                controller: yearCtrl,
+                                placeholder: '2024',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                        child: InfoLabel(
+                            label: 'Reg No *',
+                            child: TextBox(
+                                controller: regNoCtrl,
+                                placeholder: 'LEA-1234',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: InfoLabel(
+                            label: 'Car Color',
+                            child: TextBox(
+                                controller: carColorCtrl,
+                                placeholder: 'White',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                  ]),
+                  const SizedBox(height: 10),
+                  InfoLabel(
+                      label: 'Reg Name (Registered Owner)',
+                      child: TextBox(
+                          controller: regNameCtrl,
+                          placeholder: 'Owner / registered name',
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontFamily, fontSize: 13))),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                        child: InfoLabel(
+                            label: 'Chassis No',
+                            child: TextBox(
+                                controller: chassisNoCtrl,
+                                placeholder: 'Optional',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: InfoLabel(
+                            label: 'Engine No',
+                            child: TextBox(
+                                controller: engineNoCtrl,
+                                placeholder: 'Optional',
+                                style: TextStyle(
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontSize: 13)))),
+                  ]),
+                  const SizedBox(height: 10),
+                  InfoLabel(
+                      label: 'Car Status',
+                      child: ComboBox<String>(
+                        value: carStatus,
+                        isExpanded: true,
+                        items: const [
+                          ComboBoxItem(
+                              value: 'Available', child: Text('Available')),
+                          ComboBoxItem(value: 'Booked', child: Text('Booked')),
+                          ComboBoxItem(value: 'Sold', child: Text('Sold')),
+                        ],
+                        onChanged: (v) =>
+                            setDialogState(() => carStatus = v!),
+                      )),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 12),
+
+                  // ── Document Status + per-document Handover ────────────
+                  Text('Document Status & Handover',
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppTheme.primary)),
+                  const SizedBox(height: 10),
+                  _docStatusBlock(
+                    'File',
+                    fileStatus,
+                    fileToCtrl,
+                    filePhoneCtrl,
+                    fileDate,
                     (v) => setDialogState(() => fileStatus = v!),
-                    (v) => fileTo = v, (v) => fileDate = v),
-                  buildDocSection('Smart Card', smartCardStatus, smartCardTo, smartCardDate,
+                    (d) => setDialogState(() => fileDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Smart Card',
+                    smartCardStatus,
+                    smartCardToCtrl,
+                    smartCardPhoneCtrl,
+                    smartCardDate,
                     (v) => setDialogState(() => smartCardStatus = v!),
-                    (v) => smartCardTo = v, (v) => smartCardDate = v),
-                  buildDocSection('Number Plate', plateStatus, plateTo, plateDate,
+                    (d) => setDialogState(() => smartCardDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Number Plate',
+                    plateStatus,
+                    plateToCtrl,
+                    platePhoneCtrl,
+                    plateDate,
                     (v) => setDialogState(() => plateStatus = v!),
-                    (v) => plateTo = v, (v) => plateDate = v),
-                  buildDocSection('Remote / Key', remoteKeyStatus, remoteKeyTo, remoteKeyDate,
+                    (d) => setDialogState(() => plateDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Remote / Key',
+                    remoteKeyStatus,
+                    remoteKeyToCtrl,
+                    remoteKeyPhoneCtrl,
+                    remoteKeyDate,
                     (v) => setDialogState(() => remoteKeyStatus = v!),
-                    (v) => remoteKeyTo = v, (v) => remoteKeyDate = v),
+                    (d) => setDialogState(() => remoteKeyDate = d),
+                  ),
                   const SizedBox(height: 4),
+                  const Divider(),
+                  const SizedBox(height: 12),
                   InfoLabel(
                     label: 'Additional Notes (optional)',
                     child: TextBox(
                       controller: extraNotesCtrl,
                       maxLines: 3,
-                      placeholder: 'Anything else to remember about this vehicle’s documents...',
+                      placeholder:
+                          'Anything else to remember about this vehicle’s documents...',
                     ),
                   ),
                 ],
@@ -1004,30 +1130,99 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             actions: [
               Button(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                child: const Text('Cancel',
+                    style: TextStyle(fontFamily: AppTheme.fontFamily)),
               ).withClickCursor,
               FilledButton(
-                style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
+                style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.all(AppTheme.primary)),
                 onPressed: () {
+                  if (carModelCtrl.text.trim().isEmpty ||
+                      regNoCtrl.text.trim().isEmpty) {
+                    return;
+                  }
+                  String? fmt(DateTime? d) => d == null
+                      ? null
+                      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+                  void writeDoc(
+                    String key,
+                    String status,
+                    TextEditingController toCtrl,
+                    TextEditingController phoneCtrl,
+                    DateTime? date,
+                  ) {
+                    record[key] ??= {
+                      'status': 'inOffice',
+                      'to': null,
+                      'phone': null,
+                      'date': null,
+                    };
+                    record[key]['status'] = status;
+                    if (status == 'handedOver') {
+                      record[key]['to'] = toCtrl.text.trim().isEmpty
+                          ? null
+                          : toCtrl.text.trim();
+                      record[key]['phone'] = phoneCtrl.text.trim().isEmpty
+                          ? null
+                          : phoneCtrl.text.trim();
+                      record[key]['date'] = fmt(date);
+                    } else {
+                      record[key]['to'] = null;
+                      record[key]['phone'] = null;
+                      record[key]['date'] = null;
+                    }
+                  }
+
+                  String? firstNonEmpty(List<TextEditingController> cs) {
+                    for (final c in cs) {
+                      final t = c.text.trim();
+                      if (t.isNotEmpty) return t;
+                    }
+                    return null;
+                  }
+                  final primaryBuyer = firstNonEmpty([
+                    fileToCtrl,
+                    smartCardToCtrl,
+                    plateToCtrl,
+                    remoteKeyToCtrl,
+                  ]);
+                  final primaryPhone = firstNonEmpty([
+                    filePhoneCtrl,
+                    smartCardPhoneCtrl,
+                    platePhoneCtrl,
+                    remoteKeyPhoneCtrl,
+                  ]);
+
                   setState(() {
-                    record['file']['status'] = fileStatus;
-                    if (fileStatus == 'handedOver') { record['file']['to'] = fileTo; record['file']['date'] = fileDate; }
-
-                    record['smartCard']['status'] = smartCardStatus;
-                    if (smartCardStatus == 'handedOver') { record['smartCard']['to'] = smartCardTo; record['smartCard']['date'] = smartCardDate; }
-
-                    record['plate']['status'] = plateStatus;
-                    if (plateStatus == 'handedOver') { record['plate']['to'] = plateTo; record['plate']['date'] = plateDate; }
-
-                    record['remoteKey'] ??= {'status': 'inOffice', 'to': null, 'date': null};
-                    record['remoteKey']['status'] = remoteKeyStatus;
-                    if (remoteKeyStatus == 'handedOver') { record['remoteKey']['to'] = remoteKeyTo; record['remoteKey']['date'] = remoteKeyDate; }
-
+                    record['carName'] = carModelCtrl.text.trim();
+                    record['year'] = int.tryParse(yearCtrl.text.trim()) ??
+                        record['year'];
+                    record['regNo'] = regNoCtrl.text.trim();
+                    record['regName'] = regNameCtrl.text.trim();
+                    record['carColor'] = carColorCtrl.text.trim();
+                    record['chassisNo'] = chassisNoCtrl.text.trim().isEmpty
+                        ? '-'
+                        : chassisNoCtrl.text.trim();
+                    record['engineNo'] = engineNoCtrl.text.trim().isEmpty
+                        ? '-'
+                        : engineNoCtrl.text.trim();
+                    record['carStatus'] = carStatus;
+                    record['buyer'] = primaryBuyer;
+                    record['buyerPhone'] = primaryPhone ?? '';
                     record['extraNotes'] = extraNotesCtrl.text.trim();
+
+                    writeDoc('file', fileStatus, fileToCtrl, filePhoneCtrl, fileDate);
+                    writeDoc('smartCard', smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate);
+                    writeDoc('plate', plateStatus, plateToCtrl, platePhoneCtrl, plateDate);
+                    writeDoc('remoteKey', remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate);
                   });
                   Navigator.pop(ctx);
                 },
-                child: const Text('Save', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+                child: const Text('Save',
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        color: Colors.white)),
               ).withClickCursor,
             ],
           );
@@ -1195,16 +1390,31 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     final carColorCtrl    = TextEditingController();
     final chassisNoCtrl   = TextEditingController();
     final engineNoCtrl    = TextEditingController();
-    final buyerNameCtrl   = TextEditingController();
-    final buyerPhoneCtrl  = TextEditingController();
     final extraNotesCtrl  = TextEditingController();
 
     String carStatus       = 'Available';
+
     String fileStatus      = 'inOffice';
     String smartCardStatus = 'inOffice';
     String plateStatus     = 'inOffice';
     String remoteKeyStatus = 'inOffice';
-    DateTime? handoverDate;
+
+    // Per-document handover details (used only when status == 'handedOver')
+    final fileToCtrl       = TextEditingController();
+    final filePhoneCtrl    = TextEditingController();
+    DateTime? fileDate;
+
+    final smartCardToCtrl    = TextEditingController();
+    final smartCardPhoneCtrl = TextEditingController();
+    DateTime? smartCardDate;
+
+    final plateToCtrl    = TextEditingController();
+    final platePhoneCtrl = TextEditingController();
+    DateTime? plateDate;
+
+    final remoteKeyToCtrl    = TextEditingController();
+    final remoteKeyPhoneCtrl = TextEditingController();
+    DateTime? remoteKeyDate;
 
     showDialog(
       context: context,
@@ -1273,46 +1483,50 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                   const Divider(),
                   const SizedBox(height: 12),
 
-                  // ── Document Status ────────────────────────────────────
-                  Text('Document Status',
+                  // ── Document Status + per-document Handover ────────────
+                  Text('Document Status & Handover',
                       style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600,
                           fontSize: 13, color: AppTheme.primary)),
                   const SizedBox(height: 10),
-                  _docStatusDropdown('File', fileStatus,
-                      (v) => setDialogState(() => fileStatus = v!)),
-                  _docStatusDropdown('Smart Card', smartCardStatus,
-                      (v) => setDialogState(() => smartCardStatus = v!)),
-                  _docStatusDropdown('Number Plate', plateStatus,
-                      (v) => setDialogState(() => plateStatus = v!)),
-                  _docStatusDropdown('Remote / Key', remoteKeyStatus,
-                      (v) => setDialogState(() => remoteKeyStatus = v!)),
+                  _docStatusBlock(
+                    'File',
+                    fileStatus,
+                    fileToCtrl,
+                    filePhoneCtrl,
+                    fileDate,
+                    (v) => setDialogState(() => fileStatus = v!),
+                    (d) => setDialogState(() => fileDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Smart Card',
+                    smartCardStatus,
+                    smartCardToCtrl,
+                    smartCardPhoneCtrl,
+                    smartCardDate,
+                    (v) => setDialogState(() => smartCardStatus = v!),
+                    (d) => setDialogState(() => smartCardDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Number Plate',
+                    plateStatus,
+                    plateToCtrl,
+                    platePhoneCtrl,
+                    plateDate,
+                    (v) => setDialogState(() => plateStatus = v!),
+                    (d) => setDialogState(() => plateDate = d),
+                  ),
+                  _docStatusBlock(
+                    'Remote / Key',
+                    remoteKeyStatus,
+                    remoteKeyToCtrl,
+                    remoteKeyPhoneCtrl,
+                    remoteKeyDate,
+                    (v) => setDialogState(() => remoteKeyStatus = v!),
+                    (d) => setDialogState(() => remoteKeyDate = d),
+                  ),
                   const SizedBox(height: 4),
                   const Divider(),
                   const SizedBox(height: 12),
-
-                  // ── Handover Details ───────────────────────────────────
-                  Text('Handover Details',
-                      style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600,
-                          fontSize: 13, color: AppTheme.primary)),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Expanded(child: InfoLabel(label: 'Customer Name',
-                        child: TextBox(controller: buyerNameCtrl, placeholder: 'Buyer / customer name',
-                            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))),
-                    const SizedBox(width: 12),
-                    Expanded(child: InfoLabel(label: 'Customer Phone',
-                        child: TextBox(controller: buyerPhoneCtrl, placeholder: '0300-1234567',
-                            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))),
-                  ]),
-                  const SizedBox(height: 10),
-                  InfoLabel(
-                    label: 'Handover Date',
-                    child: DatePicker(
-                      selected: handoverDate,
-                      onChanged: (d) => setDialogState(() => handoverDate = d),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   InfoLabel(label: 'Extra Notes',
                       child: TextBox(
                         controller: extraNotesCtrl,
@@ -1332,33 +1546,65 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                 style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
                 onPressed: () {
                   if (carModelCtrl.text.trim().isEmpty || regNoCtrl.text.trim().isEmpty) return;
-                  final hDate = handoverDate != null
-                      ? '${handoverDate!.year}-${handoverDate!.month.toString().padLeft(2, '0')}-${handoverDate!.day.toString().padLeft(2, '0')}'
-                      : null;
-                  Map<String, dynamic> docEntry(String status) => {
-                    'status': status,
-                    'to': (status == 'handedOver' && buyerNameCtrl.text.trim().isNotEmpty)
-                        ? buyerNameCtrl.text.trim()
-                        : null,
-                    'date': status == 'handedOver' ? hDate : null,
-                  };
+                  String? fmt(DateTime? d) => d == null
+                      ? null
+                      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+                  Map<String, dynamic> docEntry(
+                    String status,
+                    TextEditingController toCtrl,
+                    TextEditingController phoneCtrl,
+                    DateTime? date,
+                  ) =>
+                      {
+                        'status': status,
+                        'to': (status == 'handedOver' && toCtrl.text.trim().isNotEmpty)
+                            ? toCtrl.text.trim()
+                            : null,
+                        'phone': (status == 'handedOver' && phoneCtrl.text.trim().isNotEmpty)
+                            ? phoneCtrl.text.trim()
+                            : null,
+                        'date': status == 'handedOver' ? fmt(date) : null,
+                      };
+
+                  // Pick the first non-empty buyer/phone to keep the existing
+                  // record-level fields in sync (used for table display).
+                  String? firstNonEmpty(List<TextEditingController> cs) {
+                    for (final c in cs) {
+                      final t = c.text.trim();
+                      if (t.isNotEmpty) return t;
+                    }
+                    return null;
+                  }
+                  final primaryBuyer = firstNonEmpty([
+                    fileToCtrl,
+                    smartCardToCtrl,
+                    plateToCtrl,
+                    remoteKeyToCtrl,
+                  ]);
+                  final primaryPhone = firstNonEmpty([
+                    filePhoneCtrl,
+                    smartCardPhoneCtrl,
+                    platePhoneCtrl,
+                    remoteKeyPhoneCtrl,
+                  ]);
+
                   setState(() {
-                    _records.add({
+                    _records.insert(0, {
                       'carName':   carModelCtrl.text.trim(),
                       'year':      int.tryParse(yearCtrl.text.trim()) ?? DateTime.now().year,
                       'regNo':     regNoCtrl.text.trim(),
                       'chassisNo': chassisNoCtrl.text.trim().isEmpty ? '-' : chassisNoCtrl.text.trim(),
                       'engineNo':  engineNoCtrl.text.trim().isEmpty  ? '-' : engineNoCtrl.text.trim(),
                       'carStatus': carStatus,
-                      'buyer':     buyerNameCtrl.text.trim().isEmpty ? null : buyerNameCtrl.text.trim(),
+                      'buyer':     primaryBuyer,
                       'regName':   regNameCtrl.text.trim(),
                       'carColor':  carColorCtrl.text.trim(),
-                      'buyerPhone': buyerPhoneCtrl.text.trim(),
+                      'buyerPhone': primaryPhone ?? '',
                       'extraNotes': extraNotesCtrl.text.trim(),
-                      'file':      docEntry(fileStatus),
-                      'smartCard': docEntry(smartCardStatus),
-                      'plate':     docEntry(plateStatus),
-                      'remoteKey': docEntry(remoteKeyStatus),
+                      'file':      docEntry(fileStatus, fileToCtrl, filePhoneCtrl, fileDate),
+                      'smartCard': docEntry(smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate),
+                      'plate':     docEntry(plateStatus, plateToCtrl, platePhoneCtrl, plateDate),
+                      'remoteKey': docEntry(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
                     });
                   });
                   Navigator.pop(ctx);
@@ -1368,6 +1614,81 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Renders a status dropdown for a doc, plus inline Customer Name / Phone /
+  // Handover Date fields that only appear when status == 'handedOver'.
+  Widget _docStatusBlock(
+    String label,
+    String status,
+    TextEditingController toCtrl,
+    TextEditingController phoneCtrl,
+    DateTime? date,
+    ValueChanged<String?> onStatusChanged,
+    ValueChanged<DateTime> onDateChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _docStatusDropdown(label, status, onStatusChanged),
+          if (status == 'handedOver') ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                        child: InfoLabel(
+                          label: 'Customer Name',
+                          child: TextBox(
+                            controller: toCtrl,
+                            placeholder: 'Buyer / customer name',
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InfoLabel(
+                          label: 'Customer Phone',
+                          child: TextBox(
+                            controller: phoneCtrl,
+                            placeholder: '0300-1234567',
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    InfoLabel(
+                      label: 'Handover Date',
+                      child: DatePicker(
+                        selected: date,
+                        onChanged: onDateChanged,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1416,7 +1737,68 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
       ),
     );
 
-    pw.Widget docItem(String label, String status) {
+    // Draw a tick mark using two rotated rectangles (no font glyph needed).
+    pw.Widget tickMark(PdfColor color) {
+      return pw.SizedBox(
+        width: 14,
+        height: 14,
+        child: pw.Stack(children: [
+          pw.Positioned(
+            left: 1,
+            top: 7,
+            child: pw.Transform.rotate(
+              angle: -0.785, // -45°
+              child: pw.Container(width: 6, height: 1.8, color: color),
+            ),
+          ),
+          pw.Positioned(
+            left: 4,
+            top: 4,
+            child: pw.Transform.rotate(
+              angle: -0.95, // ~-54°
+              child: pw.Container(width: 10, height: 1.8, color: color),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    // Draw an X using two rotated rectangles.
+    pw.Widget crossMark(PdfColor color) {
+      return pw.SizedBox(
+        width: 14,
+        height: 14,
+        child: pw.Stack(children: [
+          pw.Positioned(
+            left: 0,
+            top: 6,
+            child: pw.Transform.rotate(
+              angle: -0.785,
+              child: pw.Container(width: 14, height: 1.8, color: color),
+            ),
+          ),
+          pw.Positioned(
+            left: 0,
+            top: 6,
+            child: pw.Transform.rotate(
+              angle: 0.785,
+              child: pw.Container(width: 14, height: 1.8, color: color),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    // A horizontal dash for "Not Available / Not Issued".
+    pw.Widget dashMark(PdfColor color) {
+      return pw.Container(
+        width: 10,
+        height: 1.8,
+        color: color,
+      );
+    }
+
+    pw.Widget docItem(String label, String status, String? toPerson) {
       final isHandedOver   = status == 'handedOver';
       final isNotReceived  = status == 'notReceived';
       final isNotAvailable = status == 'notAvailable';
@@ -1428,39 +1810,84 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
               : isNotAvailable
                   ? (isPlate ? 'Not Issued' : 'Not Available')
                   : 'In Office';
-      final itemFill   = isHandedOver ? greenFill : isNotReceived ? redFill : isNotAvailable ? primaryLight : primaryLight;
-      final itemText   = isHandedOver ? greenText : isNotReceived ? redText : isNotAvailable ? textGray    : textGray;
-      final itemBorder = isHandedOver ? greenText : isNotReceived ? redText : isNotAvailable ? borderGray  : borderGray;
+
+      final markColor = isHandedOver
+          ? greenText
+          : isNotReceived
+              ? redText
+              : isNotAvailable
+                  ? textGray
+                  : textGray;
+      final boxBorder = isHandedOver
+          ? greenText
+          : isNotReceived
+              ? redText
+              : isNotAvailable
+                  ? textGray
+                  : borderGray;
+
+      final pw.Widget mark = isHandedOver
+          ? tickMark(markColor)
+          : isNotReceived
+              ? crossMark(markColor)
+              : isNotAvailable
+                  ? dashMark(markColor)
+                  : pw.SizedBox();
+
+      final pillFill   = isHandedOver ? greenFill : isNotReceived ? redFill : primaryLight;
+      final pillText   = isHandedOver ? greenText : isNotReceived ? redText : textGray;
+
+      final personLine = (isHandedOver &&
+              toPerson != null &&
+              toPerson.trim().isNotEmpty)
+          ? toPerson.trim()
+          : '';
 
       return pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 5),
         child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
             pw.Container(
-              width: 18, height: 18,
+              width: 18,
+              height: 18,
               decoration: pw.BoxDecoration(
-                color: itemFill,
-                border: pw.Border.all(color: itemBorder),
+                color: PdfColors.white,
+                border: pw.Border.all(color: boxBorder, width: 1.4),
                 borderRadius: pw.BorderRadius.circular(3),
               ),
               alignment: pw.Alignment.center,
-              child: isHandedOver
-                  ? pw.Text('✓',
-                      style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: greenText))
-                  : pw.SizedBox(),
+              child: mark,
             ),
             pw.SizedBox(width: 10),
             pw.Expanded(
-                child: pw.Text(label,
-                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: textDark))),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(label,
+                      style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                          color: textDark)),
+                  if (personLine.isNotEmpty)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 2),
+                      child: pw.Text('Handed to: $personLine',
+                          style: const pw.TextStyle(
+                              fontSize: 9, color: textGray)),
+                    ),
+                ],
+              ),
+            ),
             pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: pw.BoxDecoration(
-                color: itemFill,
+                color: pillFill,
                 borderRadius: pw.BorderRadius.circular(4),
               ),
               child: pw.Text(statusLabel,
-                  style: pw.TextStyle(fontSize: 9, color: itemText)),
+                  style: pw.TextStyle(fontSize: 9, color: pillText)),
             ),
           ],
         ),
@@ -1482,10 +1909,69 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     final plateStatus      = (record['plate']      as Map?)?['status'] as String? ?? 'inOffice';
     final remoteKeyStatus  = (record['remoteKey']  as Map?)?['status'] as String? ?? 'inOffice';
 
-    final handoverDate =
-        (record['file'] as Map?)?['date'] as String? ??
-        (record['smartCard'] as Map?)?['date'] as String? ??
+    final fileTo       = (record['file']      as Map?)?['to'] as String?;
+    final smartCardTo  = (record['smartCard']  as Map?)?['to'] as String?;
+    final plateTo      = (record['plate']      as Map?)?['to'] as String?;
+    final remoteKeyTo  = (record['remoteKey']  as Map?)?['to'] as String?;
+
+    final filePhone       = (record['file']      as Map?)?['phone'] as String?;
+    final smartCardPhone  = (record['smartCard']  as Map?)?['phone'] as String?;
+    final platePhone      = (record['plate']      as Map?)?['phone'] as String?;
+    final remoteKeyPhone  = (record['remoteKey']  as Map?)?['phone'] as String?;
+
+    final fileDate       = (record['file']      as Map?)?['date'] as String?;
+    final smartCardDate  = (record['smartCard']  as Map?)?['date'] as String?;
+    final plateDate      = (record['plate']      as Map?)?['date'] as String?;
+    final remoteKeyDate  = (record['remoteKey']  as Map?)?['date'] as String?;
+
+    final handoverDate = fileDate ??
+        smartCardDate ??
+        plateDate ??
+        remoteKeyDate ??
         DateTime.now().toString().split(' ')[0];
+
+    // Build a per-document Receiver Details block (only emitted if status is
+    // 'handedOver').
+    pw.Widget perDocReceiver(
+      String label,
+      String status,
+      String? to,
+      String? phone,
+      String? date,
+    ) {
+      if (status != 'handedOver') return pw.SizedBox();
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 8),
+        padding: const pw.EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: pw.BoxDecoration(
+          color: primaryLight,
+          border: pw.Border.all(color: borderGray),
+          borderRadius: pw.BorderRadius.circular(6),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(label,
+                style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: primary)),
+            pw.SizedBox(height: 6),
+            slipRow('Customer / Buyer',
+                (to == null || to.trim().isEmpty) ? 'N/A' : to),
+            slipRow('Phone',
+                (phone == null || phone.trim().isEmpty) ? 'N/A' : phone),
+            slipRow('Handover Date',
+                (date == null || date.trim().isEmpty) ? 'N/A' : date),
+          ],
+        ),
+      );
+    }
+
+    final anyHandedOver = fileStatus == 'handedOver' ||
+        smartCardStatus == 'handedOver' ||
+        plateStatus == 'handedOver' ||
+        remoteKeyStatus == 'handedOver';
 
     pdf.addPage(
       pw.MultiPage(
@@ -1537,12 +2023,30 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
           slipRow('Engine No.', engine),
           slipRow('Car Status', carStatus),
 
-          // ── Receiver Details ─────────────────────────────────────────
-          sectionTitle('Receiver Details'),
-          slipRow('Customer / Buyer', buyer == '-' ? 'N/A' : buyer),
-          slipRow('Phone', buyerPhone == '-' ? 'N/A' : buyerPhone),
+          // ── Owner Info ────────────────────────────────────────────────
+          sectionTitle('Registered Owner'),
           slipRow('Reg. Owner (Name)', regName == '-' ? 'N/A' : regName),
-          slipRow('Handover Date', handoverDate),
+          slipRow('Owner Phone', buyerPhone.isEmpty || buyerPhone == '-' ? 'N/A' : buyerPhone),
+          slipRow('Owner Name', buyer == '-' ? 'N/A' : buyer),
+
+          // ── Per-Document Receiver Details ────────────────────────────
+          if (anyHandedOver) sectionTitle('Receiver Details (per Document)'),
+          if (anyHandedOver)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 4),
+              child: pw.Column(
+                children: [
+                  perDocReceiver('Vehicle File (Registration Book)',
+                      fileStatus, fileTo, filePhone, fileDate),
+                  perDocReceiver('Smart Card', smartCardStatus, smartCardTo,
+                      smartCardPhone, smartCardDate),
+                  perDocReceiver('Number Plate', plateStatus, plateTo,
+                      platePhone, plateDate),
+                  perDocReceiver('Remote / Key', remoteKeyStatus, remoteKeyTo,
+                      remoteKeyPhone, remoteKeyDate),
+                ],
+              ),
+            ),
 
           // ── Document Checklist ───────────────────────────────────────
           sectionTitle('Document Handover Checklist'),
@@ -1555,13 +2059,13 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
             ),
             child: pw.Column(
               children: [
-                docItem('Vehicle File (Registration Book)', fileStatus),
+                docItem('Vehicle File (Registration Book)', fileStatus, fileTo),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Smart Card', smartCardStatus),
+                docItem('Smart Card', smartCardStatus, smartCardTo),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Number Plate', plateStatus),
+                docItem('Number Plate', plateStatus, plateTo),
                 pw.Divider(color: borderGray, height: 1),
-                docItem('Remote / Key', remoteKeyStatus),
+                docItem('Remote / Key', remoteKeyStatus, remoteKeyTo),
               ],
             ),
           ),
