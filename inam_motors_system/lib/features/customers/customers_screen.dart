@@ -2586,8 +2586,6 @@ class CustomersScreenState extends State<CustomersScreen> {
   Future<void> _showLedgerPdf(Map<String, dynamic> c) async {
     final ledger = c['ledger'] as List<Map<String, dynamic>>;
     final balance = _getBalance(c);
-    final totalDebit = _getTotalDebit(c);
-    final totalCredit = _getTotalCredit(c);
 
     final pdf = pw.Document();
     pdf.addPage(
@@ -2645,20 +2643,8 @@ class CustomersScreenState extends State<CustomersScreen> {
             pw.Row(
               children: [
                 _pdfStatBox(
-                  "Total Charged",
-                  formatFullPrice(totalDebit),
-                  PdfColor.fromHex('#EF4444'),
-                ),
-                pw.SizedBox(width: 12),
-                _pdfStatBox(
-                  "Total Paid",
-                  formatFullPrice(totalCredit),
-                  PdfColors.green,
-                ),
-                pw.SizedBox(width: 12),
-                _pdfStatBox(
                   balance > 0
-                      ? "Outstanding"
+                      ? "Outstanding Balance"
                       : balance < 0
                       ? "Credit Balance"
                       : "Balance",
