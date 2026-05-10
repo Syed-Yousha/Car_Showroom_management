@@ -1,0 +1,9 @@
+Inventory:
+	-> the new entry should alway be showed on the above row. right now I had done a new entry and I had to scroll down to find its card.
+	-> when I edit the tick boxed of file, smart card, number plate, remote/key in inventory, eg first I had checked all boxes and then  edited and unchecked the smart card box. so the status in docs & file should also change to not recieved.
+	-> inventory card should show all the tick boxes on the card of File, Smart card, plate, Remote and key. as F, SC, P, R/K and checkboxed as entered.
+
+Docs & file:
+	-> right now I had make an entry of a car in inventory and I had did not check the boxes of File and number plate(which mean inam motors did not received them), but in docs and files the system is showing that File and number plate of that car is at office which is wrong.
+	
+

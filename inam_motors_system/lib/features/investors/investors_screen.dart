@@ -1,6 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
+import '../../main.dart';
+import '../../models/investor.dart';
 import '../shared/widgets.dart';
 
 class InvestorsScreen extends StatefulWidget {
@@ -11,40 +13,34 @@ class InvestorsScreen extends StatefulWidget {
 }
 
 class _InvestorsScreenState extends State<InvestorsScreen> {
-  final List<Map<String, dynamic>> _investors = [
-    {
-      'name': 'Faheem Khan',
-      'role': 'Managing Partner',
-      'invested': 25000000,
-      'share': 50,
-      'profit': 3200000,
-      'phone': '0300-1234567',
-      'joinDate': '2024-01-15',
-      'status': 'Active',
-      'cars': [
-        {'car': 'Toyota Grande 2024', 'purchasePrice': 7500000, 'salePrice': 8500000, 'repairs': 120000, 'status': 'Sold'},
-        {'car': 'Honda Civic 2023', 'purchasePrice': 6200000, 'salePrice': 7200000, 'repairs': 180000, 'status': 'Sold'},
-        {'car': 'Kia Sportage 2022', 'purchasePrice': 8200000, 'salePrice': 0, 'repairs': 250000, 'status': 'In Stock'},
-        {'car': 'Changan Alsvin 2024', 'purchasePrice': 3800000, 'salePrice': 4600000, 'repairs': 60000, 'status': 'Sold'},
-      ],
-    },
-    {
-      'name': 'Inam Khan',
-      'role': 'Managing Partner',
-      'invested': 25000000,
-      'share': 50,
-      'profit': 3200000,
-      'phone': '0321-9876543',
-      'joinDate': '2024-01-15',
-      'status': 'Active',
-      'cars': [
-        {'car': 'MG HS 2024', 'purchasePrice': 8800000, 'salePrice': 9800000, 'repairs': 90000, 'status': 'Sold'},
-        {'car': 'Toyota Corolla 2024', 'purchasePrice': 5800000, 'salePrice': 6800000, 'repairs': 75000, 'status': 'Sold'},
-        {'car': 'Hyundai Tucson 2022', 'purchasePrice': 9500000, 'salePrice': 11000000, 'repairs': 200000, 'status': 'Sold'},
-        {'car': 'Suzuki Cultus 2024', 'purchasePrice': 3200000, 'salePrice': 0, 'repairs': 45000, 'status': 'In Stock'},
-      ],
-    },
-  ];
+  /// Filled from a REST `listAll` call inside the FutureBuilder.
+  /// Existing rendering helpers consume `Map<String, dynamic>`, so we
+  /// adapt the typed `Investor` into that shape.
+  List<Map<String, dynamic>> _investors = const [];
+
+  Future<List<Investor>> _futureInvestors = investorsRepo.listAll();
+
+  void _refresh() {
+    setState(() {
+      _futureInvestors = investorsRepo.listAll();
+    });
+  }
+
+  Map<String, dynamic> _toDisplayMap(Investor inv) => {
+        'id': inv.id,
+        'name': inv.name,
+        'role': inv.role,
+        'invested': inv.invested,
+        'share': inv.share,
+        'profit': inv.profit,
+        'phone': inv.phone,
+        'joinDate':
+            (inv.joinDate ?? DateTime.now()).toIso8601String().substring(0, 10),
+        'status': inv.status,
+        // Per-car P&L breakdown isn't in Firestore yet; keep empty so the
+        // existing card layout renders cleanly.
+        'cars': const <Map<String, dynamic>>[],
+      };
 
   int get _totalInvested => _investors.fold(0, (s, i) => s + (i['invested'] as int));
   int get _totalProfit => _investors.fold(0, (s, i) => s + (i['profit'] as int));
@@ -151,7 +147,49 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => _buildMainContent();
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Investor>>(
+      future: _futureInvestors,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const ScaffoldPage(
+            content: Center(child: ProgressRing()),
+          );
+        }
+        if (snap.hasError) {
+          return ScaffoldPage(
+            content: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Failed to load investors:\n${snap.error}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        color: AppTheme.error,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _refresh,
+                      child: const Text('Retry',
+                          style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        _investors =
+            (snap.data ?? const []).map(_toDisplayMap).toList();
+        return _buildMainContent();
+      },
+    );
+  }
 
   Widget _buildMainContent() {
     return LayoutBuilder(builder: (context, constraints) {

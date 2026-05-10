@@ -14,6 +14,16 @@ dependencies:
   printing: ^5.14.2
   file_picker: ^10.3.10
   path_provider: ^2.1.5
+  # Stay on 6.x — writes work fine. Reads via SDK crash the Windows C++
+  # SDK on this build; we use the Firestore REST API (services/firestore_rest.dart)
+  # for reads instead. (5.x family fails to compile on Windows due to a
+  # Firebase C++ SDK / plugin version mismatch in `UpdateEmail`.)
+  firebase_core: ^4.7.0
+  cloud_firestore: ^6.3.0
+  firebase_auth: ^6.2.0
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

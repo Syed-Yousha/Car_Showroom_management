@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
+import '../../main.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
 import '../customers/customers_screen.dart';
@@ -22,6 +23,37 @@ class _MainLayoutState extends State<MainLayout> {
   final _inventoryKey = GlobalKey<InventoryScreenState>();
   final _customersKey = GlobalKey<CustomersScreenState>();
   final _expensesKey = GlobalKey<ExpensesScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // One-time seed of demo data on app launch (if not already seeded).
+    // This runs once after login but before the user navigates.
+    _ensureSeedDataLoaded();
+  }
+
+  /// Automatically populate Firestore with demo data on first run.
+  /// Silently fails if seeding is not needed or if it's already been done.
+  Future<void> _ensureSeedDataLoaded() async {
+    try {
+      debugPrint('[MainLayout] Checking if seed data is needed...');
+      // Try to fetch one investor to see if any data exists.
+      final investors = await investorsRepo.listAll();
+      if (investors.isNotEmpty) {
+        debugPrint('[MainLayout] Seed data already exists (${investors.length} investor(s) found)');
+        return;
+      }
+      debugPrint('[MainLayout] No data found — auto-seeding Firestore...');
+      await seedService.seedAll(onProgress: (step) {
+        debugPrint('[MainLayout] Seed: $step');
+      });
+      debugPrint('[MainLayout] Auto-seed completed successfully');
+    } catch (e, s) {
+      debugPrint('[MainLayout] Auto-seed skipped or failed: $e');
+      debugPrint('[MainLayout] Stack: $s');
+      // Silently fail — user can manually seed if needed.
+    }
+  }
 
   void _openAddDialog(int index, GlobalKey key) {
     setState(() => _selectedIndex = index);

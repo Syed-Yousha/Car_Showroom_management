@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +7,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
+import '../../main.dart';
+import '../../models/car.dart';
+import '../../models/customer.dart';
 import '../shared/widgets.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -48,541 +51,179 @@ class CustomersScreenState extends State<CustomersScreen> {
   String _selectedFilter = 'All';
   Map<String, dynamic>? _selectedCustomer;
 
-  // ───── Available cars for selling ─────
-  // TODO: When UI becomes dynamic, sync this with InventoryScreen's _cars list.
-  // On Sell Car → remove from inventory (mark as Sold).
-  // On Trade-In → add back to inventory (mark as Available).
-  final List<Map<String, dynamic>> _availableCars = [
-    {'name': 'Toyota Grande 2024', 'price': 8500000, 'regNo': 'LEA-7421'},
-    {'name': 'Suzuki Cultus VXL 2024', 'price': 3800000, 'regNo': 'LEA-1105'},
-    {'name': 'Corolla GLI 2023', 'price': 5000000, 'regNo': 'LHR-9021'},
-    {'name': 'MG HS 2024', 'price': 9800000, 'regNo': 'ISB-2244'},
-    {'name': 'Hyundai Tucson 2022', 'price': 11000000, 'regNo': 'LEA-6182'},
-    {'name': 'Changan Alsvin 2024', 'price': 6800000, 'regNo': 'LHR-7733'},
-    {'name': 'Suzuki Alto 2025', 'price': 3200000, 'regNo': 'LEA-4455'},
-  ];
+  // ───── Available cars for selling — populated live from Firestore via REST
+  // every time the Add Transaction dialog opens (so newly-added inventory
+  // and just-sold cars reflect immediately on the next open).
+  List<Map<String, dynamic>> _availableCars = const [];
 
-  // ───── Customer data ─────
-  final List<Map<String, dynamic>> _customers = [
-    {
-      'name': 'Ali Hassan',
-      'phone': '0312-1234567',
-      'cnic': '35202-1234567-1',
-      'city': 'Lahore',
-      'address': '123 Model Town, Lahore',
-      'type': 'VIP',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-01-05',
-          'type': 'Car Sale',
-          'details': 'Kia Sportage 2022',
-          'debit': 9500000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': false,
-        },
-        {
-          'date': '2026-01-05',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 5000000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2026-03-10',
-          'type': 'Payment',
-          'details': 'Bank Transfer - HBL 0012345',
-          'debit': 0,
-          'credit': 2000000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2026-04-15',
-          'type': 'Trade-In',
-          'details': 'Kia Sportage 2022 (Sold Back)',
-          'debit': 0,
-          'credit': 7000000,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': false,
-        },
-        {
-          'date': '2026-04-15',
-          'type': 'Car Sale',
-          'details': 'Corolla GLI 2023',
-          'debit': 5000000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': true,
-        },
-      ],
-    },
-    {
-      'name': 'Ahmed Khan',
-      'phone': '0300-9876543',
-      'cnic': '35201-9876543-2',
-      'city': 'Islamabad',
-      'address': '45 F-8, Islamabad',
-      'type': 'Regular',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-02-03',
-          'type': 'Car Sale',
-          'details': 'Honda Civic 2023',
-          'debit': 7200000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2026-02-03',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 7200000,
-          'salesman': 'Inam Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Usman Ali',
-      'phone': '0321-5551234',
-      'cnic': '35203-5551234-3',
-      'city': 'Karachi',
-      'address': '78 Clifton Block 5, Karachi',
-      'type': 'VIP',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2025-06-15',
-          'type': 'Car Sale',
-          'details': 'Suzuki Alto 2025',
-          'debit': 3200000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2025-06-15',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 3200000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2025-10-20',
-          'type': 'Car Sale',
-          'details': 'MG HS 2024',
-          'debit': 9800000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': false,
-        },
-        {
-          'date': '2025-10-20',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 5000000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2025-11-25',
-          'type': 'Payment',
-          'details': 'Bank Transfer - MCB 0098765',
-          'debit': 0,
-          'credit': 3000000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2025-12-10',
-          'type': 'Payment',
-          'details': 'Cash Payment',
-          'debit': 0,
-          'credit': 1800000,
-          'salesman': 'Inam Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Bilal Malik',
-      'phone': '0333-6667890',
-      'cnic': '35204-6667890-4',
-      'city': 'Lahore',
-      'address': '12 Johar Town Phase 2, Lahore',
-      'type': 'New',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-01-28',
-          'type': 'Car Sale',
-          'details': 'Suzuki Cultus VXL 2024',
-          'debit': 3800000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2026-01-28',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 2000000,
-          'salesman': 'Inam Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Farhan Raza',
-      'phone': '0345-1112233',
-      'cnic': '35205-1112233-5',
-      'city': 'Faisalabad',
-      'address': '56 D Ground, Faisalabad',
-      'type': 'Regular',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2025-09-10',
-          'type': 'Car Sale',
-          'details': 'Changan Alsvin 2024',
-          'debit': 6800000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2025-09-10',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 6800000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2026-01-25',
-          'type': 'Car Sale',
-          'details': 'Hyundai Tucson 2022',
-          'debit': 11000000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': true,
-        },
-        {
-          'date': '2026-01-25',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 8000000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2026-02-20',
-          'type': 'Payment',
-          'details': 'Bank Transfer - UBL 0055432',
-          'debit': 0,
-          'credit': 3000000,
-          'salesman': 'Faheem Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Imran Shah',
-      'phone': '0301-4445566',
-      'cnic': '35206-4445566-6',
-      'city': 'Multan',
-      'address': '90 Gulberg Colony, Multan',
-      'type': 'Lead',
-      'ledger': <Map<String, dynamic>>[],
-    },
-    {
-      'name': 'Zain ul Abideen',
-      'phone': '0311-7778899',
-      'cnic': '35207-7778899-7',
-      'city': 'Rawalpindi',
-      'address': '34 Saddar Bazaar, Rawalpindi',
-      'type': 'VIP',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2025-04-03',
-          'type': 'Car Sale',
-          'details': 'Suzuki Cultus VXL 2024',
-          'debit': 3800000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2025-04-03',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 3800000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2025-07-12',
-          'type': 'Car Sale',
-          'details': 'Honda Civic 2023',
-          'debit': 7200000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2025-07-12',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 7200000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2025-11-01',
-          'type': 'Car Sale',
-          'details': 'Toyota Grande 2024',
-          'debit': 8500000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': false,
-        },
-        {
-          'date': '2025-11-01',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 8500000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2026-01-15',
-          'type': 'Car Sale',
-          'details': 'MG HS 2024',
-          'debit': 9800000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': false,
-        },
-        {
-          'date': '2026-01-15',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 6000000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2026-02-10',
-          'type': 'Payment',
-          'details': 'Bank Transfer',
-          'debit': 0,
-          'credit': 3800000,
-          'salesman': 'Faheem Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Hamza Tariq',
-      'phone': '0322-2223344',
-      'cnic': '35208-2223344-8',
-      'city': 'Lahore',
-      'address': '67 Canal Road, Lahore',
-      'type': 'New',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-01-10',
-          'type': 'Car Sale',
-          'details': 'Changan Alsvin 2024',
-          'debit': 4600000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2026-01-10',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 3000000,
-          'salesman': 'Inam Khan',
-        },
-        {
-          'date': '2026-02-15',
-          'type': 'Payment',
-          'details': 'Cash Payment',
-          'debit': 0,
-          'credit': 1600000,
-          'salesman': 'Inam Khan',
-        },
-      ],
-    },
-    {
-      'name': 'Saad Qureshi',
-      'phone': '0334-5556677',
-      'cnic': '35209-5556677-9',
-      'city': 'Islamabad',
-      'address': '22 G-9 Markaz, Islamabad',
-      'type': 'Lead',
-      'ledger': <Map<String, dynamic>>[],
-    },
-    {
-      'name': 'Waqar Ahmed',
-      'phone': '0346-8889900',
-      'cnic': '35210-8889900-0',
-      'city': 'Peshawar',
-      'address': '15 University Road, Peshawar',
-      'type': 'Regular',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-01-05',
-          'type': 'Car Sale',
-          'details': 'Kia Sportage 2022',
-          'debit': 9500000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2026-01-05',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 5000000,
-          'salesman': 'Faheem Khan',
-        },
-        {
-          'date': '2026-02-01',
-          'type': 'Payment',
-          'details': 'Bank Transfer - ABL 0077654',
-          'debit': 0,
-          'credit': 2500000,
-          'salesman': 'Faheem Khan',
-        },
-      ],
-    },
-    // ── Credit-balance demo: customer overpaid then bought another car ──
-    {
-      'name': 'Kashif Nadeem',
-      'phone': '0315-9990011',
-      'cnic': '35211-9990011-1',
-      'city': 'Lahore',
-      'address': '88 Gulberg III, Lahore',
-      'type': 'VIP',
-      'ledger': <Map<String, dynamic>>[
-        {
-          'date': '2026-01-02',
-          'type': 'Car Sale',
-          'details': 'Suzuki Alto 2025',
-          'debit': 3200000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': true,
-          'plate': true,
-        },
-        {
-          'date': '2026-01-02',
-          'type': 'Payment',
-          'details': 'Cash - Full Payment',
-          'debit': 0,
-          'credit': 3200000,
-          'salesman': 'Inam Khan',
-        },
-        // Owed 10L on a second car, paid 20L → 10L credit on us
-        {
-          'date': '2026-02-10',
-          'type': 'Car Sale',
-          'details': 'Changan Alsvin 2024',
-          'debit': 6800000,
-          'credit': 0,
-          'salesman': 'Inam Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': true,
-        },
-        {
-          'date': '2026-02-10',
-          'type': 'Payment',
-          'details': 'Cash Deposit',
-          'debit': 0,
-          'credit': 5800000,
-          'salesman': 'Inam Khan',
-        },
-        // Now owes 10L. Pays 20L → gets 10L credit
-        {
-          'date': '2026-02-20',
-          'type': 'Payment',
-          'details': 'Bank Transfer - HBL 0099887',
-          'debit': 0,
-          'credit': 2000000,
-          'salesman': 'Inam Khan',
-        },
-        // Balance is now -10L (credit). Buys 50L car → owes 40L
-        {
-          'date': '2026-03-01',
-          'type': 'Car Sale',
-          'details': 'MG HS 2024',
-          'debit': 9800000,
-          'credit': 0,
-          'salesman': 'Faheem Khan',
-          'file': true,
-          'smartCard': false,
-          'plate': false,
-        },
-      ],
-    },
-  ];
+  /// Re-fetch all cars via REST and keep only the ones that are still
+  /// Available (i.e. excluded Sold / Booked). Returns the list so callers
+  /// can also chain off it.
+  Future<List<Map<String, dynamic>>> _loadAvailableCars() async {
+    // ignore: avoid_print
+    print('[AddTxn] Loading available cars via REST...');
+    final cars = await inventoryService.fetchCarsSafe();
+    final available = cars
+        .where((c) => c.status == 'Available')
+        .map((c) => {
+              'id': c.id,
+              'name': c.name,
+              'price': c.price,
+              'regNo': c.regNo,
+            })
+        .toList();
+    // ignore: avoid_print
+    print('[AddTxn] Available cars after filter: ${available.length}');
+    _availableCars = available;
+    return available;
+  }
+
+  // â”€â”€â”€â”€â”€ Customer data â”€â”€â”€â”€â”€
+  /// Live list of customers — loaded from Firestore via REST
+  /// (`CustomerService.fetchCustomersSafe`). Existing rendering code
+  /// reads `Map<String, dynamic>`, so we adapt typed `Customer` objects
+  /// into that shape via `_customerToDisplayMap`.
+  List<Map<String, dynamic>> _customers = [];
+  bool _loadingCustomers = true;
+  String? _customersLoadError;
+
+  /// Ledger state for the currently-selected customer (Layer 2). Loaded
+  /// via REST when the user opens a customer; reflected in a banner at
+  /// the top of the detail view.
+  bool _loadingLedger = false;
+  String? _ledgerLoadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshCustomers();
+  }
+
+  /// Open a customer's detail view and kick off a fresh ledger fetch.
+  /// All Layer-1 tap handlers route through this single entry point so
+  /// we never end up showing stale or empty ledger data.
+  void _selectCustomer(Map<String, dynamic> c) {
+    setState(() => _selectedCustomer = c);
+    final id = (c['id'] ?? '').toString();
+    if (id.isNotEmpty) _refreshLedgerFor(id);
+  }
+
+  /// Load the ledger sub-collection for [customerId] via REST and inject
+  /// it into the matching customer's display map so the existing detail
+  /// view renders without further changes.
+  Future<void> _refreshLedgerFor(String customerId) async {
+    if (customerId.isEmpty) return;
+    if (mounted) {
+      setState(() {
+        _loadingLedger = true;
+        _ledgerLoadError = null;
+      });
+    }
+    try {
+      final ledger = await ledgerService.fetchLedgerSafe(customerId);
+      if (!mounted) return;
+      // Sort by server-side `createdAt` ASCENDING — i.e. real insertion
+      // order, oldest first. This matches how a bank-style statement reads
+      // top-to-bottom and lets the running balance accumulate correctly.
+      // Falls back to `date` string if createdAt is missing.
+      ledger.sort((a, b) {
+        final ca = (a['createdAt'] ?? '').toString();
+        final cb = (b['createdAt'] ?? '').toString();
+        if (ca.isNotEmpty && cb.isNotEmpty) return ca.compareTo(cb);
+        if (ca.isNotEmpty) return -1; // a has timestamp, b doesn't → a first
+        if (cb.isNotEmpty) return 1;  // b has timestamp, a doesn't → b first
+        // Both missing — fall back to date string ascending.
+        final da = (a['date'] ?? '').toString();
+        final db = (b['date'] ?? '').toString();
+        return da.compareTo(db);
+      });
+      // Mutate the customer Map in place so existing `customer['ledger']`
+      // reads (scattered through detail-view code) get the live data.
+      for (final c in _customers) {
+        if ((c['id'] ?? '') == customerId) {
+          c['ledger'] = ledger;
+        }
+      }
+      if (_selectedCustomer != null &&
+          (_selectedCustomer!['id'] ?? '') == customerId) {
+        _selectedCustomer!['ledger'] = ledger;
+      }
+      setState(() => _loadingLedger = false);
+    } catch (e, s) {
+      // ignore: avoid_print
+      print('[Ledger] fetchLedgerSafe failed: $e');
+      // ignore: avoid_print
+      print('[Ledger] Stack: $s');
+      if (!mounted) return;
+      setState(() {
+        _ledgerLoadError = e.toString();
+        _loadingLedger = false;
+      });
+    }
+  }
+
+  /// Fetch customers via REST and rebuild. Call on initState, on the
+  /// Refresh button, and after every successful Add/Edit/Delete.
+  Future<void> _refreshCustomers() async {
+    if (mounted) {
+      setState(() {
+        _loadingCustomers = true;
+        _customersLoadError = null;
+      });
+    }
+    try {
+      final customers = await customerService.fetchCustomersSafe();
+      if (!mounted) return;
+      setState(() {
+        _customers = customers.map(_customerToDisplayMap).toList();
+        _loadingCustomers = false;
+      });
+    } catch (e, s) {
+      debugPrint('[Customers] fetchCustomersSafe failed: $e');
+      debugPrint('[Customers] Stack: $s');
+      if (!mounted) return;
+      setState(() {
+        _customersLoadError = e.toString();
+        _loadingCustomers = false;
+      });
+    }
+  }
+
+  /// Adapt a typed `Customer` into the `Map<String, dynamic>` shape
+  /// the existing rendering code consumes. The `ledger` sub-collection
+  /// is left empty here — Layer 2 will populate it lazily when the user
+  /// opens a customer's statement.
+  Map<String, dynamic> _customerToDisplayMap(Customer c) => {
+        'id': c.id,
+        'name': c.name,
+        'phone': c.phone,
+        'cnic': c.cnic,
+        'city': c.city,
+        'address': c.address,
+        'type': c.type,
+        'balance': c.balance,
+        'notes': c.notes ?? '',
+        'ledger': <Map<String, dynamic>>[],
+      };
 
   // ───── Computed helpers ─────
   int _getBalance(Map<String, dynamic> c) {
-    final ledger = c['ledger'] as List<Map<String, dynamic>>;
-    int balance = 0;
-    for (final entry in ledger) {
-      balance += (entry['debit'] as int) - (entry['credit'] as int);
-    }
-    return balance;
+    return c['balance'] as int? ?? 0;
   }
 
   int _getTotalDebit(Map<String, dynamic> c) {
-    final ledger = c['ledger'] as List<Map<String, dynamic>>;
-    return ledger.fold(0, (s, e) => s + (e['debit'] as int));
+    final ledger = (c['ledger'] as List<dynamic>?) ?? [];
+    return ledger.fold(0, (s, e) => s + ((e as Map)['debit'] as int? ?? 0));
   }
 
   int _getTotalCredit(Map<String, dynamic> c) {
-    final ledger = c['ledger'] as List<Map<String, dynamic>>;
-    return ledger.fold(0, (s, e) => s + (e['credit'] as int));
+    final ledger = (c['ledger'] as List<dynamic>?) ?? [];
+    return ledger.fold(0, (s, e) => s + ((e as Map)['credit'] as int? ?? 0));
   }
 
   int _getCarCount(Map<String, dynamic> c) {
-    final ledger = c['ledger'] as List<Map<String, dynamic>>;
-    return ledger.where((e) => e['type'] == 'Car Sale').length;
+    final ledger = (c['ledger'] as List<dynamic>?) ?? [];
+    return ledger.where((e) => (e as Map)['type'] == 'Car Sale').length;
   }
 
   List<Map<String, dynamic>> get _filtered {
@@ -610,9 +251,9 @@ class CustomersScreenState extends State<CustomersScreen> {
   int get _withBalanceCount =>
       _customers.where((c) => _getBalance(c) > 0).length;
 
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  DIALOGS
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   void _showAddTransactionDialog(Map<String, dynamic> customer) {
     String txnType = 'Sell Car';
@@ -628,14 +269,12 @@ class CustomersScreenState extends State<CustomersScreen> {
 
     // Sell Car
     final manualCarNameCtrl = TextEditingController();
-    bool sellFullPayment = false;
-    DateTime? sellDueDate;
 
-    // Payment — full payment + clearance due date
+    // Payment â€” full payment + clearance due date
     bool paymentFullPayment = false;
     DateTime? paymentDueDate;
 
-    // Trade-In — full car detail controllers
+    // Trade-In â€” full car detail controllers
     final tradeCarNameCtrl = TextEditingController();
     final tradeMakeCtrl = TextEditingController();
     final tradeModelCtrl = TextEditingController();
@@ -649,10 +288,10 @@ class CustomersScreenState extends State<CustomersScreen> {
     String tradeTransmission = 'Automatic';
     List<String> tradeImagePaths = [];
 
-    // Additional notes (shared — one type active at a time)
+    // Additional notes (shared â€” one type active at a time)
     final notesCtrl = TextEditingController();
 
-    // Salesman — manual text entry (global to dialog)
+    // Salesman â€” manual text entry (global to dialog)
     final salesmanCtrl = TextEditingController();
 
     DateTime txnDate = DateTime.now();
@@ -661,11 +300,34 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool plateHandedOver = false;
     bool remoteKeyHandedOver = false;
 
+    // Available-cars loader state — fetched fresh from inventory on dialog
+    // open via REST so we never show stale or already-sold cars.
+    bool inventoryLoading = true;
+    String? inventoryLoadError;
+    bool inventoryLoadKicked = false;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          // ── Chip builders ─────────────────────────────────────────────
+          if (!inventoryLoadKicked) {
+            inventoryLoadKicked = true;
+            Future(() async {
+              try {
+                await _loadAvailableCars();
+              } catch (e, s) {
+                // ignore: avoid_print
+                print('[AddTxn] Failed to load inventory: $e');
+                // ignore: avoid_print
+                print('[AddTxn] Stack: $s');
+                inventoryLoadError = e.toString();
+              } finally {
+                inventoryLoading = false;
+                if (ctx.mounted) setDialogState(() {});
+              }
+            });
+          }
+          // â”€â”€ Chip builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           Widget txnTypeChip(String label) {
             final sel = txnType == label;
             return MouseRegion(
@@ -747,7 +409,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Transaction type selector ──────────────────────────
+                  // â”€â”€ Transaction type selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   Text('Transaction Type', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const SizedBox(height: 8),
                   Wrap(spacing: 8, runSpacing: 8, children: [
@@ -758,7 +420,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // ── SELL CAR ───────────────────────────────────────────
+                  // â”€â”€ SELL CAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (txnType == 'Sell Car') ...[
                     Row(children: [
                       Expanded(
@@ -782,57 +444,40 @@ class CustomersScreenState extends State<CustomersScreen> {
                       InfoLabel(
                         label: 'Select Car',
                         labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                        child: AutoSuggestBox<Map<String, dynamic>>(
-                          items: _availableCars.map((c) => AutoSuggestBoxItem<Map<String, dynamic>>(
-                            value: c,
-                            label: '${c['name']} - ${formatFullPrice(c['price'])}',
-                          )).toList(),
-                          onSelected: (item) => setDialogState(() {
-                            selectedCar = item.value;
-                            selectedCarPrice = item.value?['price'] ?? 0;
-                            amountCtrl.text = selectedCarPrice.toString();
-                          }),
-                        ),
+                        child: inventoryLoading
+                            ? Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                alignment: Alignment.centerLeft,
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  const SizedBox(width: 12, height: 12, child: ProgressRing(strokeWidth: 2)),
+                                  const SizedBox(width: 8),
+                                  Text("Loading inventory…", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                                ]),
+                              )
+                            : inventoryLoadError != null
+                                ? Text("Failed to load inventory: $inventoryLoadError",
+                                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error))
+                                : _availableCars.isEmpty
+                                    ? Text("No available cars in inventory. Switch to Manual Entry.",
+                                        style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted))
+                                    : AutoSuggestBox<Map<String, dynamic>>(
+                                        items: _availableCars.map((c) => AutoSuggestBoxItem<Map<String, dynamic>>(
+                                          value: c,
+                                          label: '${c['name']} - ${formatFullPrice(c['price'])}',
+                                        )).toList(),
+                                        onSelected: (item) => setDialogState(() {
+                                          selectedCar = item.value;
+                                          selectedCarPrice = item.value?['price'] ?? 0;
+                                          amountCtrl.text = selectedCarPrice.toString();
+                                        }),
+                                      ),
                       )
                     else
                       _editField("Manual Car Name / Details", manualCarNameCtrl),
                     const SizedBox(height: 12),
                     _editField("Final Sale Price (Rs)", amountCtrl),
-                    const SizedBox(height: 4),
-                    Checkbox(
-                      checked: sellFullPayment,
-                      onChanged: (v) => setDialogState(() {
-                        sellFullPayment = v ?? false;
-                        if (sellFullPayment) sellDueDate = null;
-                      }),
-                      content: Text(
-                        "Full Payment",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (!sellFullPayment) ...[
-                      Text(
-                        "Payment Clearance Due Date",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      DatePicker(
-                        selected: sellDueDate ?? DateTime.now(),
-                        onChanged: (d) =>
-                            setDialogState(() => sellDueDate = d),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
+                    const SizedBox(height: 14),
                     sectionLabel("Documentation Handover"),
                     _buildDocStatusGrid(
                       fileHandedOver, smartCardHandedOver, plateHandedOver, remoteKeyHandedOver,
@@ -841,7 +486,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
-                  // ── PAYMENT ────────────────────────────────────────────
+                  // â”€â”€ PAYMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (txnType == 'Payment') ...[
                     _editField("Payment Amount (Rs)", amountCtrl),
                     const SizedBox(height: 4),
@@ -892,7 +537,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
-                  // ── TRADE-IN ───────────────────────────────────────────
+                  // â”€â”€ TRADE-IN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (txnType == 'Trade-In') ...[
                     _editField("Car Name", tradeCarNameCtrl),
                     Row(children: [
@@ -929,7 +574,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                       optionChip('Manual',    tradeTransmission, (v) => tradeTransmission = v),
                     ]),
                     const SizedBox(height: 14),
-                    // ── Car Photos ──────────────────────────────────────
+                    // â”€â”€ Car Photos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -1082,7 +727,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
-                  // ── CREDIT REFUND ──────────────────────────────────────
+                  // â”€â”€ CREDIT REFUND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (txnType == 'Credit Refund') ...[
                     _editField("Refund Amount (Rs)", amountCtrl),
                     sectionLabel("Refund Method"),
@@ -1098,7 +743,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     _editFieldMultiline("Additional Notes (optional)", notesCtrl),
                   ],
 
-                  // ── SALESMAN + DATE (global footer) ────────────────────
+                  // â”€â”€ SALESMAN + DATE (global footer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const SizedBox(height: 24),
                   Row(children: [
                     Expanded(child: _editField(
@@ -1128,10 +773,16 @@ class CustomersScreenState extends State<CustomersScreen> {
               ).withClickCursor,
               FilledButton(
                 style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-                onPressed: () {
+                onPressed: () async {
                   final dateStr = '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}-${txnDate.day.toString().padLeft(2, '0')}';
-                  final ledger = customer['ledger'] as List<Map<String, dynamic>>;
                   final salesman = salesmanCtrl.text.trim();
+                  final customerId = (customer['id'] ?? '').toString();
+                  if (customerId.isEmpty) return;
+
+                  // Build the entry data + debit/credit amounts.
+                  Map<String, dynamic>? entryData;
+                  int debit = 0;
+                  int credit = 0;
 
                   if (txnType == 'Sell Car') {
                     final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
@@ -1144,37 +795,24 @@ class CustomersScreenState extends State<CustomersScreen> {
                       detail = selectedCar!['name'] as String;
                       if (amt <= 0) return;
                     }
-                    final dueDateStr = (sellFullPayment || sellDueDate == null)
-                        ? ''
-                        : '${sellDueDate!.year}-${sellDueDate!.month.toString().padLeft(2, '0')}-${sellDueDate!.day.toString().padLeft(2, '0')}';
-                    setState(() {
-                      ledger.add({
-                        'date': dateStr,
-                        'type': 'Car Sale',
-                        'details': detail,
-                        'debit': amt,
-                        'credit': 0,
-                        'salesman': salesman,
-                        'fullPayment': sellFullPayment,
-                        'dueDate': dueDateStr,
-                        'file': fileHandedOver,
-                        'smartCard': smartCardHandedOver,
-                        'plate': plateHandedOver,
-                        'notes': notesCtrl.text.trim(),
-                        'remoteKey': remoteKeyHandedOver,
-                      });
-                      if (!isManualEntry && selectedCar != null) {
-                        _availableCars.remove(selectedCar);
-                      }
-                    });
-
+                    debit = amt;
+                    entryData = {
+                      'date': dateStr,
+                      'type': 'Car Sale',
+                      'details': detail,
+                      'salesman': salesman,
+                      'file': fileHandedOver,
+                      'smartCard': smartCardHandedOver,
+                      'plate': plateHandedOver,
+                      'notes': notesCtrl.text.trim(),
+                      'remoteKey': remoteKeyHandedOver,
+                    };
                   } else if (txnType == 'Payment') {
                     final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
                     if (amt <= 0) return;
-                    final remainingDueStr =
-                        (paymentFullPayment || paymentDueDate == null)
-                            ? ''
-                            : '${paymentDueDate!.year}-${paymentDueDate!.month.toString().padLeft(2, '0')}-${paymentDueDate!.day.toString().padLeft(2, '0')}';
+                    final remainingDueStr = (paymentFullPayment || paymentDueDate == null)
+                        ? ''
+                        : '${paymentDueDate!.year}-${paymentDueDate!.month.toString().padLeft(2, '0')}-${paymentDueDate!.day.toString().padLeft(2, '0')}';
                     String detail = paymentType;
                     if (paymentType != 'Cash') {
                       final parts = <String>[];
@@ -1182,20 +820,16 @@ class CustomersScreenState extends State<CustomersScreen> {
                       if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
                       detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                     }
-                    setState(() {
-                      ledger.add({
-                        'date': dateStr,
-                        'type': 'Payment',
-                        'details': detail,
-                        'debit': 0,
-                        'credit': amt,
-                        'salesman': salesman,
-                        'fullPayment': paymentFullPayment,
-                        'remainingDueDate': remainingDueStr,
-                        'notes': notesCtrl.text.trim(),
-                      });
-                    });
-
+                    credit = amt;
+                    entryData = {
+                      'date': dateStr,
+                      'type': 'Payment',
+                      'details': detail,
+                      'salesman': salesman,
+                      'fullPayment': paymentFullPayment,
+                      'remainingDueDate': remainingDueStr,
+                      'notes': notesCtrl.text.trim(),
+                    };
                   } else if (txnType == 'Trade-In') {
                     final amt = int.tryParse(tradeAmountCtrl.text.replaceAll(',', '')) ?? 0;
                     final carName = tradeCarNameCtrl.text.trim();
@@ -1203,33 +837,29 @@ class CustomersScreenState extends State<CustomersScreen> {
                     final model = tradeModelCtrl.text.trim();
                     if (amt <= 0 || make.isEmpty) return;
                     final detail = carName.isNotEmpty ? carName : (model.isNotEmpty ? '$make $model' : make);
-                    setState(() {
-                      ledger.add({
-                        'date': dateStr,
-                        'type': 'Trade-In',
-                        'details': detail,
-                        'debit': 0,
-                        'credit': amt,
-                        'salesman': salesman,
-                        'tradeCarName': carName,
-                        'tradeCarMake': make,
-                        'tradeCarModel': model,
-                        'tradeCarRegNo': tradeRegNoCtrl.text.trim(),
-                        'tradeCarColor': tradeColorCtrl.text.trim(),
-                        'tradeCarMileage': tradeMileageCtrl.text.trim(),
-                        'tradeCarChassis': tradeChassisCtrl.text.trim(),
-                        'tradeCarEngine': tradeEngineCtrl.text.trim(),
-                        'tradeCarFuel': tradeFuelType,
-                        'tradeCarTransmission': tradeTransmission,
-                        'tradeCarPhotos': List<String>.from(tradeImagePaths),
-                        'file': fileHandedOver,
-                        'smartCard': smartCardHandedOver,
-                        'plate': plateHandedOver,
-                        'remoteKey': remoteKeyHandedOver,
-                        'notes': notesCtrl.text.trim(),
-                      });
-                    });
-
+                    credit = amt;
+                    entryData = {
+                      'date': dateStr,
+                      'type': 'Trade-In',
+                      'details': detail,
+                      'salesman': salesman,
+                      'tradeCarName': carName,
+                      'tradeCarMake': make,
+                      'tradeCarModel': model,
+                      'tradeCarRegNo': tradeRegNoCtrl.text.trim(),
+                      'tradeCarColor': tradeColorCtrl.text.trim(),
+                      'tradeCarMileage': tradeMileageCtrl.text.trim(),
+                      'tradeCarChassis': tradeChassisCtrl.text.trim(),
+                      'tradeCarEngine': tradeEngineCtrl.text.trim(),
+                      'tradeCarFuel': tradeFuelType,
+                      'tradeCarTransmission': tradeTransmission,
+                      'tradeCarPhotos': List<String>.from(tradeImagePaths),
+                      'file': fileHandedOver,
+                      'smartCard': smartCardHandedOver,
+                      'plate': plateHandedOver,
+                      'remoteKey': remoteKeyHandedOver,
+                      'notes': notesCtrl.text.trim(),
+                    };
                   } else if (txnType == 'Credit Refund') {
                     final amt = int.tryParse(amountCtrl.text.replaceAll(',', '')) ?? 0;
                     if (amt <= 0) return;
@@ -1240,12 +870,161 @@ class CustomersScreenState extends State<CustomersScreen> {
                       if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
                       if (parts.isNotEmpty) detail = 'Credit Refund - $paymentType / ${parts.join(' / ')}';
                     }
-                    setState(() {
-                      ledger.add({'date': dateStr, 'type': 'Credit Refund', 'details': detail, 'debit': amt, 'credit': 0, 'salesman': salesman, 'notes': notesCtrl.text.trim()});
-                    });
+                    debit = amt;
+                    entryData = {
+                      'date': dateStr,
+                      'type': 'Credit Refund',
+                      'details': detail,
+                      'salesman': salesman,
+                      'notes': notesCtrl.text.trim(),
+                    };
                   }
 
-                  Navigator.pop(ctx);
+                  if (entryData == null) return;
+
+                  // Persist via LedgerService. We rebuild the Customer
+                  // object from the live display map so the service can
+                  // adjust customer.balance with the correct starting value.
+                  final customerObj = Customer(
+                    id: customerId,
+                    name: (customer['name'] ?? '').toString(),
+                    phone: (customer['phone'] ?? '').toString(),
+                    cnic: (customer['cnic'] ?? '').toString(),
+                    city: (customer['city'] ?? '').toString(),
+                    address: (customer['address'] ?? '').toString(),
+                    type: (customer['type'] ?? 'Regular').toString(),
+                    balance: (customer['balance'] as int?) ?? 0,
+                    notes: customer['notes'] as String?,
+                  );
+                  try {
+                    // ignore: avoid_print
+                    print('[AddTxn] type=$txnType debit=$debit credit=$credit customerId=$customerId');
+                    final id = await ledgerService.addEntry(
+                      customer: customerObj,
+                      entryData: entryData,
+                      debit: debit,
+                      credit: credit,
+                    );
+                    // ignore: avoid_print
+                    print('[AddTxn] entry written id=$id');
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    // Update local customer.balance + reload ledger.
+                    customer['balance'] = customerObj.balance + (debit - credit);
+                    // ── Inventory side-effects ─────────────────────────
+                    // Sell Car (with a real inventory pick) → mark Sold.
+                    if (txnType == 'Sell Car' &&
+                        !isManualEntry &&
+                        selectedCar != null) {
+                      final soldCarId = (selectedCar!['id'] ?? '').toString();
+                      if (soldCarId.isNotEmpty) {
+                        try {
+                          await inventoryService.markCarSold(
+                            soldCarId,
+                            buyerId: customerId,
+                            buyerName: customerObj.name,
+                            buyerPhone: customerObj.phone,
+                          );
+                        } catch (e, s) {
+                          // ignore: avoid_print
+                          print('[AddTxn] markCarSold failed (ledger entry already saved): $e');
+                          // ignore: avoid_print
+                          print('[AddTxn] Stack: $s');
+                        }
+                        // Mirror this dialog's handover checkboxes onto the
+                        // matching documents/{carId} record so the Docs &
+                        // Files screen reflects what was handed to the buyer.
+                        final today = DateTime.now();
+                        final todayStr = '${today.year}-'
+                            '${today.month.toString().padLeft(2, '0')}-'
+                            '${today.day.toString().padLeft(2, '0')}';
+                        Map<String, dynamic> docState(bool given) => given
+                            ? {
+                                'status': 'handedOver',
+                                'to': customerObj.name,
+                                'phone': customerObj.phone,
+                                'date': todayStr,
+                              }
+                            : {
+                                'status': 'inOffice',
+                                'to': null,
+                                'phone': null,
+                                'date': null,
+                              };
+                        try {
+                          await documentService.savePartial(soldCarId, {
+                            'carStatus': 'Sold',
+                            'buyer': customerObj.name,
+                            'buyerPhone': customerObj.phone,
+                            if (fileHandedOver)
+                              'file': docState(true),
+                            if (smartCardHandedOver)
+                              'smartCard': docState(true),
+                            if (plateHandedOver)
+                              'plate': docState(true),
+                            if (remoteKeyHandedOver)
+                              'remoteKey': docState(true),
+                          });
+                        } catch (e, s) {
+                          // ignore: avoid_print
+                          print('[AddTxn] docs handover sync failed: $e\n$s');
+                        }
+                      }
+                    }
+                    // Trade-In → add the customer's car as new Available
+                    // inventory so it shows up on the Inventory screen.
+                    if (txnType == 'Trade-In') {
+                      try {
+                        final tradeCar = Car(
+                          id: '', // auto-id
+                          name: tradeCarNameCtrl.text.trim().isNotEmpty
+                              ? tradeCarNameCtrl.text.trim()
+                              : '${tradeMakeCtrl.text.trim()} ${tradeModelCtrl.text.trim()}'.trim(),
+                          make: tradeMakeCtrl.text.trim(),
+                          model: tradeModelCtrl.text.trim(),
+                          year: DateTime.now().year,
+                          color: tradeColorCtrl.text.trim(),
+                          price: int.tryParse(tradeAmountCtrl.text.replaceAll(',', '')) ?? 0,
+                          regNo: tradeRegNoCtrl.text.trim(),
+                          status: 'Available',
+                          mileage: tradeMileageCtrl.text.trim(),
+                          fuel: tradeFuelType,
+                          transmission: tradeTransmission,
+                          chassisNo: tradeChassisCtrl.text.trim(),
+                          engineNo: tradeEngineCtrl.text.trim(),
+                          photos: List<String>.from(tradeImagePaths),
+                          sellerName: customerObj.name,
+                          sellerPhone: customerObj.phone,
+                          sellerCnic: customerObj.cnic,
+                          notes: 'Acquired via Trade-In from ${customerObj.name}',
+                        );
+                        await inventoryService.addCar(tradeCar);
+                      } catch (e, s) {
+                        // ignore: avoid_print
+                        print('[AddTxn] addCar (trade-in) failed (ledger entry already saved): $e');
+                        // ignore: avoid_print
+                        print('[AddTxn] Stack: $s');
+                      }
+                    }
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('$txnType added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.success,
+                      onClose: close,
+                    ));
+                    _refreshLedgerFor(customerId);
+                  } catch (e, s) {
+                    // ignore: avoid_print
+                    print('[AddTxn] FAILED: $e');
+                    // ignore: avoid_print
+                    print('[AddTxn] Stack: $s');
+                    if (!mounted) return;
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Failed to add transaction: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.error,
+                      onClose: close,
+                    ));
+                  }
                 },
                 child: const Text('Add Transaction', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
               ).withClickCursor,
@@ -1264,6 +1043,8 @@ class CustomersScreenState extends State<CustomersScreen> {
     final addressCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     String selectedType = 'New';
+    bool savingAdd = false;
+    String? addError;
 
     showDialog(
       context: context,
@@ -1338,8 +1119,16 @@ class CustomersScreenState extends State<CustomersScreen> {
             ),
           ),
           actions: [
+            if (addError != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Text(
+                  addError!,
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error),
+                ),
+              ),
             Button(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: savingAdd ? null : () => Navigator.pop(ctx),
               child: const Text(
                 "Cancel",
                 style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1349,29 +1138,59 @@ class CustomersScreenState extends State<CustomersScreen> {
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.primary),
               ),
-              onPressed: () {
-                if (nameCtrl.text.trim().isEmpty) return;
-                setState(() {
-                  _customers.insert(0, {
-                    'name': nameCtrl.text.trim(),
-                    'phone': phoneCtrl.text.trim(),
-                    'cnic': cnicCtrl.text.trim(),
-                    'city': cityCtrl.text.trim(),
-                    'address': addressCtrl.text.trim(),
-                    'type': selectedType,
-                    'notes': notesCtrl.text.trim(),
-                    'ledger': <Map<String, dynamic>>[],
-                  });
-                });
-                Navigator.pop(ctx);
-              },
-              child: const Text(
-                "Add Customer",
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  color: Colors.white,
-                ),
-              ),
+              onPressed: savingAdd
+                  ? null
+                  : () async {
+                      if (nameCtrl.text.trim().isEmpty) {
+                        setDialogState(() => addError = 'Customer name is required.');
+                        return;
+                      }
+                      setDialogState(() {
+                        savingAdd = true;
+                        addError = null;
+                      });
+                      final newCustomer = Customer(
+                        id: '', // Firestore generates
+                        name: nameCtrl.text.trim(),
+                        phone: phoneCtrl.text.trim(),
+                        cnic: cnicCtrl.text.trim(),
+                        city: cityCtrl.text.trim(),
+                        address: addressCtrl.text.trim(),
+                        type: selectedType,
+                        notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                      );
+                      try {
+                        debugPrint('[AddCustomer] Calling customerService.addCustomer() — name=${newCustomer.name}');
+                        final id = await customerService.addCustomer(newCustomer);
+                        debugPrint('[AddCustomer] Customer saved with id=$id');
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        if (!mounted) return;
+                        displayInfoBar(context, builder: (c, close) => InfoBar(
+                          title: Text('Customer "${newCustomer.name}" added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                          severity: InfoBarSeverity.success,
+                          onClose: close,
+                        ));
+                        _refreshCustomers();
+                      } catch (e, s) {
+                        debugPrint('[AddCustomer] FAILED: $e');
+                        debugPrint('[AddCustomer] Stack: $s');
+                        if (!ctx.mounted) return;
+                        setDialogState(() {
+                          savingAdd = false;
+                          addError = 'Save failed: $e';
+                        });
+                      }
+                    },
+              child: savingAdd
+                  ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
+                  : const Text(
+                      "Add Customer",
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        color: Colors.white,
+                      ),
+                    ),
             ).withClickCursor,
           ],
         ),
@@ -1380,8 +1199,8 @@ class CustomersScreenState extends State<CustomersScreen> {
   }
 
   void _showEditCustomerDialog(Map<String, dynamic> c) {
-    final idx = _customers.indexOf(c);
-    if (idx == -1) return;
+    final customerId = (c['id'] ?? '').toString();
+    if (customerId.isEmpty) return;
 
     final nameCtrl = TextEditingController(text: c['name']);
     final phoneCtrl = TextEditingController(text: c['phone']);
@@ -1390,6 +1209,8 @@ class CustomersScreenState extends State<CustomersScreen> {
     final addressCtrl = TextEditingController(text: c['address'] ?? '');
     final customerNotesCtrl = TextEditingController(text: c['notes'] as String? ?? '');
     String selectedType = c['type'];
+    bool savingEdit = false;
+    String? editError;
 
     showDialog(
       context: context,
@@ -1464,8 +1285,16 @@ class CustomersScreenState extends State<CustomersScreen> {
             ),
           ),
           actions: [
+            if (editError != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Text(
+                  editError!,
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error),
+                ),
+              ),
             Button(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: savingEdit ? null : () => Navigator.pop(ctx),
               child: const Text(
                 "Cancel",
                 style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1475,28 +1304,60 @@ class CustomersScreenState extends State<CustomersScreen> {
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.primary),
               ),
-              onPressed: () {
-                setState(() {
-                  _customers[idx] = {
-                    ...c,
-                    'name': nameCtrl.text,
-                    'phone': phoneCtrl.text,
-                    'cnic': cnicCtrl.text,
-                    'city': cityCtrl.text,
-                    'address': addressCtrl.text,
-                    'type': selectedType,
-                    'notes': customerNotesCtrl.text.trim(),
-                  };
-                });
-                Navigator.pop(ctx);
-              },
-              child: const Text(
-                "Save Changes",
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  color: Colors.white,
-                ),
-              ),
+              onPressed: savingEdit
+                  ? null
+                  : () async {
+                      if (nameCtrl.text.trim().isEmpty) {
+                        setDialogState(() => editError = 'Customer name is required.');
+                        return;
+                      }
+                      setDialogState(() {
+                        savingEdit = true;
+                        editError = null;
+                      });
+                      final updated = Customer(
+                        id: customerId,
+                        name: nameCtrl.text.trim(),
+                        phone: phoneCtrl.text.trim(),
+                        cnic: cnicCtrl.text.trim(),
+                        city: cityCtrl.text.trim(),
+                        address: addressCtrl.text.trim(),
+                        type: selectedType,
+                        balance: (c['balance'] as int?) ?? 0,
+                        notes: customerNotesCtrl.text.trim().isEmpty ? null : customerNotesCtrl.text.trim(),
+                      );
+                      try {
+                        debugPrint('[EditCustomer] Calling customerService.updateCustomer() — id=$customerId');
+                        await customerService.updateCustomer(updated);
+                        debugPrint('[EditCustomer] updateCustomer OK');
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        if (!mounted) return;
+                        displayInfoBar(context, builder: (c, close) => InfoBar(
+                          title: Text('Customer "${updated.name}" updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                          severity: InfoBarSeverity.success,
+                          onClose: close,
+                        ));
+                        _refreshCustomers();
+                      } catch (e, s) {
+                        debugPrint('[EditCustomer] FAILED: $e');
+                        debugPrint('[EditCustomer] Stack: $s');
+                        if (!ctx.mounted) return;
+                        setDialogState(() {
+                          savingEdit = false;
+                          editError = 'Update failed: $e';
+                        });
+                      }
+                    },
+              child: savingEdit
+                  ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
+                  : const Text(
+                      "Save Changes",
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        color: Colors.white,
+                      ),
+                    ),
             ).withClickCursor,
           ],
         ),
@@ -1505,11 +1366,14 @@ class CustomersScreenState extends State<CustomersScreen> {
   }
 
   void _showRemoveCustomerDialog(Map<String, dynamic> c) {
-    final index = _customers.indexOf(c);
-    if (index == -1) return;
+    final customerId = (c['id'] ?? '').toString();
+    if (customerId.isEmpty) return;
+    bool deleting = false;
+    String? deleteError;
+
     showDialog(
       context: context,
-      builder: (ctx) => ContentDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
         title: const Text(
           "Remove Customer",
           style: TextStyle(
@@ -1517,18 +1381,24 @@ class CustomersScreenState extends State<CustomersScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        content: Text(
-          "Are you sure you want to remove ${c['name']}? All ledger data will be lost. This action cannot be undone.",
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 13,
-            color: AppTheme.textSecondary,
-            height: 1.5,
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            "Are you sure you want to remove ${c['name']}? All ledger data will be lost. This action cannot be undone.",
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
           ),
-        ),
+          if (deleteError != null) ...[
+            const SizedBox(height: 8),
+            Text(deleteError!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+          ],
+        ]),
         actions: [
           Button(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: deleting ? null : () => Navigator.pop(ctx),
             child: const Text(
               "Cancel",
               style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1538,29 +1408,59 @@ class CustomersScreenState extends State<CustomersScreen> {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(AppTheme.error),
             ),
-            onPressed: () {
-              setState(() {
-                _customers.removeAt(index);
-                if (_selectedCustomer == c) _selectedCustomer = null;
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text(
-              "Remove",
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: deleting
+                ? null
+                : () async {
+                    setDialogState(() {
+                      deleting = true;
+                      deleteError = null;
+                    });
+                    try {
+                      debugPrint('[RemoveCustomer] Calling customerService.deleteCustomer() — id=$customerId');
+                      await customerService.deleteCustomer(customerId);
+                      debugPrint('[RemoveCustomer] Delete OK');
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!mounted) return;
+                      // Clear detail view if the removed customer was selected.
+                      if (_selectedCustomer != null &&
+                          (_selectedCustomer!['id'] ?? '') == customerId) {
+                        setState(() => _selectedCustomer = null);
+                      }
+                      displayInfoBar(context, builder: (c2, close) => InfoBar(
+                        title: Text('Customer "${c['name']}" removed.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ));
+                      _refreshCustomers();
+                    } catch (e, s) {
+                      debugPrint('[RemoveCustomer] FAILED: $e');
+                      debugPrint('[RemoveCustomer] Stack: $s');
+                      if (!ctx.mounted) return;
+                      setDialogState(() {
+                        deleting = false;
+                        deleteError = 'Remove failed: $e';
+                      });
+                    }
+                  },
+            child: deleting
+                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
+                : const Text(
+                    "Remove",
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      color: Colors.white,
+                    ),
+                  ),
           ).withClickCursor,
         ],
-      ),
+      )),
     );
   }
 
-  // ───── Add Transaction Dialog ─────
+  // â”€â”€â”€â”€â”€ Add Transaction Dialog â”€â”€â”€â”€â”€
 
-  // ───── Edit Transaction Dialog ─────
+  // â”€â”€â”€â”€â”€ Edit Transaction Dialog â”€â”€â”€â”€â”€
   void _showCustomerNoteDialog(Map<String, dynamic> customer) {
     final note = (customer['notes'] as String? ?? '').trim();
     if (note.isEmpty) return;
@@ -1692,13 +1592,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     bool plateHandedOver = entry['plate'] == true;
     bool remoteKeyHandedOver = entry['remoteKey'] == true;
 
-    // Sell Car — Full Payment + Due Date
-    bool editSellFullPayment = entry['fullPayment'] == true ||
-        ((entry['duration'] as String? ?? '').toLowerCase().contains('full'));
-    DateTime? editSellDueDate =
-        DateTime.tryParse(entry['dueDate'] as String? ?? '');
-
-    // Payment — Full Payment + Due Date
+    // Payment â€” Full Payment + Due Date
     bool editPaymentFullPayment = entry['fullPayment'] == true;
     DateTime? editPaymentDueDate =
         DateTime.tryParse(entry['remainingDueDate'] as String? ?? '');
@@ -1787,41 +1681,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                   if (originalType == 'Car Sale') ...[
                     _editField("Car Details", detailsCtrl),
                     _editField("Sale Price (Rs)", amountCtrl),
-                    const SizedBox(height: 4),
-                    Checkbox(
-                      checked: editSellFullPayment,
-                      onChanged: (v) => setDialogState(() {
-                        editSellFullPayment = v ?? false;
-                        if (editSellFullPayment) editSellDueDate = null;
-                      }),
-                      content: Text(
-                        "Full Payment",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (!editSellFullPayment) ...[
-                      Text(
-                        "Payment Clearance Due Date",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      DatePicker(
-                        selected: editSellDueDate ?? DateTime.now(),
-                        onChanged: (d) =>
-                            setDialogState(() => editSellDueDate = d),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
+                    const SizedBox(height: 14),
                     Text(
                       "Documentation & Handover",
                       style: TextStyle(
@@ -2017,92 +1877,134 @@ class CustomersScreenState extends State<CustomersScreen> {
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.all(AppTheme.primary),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   final dateStr =
                       '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}-${txnDate.day.toString().padLeft(2, '0')}';
                   final amt = int.tryParse(amountCtrl.text) ?? 0;
                   if (amt <= 0) return;
                   final notes = notesCtrl.text.trim();
-
                   final salesman = salesmanCtrl.text.trim();
-                  setState(() {
-                    if (originalType == 'Car Sale') {
-                      final dueStr = (editSellFullPayment ||
-                              editSellDueDate == null)
-                          ? ''
-                          : '${editSellDueDate!.year}-${editSellDueDate!.month.toString().padLeft(2, '0')}-${editSellDueDate!.day.toString().padLeft(2, '0')}';
-                      ledger[entryIndex] = {
-                        'date': dateStr,
-                        'type': 'Car Sale',
-                        'details': detailsCtrl.text.trim(),
-                        'debit': amt,
-                        'credit': 0,
-                        'salesman': salesman,
-                        'fullPayment': editSellFullPayment,
-                        'dueDate': dueStr,
-                        'file': fileHandedOver,
-                        'smartCard': smartCardHandedOver,
-                        'plate': plateHandedOver,
-                        'notes': notes,
-                        if (entry['remoteKey'] != null) 'remoteKey': entry['remoteKey'],
-                      };
-                    } else if (originalType == 'Payment') {
-                      String detail = paymentType;
-                      if (paymentType != 'Cash') {
-                        final parts = <String>[];
-                        if (bankNameCtrl.text.trim().isNotEmpty) {
-                          parts.add(bankNameCtrl.text.trim());
-                        }
-                        if (accNoCtrl.text.trim().isNotEmpty) {
-                          parts.add(accNoCtrl.text.trim());
-                        }
-                        detail = parts.isNotEmpty
-                            ? '$paymentType - ${parts.join(' / ')}'
-                            : paymentType;
-                      }
-                      final remDueStr = (editPaymentFullPayment ||
-                              editPaymentDueDate == null)
-                          ? ''
-                          : '${editPaymentDueDate!.year}-${editPaymentDueDate!.month.toString().padLeft(2, '0')}-${editPaymentDueDate!.day.toString().padLeft(2, '0')}';
-                      ledger[entryIndex] = {
-                        'date': dateStr,
-                        'type': 'Payment',
-                        'details': detail,
-                        'debit': 0,
-                        'credit': amt,
-                        'salesman': salesman,
-                        'fullPayment': editPaymentFullPayment,
-                        'remainingDueDate': remDueStr,
-                        'notes': notes,
-                      };
-                    } else if (originalType == 'Trade-In') {
-                      ledger[entryIndex] = {
-                        'date': dateStr,
-                        'type': 'Trade-In',
-                        'details': detailsCtrl.text.trim(),
-                        'debit': 0,
-                        'credit': amt,
-                        'salesman': salesman,
-                        'file': fileHandedOver,
-                        'smartCard': smartCardHandedOver,
-                        'plate': plateHandedOver,
-                        'notes': notes,
-                        if (entry['tradeCarName'] != null) 'tradeCarName': entry['tradeCarName'],
-                        if (entry['tradeCarPhotos'] != null) 'tradeCarPhotos': entry['tradeCarPhotos'],
-                      };
-                    } else if (originalType == 'Credit Refund') {
-                      ledger[entryIndex] = {
-                        'date': dateStr,
-                        'type': 'Credit Refund',
-                        'details': 'Credit Refund - Paid back to customer',
-                        'debit': amt,
-                        'credit': 0,
-                        'salesman': salesman,
-                        'notes': notes,
-                      };
+                  final entryId = (entry['id'] ?? '').toString();
+                  final customerId = (customer['id'] ?? '').toString();
+                  if (entryId.isEmpty || customerId.isEmpty) return;
+
+                  // Old debit/credit for the customer.balance delta math.
+                  final oldDebit = (entry['debit'] as int?) ?? 0;
+                  final oldCredit = (entry['credit'] as int?) ?? 0;
+
+                  // Build the new entry data + new debit/credit per type.
+                  Map<String, dynamic> newEntryData;
+                  int newDebit = 0;
+                  int newCredit = 0;
+
+                  if (originalType == 'Car Sale') {
+                    newDebit = amt;
+                    newEntryData = {
+                      'date': dateStr,
+                      'type': 'Car Sale',
+                      'details': detailsCtrl.text.trim(),
+                      'salesman': salesman,
+                      'file': fileHandedOver,
+                      'smartCard': smartCardHandedOver,
+                      'plate': plateHandedOver,
+                      'notes': notes,
+                      if (entry['remoteKey'] != null) 'remoteKey': entry['remoteKey'],
+                    };
+                  } else if (originalType == 'Payment') {
+                    String detail = paymentType;
+                    if (paymentType != 'Cash') {
+                      final parts = <String>[];
+                      if (bankNameCtrl.text.trim().isNotEmpty) parts.add(bankNameCtrl.text.trim());
+                      if (accNoCtrl.text.trim().isNotEmpty) parts.add(accNoCtrl.text.trim());
+                      detail = parts.isNotEmpty ? '$paymentType - ${parts.join(' / ')}' : paymentType;
                     }
-                  });
-                  Navigator.pop(ctx);
+                    final remDueStr = (editPaymentFullPayment || editPaymentDueDate == null)
+                        ? ''
+                        : '${editPaymentDueDate!.year}-${editPaymentDueDate!.month.toString().padLeft(2, '0')}-${editPaymentDueDate!.day.toString().padLeft(2, '0')}';
+                    newCredit = amt;
+                    newEntryData = {
+                      'date': dateStr,
+                      'type': 'Payment',
+                      'details': detail,
+                      'salesman': salesman,
+                      'fullPayment': editPaymentFullPayment,
+                      'remainingDueDate': remDueStr,
+                      'notes': notes,
+                    };
+                  } else if (originalType == 'Trade-In') {
+                    newCredit = amt;
+                    newEntryData = {
+                      'date': dateStr,
+                      'type': 'Trade-In',
+                      'details': detailsCtrl.text.trim(),
+                      'salesman': salesman,
+                      'file': fileHandedOver,
+                      'smartCard': smartCardHandedOver,
+                      'plate': plateHandedOver,
+                      'notes': notes,
+                      if (entry['tradeCarName'] != null) 'tradeCarName': entry['tradeCarName'],
+                      if (entry['tradeCarPhotos'] != null) 'tradeCarPhotos': entry['tradeCarPhotos'],
+                    };
+                  } else if (originalType == 'Credit Refund') {
+                    newDebit = amt;
+                    newEntryData = {
+                      'date': dateStr,
+                      'type': 'Credit Refund',
+                      'details': 'Credit Refund - Paid back to customer',
+                      'salesman': salesman,
+                      'notes': notes,
+                    };
+                  } else {
+                    return;
+                  }
+
+                  final customerObj = Customer(
+                    id: customerId,
+                    name: (customer['name'] ?? '').toString(),
+                    phone: (customer['phone'] ?? '').toString(),
+                    cnic: (customer['cnic'] ?? '').toString(),
+                    city: (customer['city'] ?? '').toString(),
+                    address: (customer['address'] ?? '').toString(),
+                    type: (customer['type'] ?? 'Regular').toString(),
+                    balance: (customer['balance'] as int?) ?? 0,
+                    notes: customer['notes'] as String?,
+                  );
+                  try {
+                    // ignore: avoid_print
+                    print('[EditTxn] entryId=$entryId oldDebit=$oldDebit oldCredit=$oldCredit newDebit=$newDebit newCredit=$newCredit');
+                    await ledgerService.updateEntry(
+                      customer: customerObj,
+                      entryId: entryId,
+                      entryData: newEntryData,
+                      oldDebit: oldDebit,
+                      oldCredit: oldCredit,
+                      newDebit: newDebit,
+                      newCredit: newCredit,
+                    );
+                    // ignore: avoid_print
+                    print('[EditTxn] updateEntry OK');
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    customer['balance'] = customerObj.balance + ((newDebit - newCredit) - (oldDebit - oldCredit));
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Transaction updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.success,
+                      onClose: close,
+                    ));
+                    _refreshLedgerFor(customerId);
+                  } catch (e, s) {
+                    // ignore: avoid_print
+                    print('[EditTxn] FAILED: $e');
+                    // ignore: avoid_print
+                    print('[EditTxn] Stack: $s');
+                    if (!mounted) return;
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Failed to update transaction: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.error,
+                      onClose: close,
+                    ));
+                  }
                 },
                 child: const Text(
                   "Save Changes",
@@ -2125,9 +2027,14 @@ class CustomersScreenState extends State<CustomersScreen> {
   ) {
     final entry =
         (customer['ledger'] as List<Map<String, dynamic>>)[entryIndex];
+    final entryId = (entry['id'] ?? '').toString();
+    final customerId = (customer['id'] ?? '').toString();
+    bool deleting = false;
+    String? deleteError;
+
     showDialog(
       context: context,
-      builder: (ctx) => ContentDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
         title: const Text(
           "Delete Entry",
           style: TextStyle(
@@ -2135,18 +2042,24 @@ class CustomersScreenState extends State<CustomersScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        content: Text(
-          "Remove ${entry['type']} entry \"${entry['details']}\" on ${entry['date']}?",
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 13,
-            color: AppTheme.textSecondary,
-            height: 1.5,
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            "Remove ${entry['type']} entry \"${entry['details']}\" on ${entry['date']}?",
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
           ),
-        ),
+          if (deleteError != null) ...[
+            const SizedBox(height: 8),
+            Text(deleteError!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+          ],
+        ]),
         actions: [
           Button(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: deleting ? null : () => Navigator.pop(ctx),
             child: const Text(
               "Cancel",
               style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -2156,48 +2069,81 @@ class CustomersScreenState extends State<CustomersScreen> {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(AppTheme.error),
             ),
-            onPressed: () {
-              setState(() {
-                final removed =
-                    (customer['ledger'] as List<Map<String, dynamic>>).removeAt(
-                      entryIndex,
+            onPressed: deleting
+                ? null
+                : () async {
+                    if (entryId.isEmpty || customerId.isEmpty) {
+                      setDialogState(() => deleteError = 'Missing entry/customer id — refresh and try again.');
+                      return;
+                    }
+                    setDialogState(() {
+                      deleting = true;
+                      deleteError = null;
+                    });
+                    final oldDebit = (entry['debit'] as int?) ?? 0;
+                    final oldCredit = (entry['credit'] as int?) ?? 0;
+                    final customerObj = Customer(
+                      id: customerId,
+                      name: (customer['name'] ?? '').toString(),
+                      phone: (customer['phone'] ?? '').toString(),
+                      cnic: (customer['cnic'] ?? '').toString(),
+                      city: (customer['city'] ?? '').toString(),
+                      address: (customer['address'] ?? '').toString(),
+                      type: (customer['type'] ?? 'Regular').toString(),
+                      balance: (customer['balance'] as int?) ?? 0,
+                      notes: customer['notes'] as String?,
                     );
-                // If a Car Sale was deleted, add the car back to inventory
-                if (removed['type'] == 'Car Sale') {
-                  final price = removed['debit'] as int;
-                  _availableCars.add({
-                    'name': removed['details'],
-                    'price': price,
-                    'regNo': 'TBD',
-                  });
-                }
-                // If a Trade-In was deleted, remove the car from inventory
-                if (removed['type'] == 'Trade-In') {
-                  final carName = (removed['details'] as String).replaceAll(
-                    ' (Sold Back)',
-                    '',
-                  );
-                  _availableCars.removeWhere((car) => car['name'] == carName);
-                }
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text(
-              "Delete",
-              style: TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                color: Colors.white,
-              ),
-            ),
+                    try {
+                      // ignore: avoid_print
+                      print('[DeleteTxn] entryId=$entryId customerId=$customerId oldDebit=$oldDebit oldCredit=$oldCredit');
+                      await ledgerService.deleteEntry(
+                        customer: customerObj,
+                        entryId: entryId,
+                        oldDebit: oldDebit,
+                        oldCredit: oldCredit,
+                      );
+                      // ignore: avoid_print
+                      print('[DeleteTxn] deleteEntry OK');
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!mounted) return;
+                      customer['balance'] = customerObj.balance - (oldDebit - oldCredit);
+                      displayInfoBar(context, builder: (c2, close) => InfoBar(
+                        title: const Text('Transaction deleted.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ));
+                      _refreshLedgerFor(customerId);
+                    } catch (e, s) {
+                      // ignore: avoid_print
+                      print('[DeleteTxn] FAILED: $e');
+                      // ignore: avoid_print
+                      print('[DeleteTxn] Stack: $s');
+                      if (!ctx.mounted) return;
+                      setDialogState(() {
+                        deleting = false;
+                        deleteError = 'Delete failed: $e';
+                      });
+                    }
+                  },
+            child: deleting
+                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
+                : const Text(
+                    "Delete",
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      color: Colors.white,
+                    ),
+                  ),
           ).withClickCursor,
         ],
-      ),
+      )),
     );
   }
 
-  // ═══════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  RECEIPT PDF (per-transaction)
-  // ═══════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Future<void> _showTransactionReceipt(
     Map<String, dynamic> customer,
     int entryIndex,
@@ -2582,7 +2528,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
-  // ───── Full Ledger PDF ─────
+  // â”€â”€â”€â”€â”€ Full Ledger PDF â”€â”€â”€â”€â”€
   Future<void> _showLedgerPdf(Map<String, dynamic> c) async {
     final ledger = c['ledger'] as List<Map<String, dynamic>>;
     final balance = _getBalance(c);
@@ -2908,9 +2854,9 @@ class CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  FIELD HELPERS
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _editField(String label, TextEditingController ctrl) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -3180,21 +3126,72 @@ class CustomersScreenState extends State<CustomersScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  BUILD
-  // ════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   @override
   Widget build(BuildContext context) {
+    // Initial fetch in flight, no data yet → full-screen spinner.
+    if (_loadingCustomers && _customers.isEmpty && _selectedCustomer == null) {
+      return const ScaffoldPage(content: Center(child: ProgressRing()));
+    }
+    // First fetch failed and we have nothing to show → error + retry.
+    if (_customersLoadError != null &&
+        _customers.isEmpty &&
+        _selectedCustomer == null) {
+      return ScaffoldPage(
+        content: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(FluentIcons.error, size: 36, color: AppTheme.error),
+                const SizedBox(height: 12),
+                Text(
+                  'Failed to load customers',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _customersLoadError!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    color: AppTheme.error,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _refreshCustomers,
+                  child: const Text('Retry',
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_selectedCustomer != null) {
       return _buildCustomerDetail(_selectedCustomer!);
     }
     return _buildCustomerList();
   }
 
-  // ────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   //  CUSTOMER LIST VIEW
-  // ────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildCustomerList() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3231,6 +3228,18 @@ class CustomersScreenState extends State<CustomersScreen> {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: _loadingCustomers
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: ProgressRing(strokeWidth: 2),
+                        )
+                      : Icon(FluentIcons.refresh,
+                          size: 16, color: AppTheme.textSecondary),
+                  onPressed: _loadingCustomers ? null : _refreshCustomers,
+                ).withClickCursor,
+                const SizedBox(width: 8),
                 FilledButton(
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(AppTheme.primary),
@@ -3597,7 +3606,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => setState(() => _selectedCustomer = c),
+        onTap: () => _selectCustomer(c),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           margin: const EdgeInsets.only(bottom: 4),
@@ -3813,7 +3822,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                     ),
                     const SizedBox(height: 4),
                     GestureDetector(
-                      onTap: () => setState(() => _selectedCustomer = c),
+                      onTap: () => _selectCustomer(c),
                       child: MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: Container(
@@ -3866,7 +3875,7 @@ class CustomersScreenState extends State<CustomersScreen> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => setState(() => _selectedCustomer = c),
+        onTap: () => _selectCustomer(c),
         child: Container(
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 10),
@@ -4063,7 +4072,7 @@ class CustomersScreenState extends State<CustomersScreen> {
               MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: () => setState(() => _selectedCustomer = c),
+                  onTap: () => _selectCustomer(c),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 10),
@@ -4101,9 +4110,9 @@ class CustomersScreenState extends State<CustomersScreen> {
     );
   }
 
-  // ────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   //  CUSTOMER DETAIL / LEDGER VIEW
-  // ────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildCustomerDetail(Map<String, dynamic> c) {
     final ledger = c['ledger'] as List<Map<String, dynamic>>;
     final balance = _getBalance(c);
@@ -4119,6 +4128,40 @@ class CustomersScreenState extends State<CustomersScreen> {
         return ScaffoldPage.scrollable(
           padding: EdgeInsets.all(isNarrow ? 16 : 28),
           children: [
+            // ── Layer-2 ledger load status ───────────────────────────────
+            if (_loadingLedger)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2)),
+                  const SizedBox(width: 8),
+                  Text('Loading ledger via REST…',
+                      style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                ]),
+              ),
+            if (_ledgerLoadError != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  Icon(FluentIcons.error, size: 14, color: AppTheme.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Failed to load ledger: $_ledgerLoadError',
+                        style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error)),
+                  ),
+                  const SizedBox(width: 8),
+                  Button(
+                    onPressed: () => _refreshLedgerFor((c['id'] ?? '').toString()),
+                    child: const Text('Retry', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                  ).withClickCursor,
+                ]),
+              ),
             // BACK + TITLE
             Row(
               children: [
@@ -4378,7 +4421,7 @@ class CustomersScreenState extends State<CustomersScreen> {
 
             const SizedBox(height: 24),
 
-            // ── SUMMARY STATS ──
+            // â”€â”€ SUMMARY STATS â”€â”€
             if (isNarrow)
               Column(
                 children: [
@@ -4454,7 +4497,7 @@ class CustomersScreenState extends State<CustomersScreen> {
 
             const SizedBox(height: 24),
 
-            // ── BALANCE BANNER ──
+            // â”€â”€ BALANCE BANNER â”€â”€
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -4527,7 +4570,7 @@ class CustomersScreenState extends State<CustomersScreen> {
 
             const SizedBox(height: 24),
 
-            // ── LEDGER TABLE ──
+            // â”€â”€ LEDGER TABLE â”€â”€
             Row(
               children: [
                 Text(

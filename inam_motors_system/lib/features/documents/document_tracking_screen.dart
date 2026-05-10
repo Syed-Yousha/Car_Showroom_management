@@ -3,6 +3,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../core/theme.dart';
+import '../../main.dart';
+import '../../models/document_record.dart';
 
 class DocumentTrackingScreen extends StatefulWidget {
   const DocumentTrackingScreen({super.key});
@@ -15,126 +17,73 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
   String _searchQuery = '';
   String _docFilter = 'All'; // All | Pending | Cleared
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Mock data — synchronized with inventory_screen.dart and customers_screen
-  //  Rule:
-  //    status: 'inOffice'   → document physically at Inam Motors
-  //    status: 'handedOver' → given to buyer, recorded with name + date
-  // ─────────────────────────────────────────────────────────────────────────
-  final List<Map<String, dynamic>> _records = [
-    // ── Toyota Grande 2024 · Available ────────────────────────────────────
-    {
-      'carName': 'Toyota Grande',
-      'year': 2024,
-      'regNo': 'LEA-7421',
-      'chassisNo': 'JTDBR32E-860045123',
-      'engineNo': '2ZR-FE-8924561',
-      'carStatus': 'Available',
-      'buyer': null,
-      'file':      {'status': 'inOffice',   'to': null,            'date': null},
-      'smartCard': {'status': 'inOffice',   'to': null,            'date': null},
-      'plate':     {'status': 'inOffice',   'to': null,            'date': null},
-      'remoteKey': {'status': 'inOffice',   'to': null,            'date': null},
-    },
-    // ── Honda Civic 2023 · Sold → Ahmed Khan (2026-02-03, all docs given) ─
-    {
-      'carName': 'Honda Civic',
-      'year': 2023,
-      'regNo': 'LHR-5532',
-      'chassisNo': 'MRHGM66-560089745',
-      'engineNo': 'R18Z1-7756231',
-      'carStatus': 'Sold',
-      'buyer': 'Ahmed Khan',
-      'file':      {'status': 'handedOver', 'to': 'Ahmed Khan', 'date': '2026-02-03'},
-      'smartCard': {'status': 'handedOver', 'to': 'Ahmed Khan', 'date': '2026-02-03'},
-      'plate':     {'status': 'handedOver', 'to': 'Ahmed Khan', 'date': '2026-02-03'},
-      'remoteKey': {'status': 'handedOver', 'to': 'Ahmed Khan', 'date': '2026-02-03'},
-    },
-    // ── Kia Sportage 2022 · Booked → Usman Ali (docs still pending) ───────
-    {
-      'carName': 'Kia Sportage',
-      'year': 2022,
-      'regNo': 'ISB-3918',
-      'chassisNo': 'KNAPH81-220056789',
-      'engineNo': 'G4FJ-2204587',
-      'carStatus': 'Booked',
-      'buyer': 'Usman Ali',
-      'file':      {'status': 'inOffice', 'to': null, 'date': null},
-      'smartCard': {'status': 'inOffice', 'to': null, 'date': null},
-      'plate':     {'status': 'inOffice', 'to': null, 'date': null},
-      'remoteKey': {'status': 'inOffice', 'to': null, 'date': null},
-    },
-    // ── Suzuki Cultus 2024 · Available ────────────────────────────────────
-    {
-      'carName': 'Suzuki Cultus',
-      'year': 2024,
-      'regNo': 'LEA-1105',
-      'chassisNo': 'MBJHA36-240012345',
-      'engineNo': 'K10B-2401234',
-      'carStatus': 'Available',
-      'buyer': null,
-      'file':      {'status': 'inOffice', 'to': null, 'date': null},
-      'smartCard': {'status': 'inOffice', 'to': null, 'date': null},
-      'plate':     {'status': 'inOffice', 'to': null, 'date': null},
-      'remoteKey': {'status': 'inOffice', 'to': null, 'date': null},
-    },
-    // ── Hyundai Tucson 2022 · Available ───────────────────────────────────
-    {
-      'carName': 'Hyundai Tucson',
-      'year': 2022,
-      'regNo': 'LHR-8890',
-      'chassisNo': 'KMHJN81-220098765',
-      'engineNo': 'G4FP-2209871',
-      'carStatus': 'Available',
-      'buyer': null,
-      'file':      {'status': 'inOffice', 'to': null, 'date': null},
-      'smartCard': {'status': 'inOffice', 'to': null, 'date': null},
-      'plate':     {'status': 'inOffice', 'to': null, 'date': null},
-      'remoteKey': {'status': 'inOffice', 'to': null, 'date': null},
-    },
-    // ── MG HS 2024 · Sold → Zain ul Abideen (file + smartCard + plate given)
-    {
-      'carName': 'MG HS',
-      'year': 2024,
-      'regNo': 'LEA-6677',
-      'chassisNo': 'LSJWB48-240076543',
-      'engineNo': '15S4G-2406543',
-      'carStatus': 'Sold',
-      'buyer': 'Zain ul Abideen',
-      'file':      {'status': 'handedOver', 'to': 'Zain ul Abideen', 'date': '2026-01-15'},
-      'smartCard': {'status': 'handedOver', 'to': 'Zain ul Abideen', 'date': '2026-01-15'},
-      'plate':     {'status': 'handedOver', 'to': 'Zain ul Abideen', 'date': '2026-01-15'},
-      'remoteKey': {'status': 'handedOver', 'to': 'Zain ul Abideen', 'date': '2026-01-15'},
-    },
-    // ── Changan Alsvin 2024 · Available ───────────────────────────────────
-    {
-      'carName': 'Changan Alsvin',
-      'year': 2024,
-      'regNo': 'MUL-2243',
-      'chassisNo': 'LSCGB54-240034567',
-      'engineNo': 'JL473Q5-2403456',
-      'carStatus': 'Available',
-      'buyer': null,
-      'file':      {'status': 'inOffice', 'to': null, 'date': null},
-      'smartCard': {'status': 'inOffice', 'to': null, 'date': null},
-      'plate':     {'status': 'inOffice', 'to': null, 'date': null},
-      'remoteKey': {'status': 'inOffice', 'to': null, 'date': null},
-    },
-    // ── Toyota Corolla 2024 · Available ───────────────────────────────────
-    {
-      'carName': 'Toyota Corolla',
-      'year': 2024,
-      'regNo': 'LEA-9034',
-      'chassisNo': 'JTDKR32E-240067890',
-      'engineNo': '1NZ-FE-2406789',
-      'carStatus': 'Available',
-      'buyer': null,
-      'file':      {'status': 'inOffice', 'to': null, 'date': null},
-      'smartCard': {'status': 'inOffice', 'to': null, 'date': null},
-      'plate':     {'status': 'inOffice', 'to': null, 'date': null},
-      'remoteKey': {'status': 'inOffice', 'to': null, 'date': null},
-    },
-  ];
+  List<Map<String, dynamic>> _records = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshDocs();
+  }
+
+  Future<void> _refreshDocs() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final docs = await documentsRepo.listAll();
+      final mapped = docs.map((doc) => {
+        'id': doc.id,
+        'carId': doc.carId,
+        'carName': doc.carName,
+        'year': doc.year,
+        'regNo': doc.regNo,
+        'chassisNo': doc.chassisNo,
+        'engineNo': doc.engineNo,
+        'carStatus': doc.carStatus,
+        'buyer': doc.buyer,
+        'buyerPhone': doc.buyerPhone,
+        'regName': doc.regName,
+        'carColor': doc.carColor,
+        'extraNotes': doc.extraNotes,
+        'file': {
+          'status': doc.file.status,
+          'to': doc.file.to,
+          'phone': doc.file.phone,
+          'date': doc.file.date?.toIso8601String(),
+        },
+        'smartCard': {
+          'status': doc.smartCard.status,
+          'to': doc.smartCard.to,
+          'phone': doc.smartCard.phone,
+          'date': doc.smartCard.date?.toIso8601String(),
+        },
+        'plate': {
+          'status': doc.plate.status,
+          'to': doc.plate.to,
+          'phone': doc.plate.phone,
+          'date': doc.plate.date?.toIso8601String(),
+        },
+        'remoteKey': {
+          'status': doc.remoteKey.status,
+          'to': doc.remoteKey.to,
+          'phone': doc.remoteKey.phone,
+          'date': doc.remoteKey.date?.toIso8601String(),
+        },
+      }).toList();
+      
+      if (mounted) {
+        setState(() {
+          _records = mapped;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading docs: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   bool _rowMatchesDoc(Map<String, dynamic> r) {
     if (_docFilter == 'All') return true;
@@ -208,6 +157,12 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return ScaffoldPage(
+        content: const Center(child: ProgressRing()),
+      );
+    }
+
     final filtered = _filtered;
 
     return ScaffoldPage(
@@ -485,8 +440,10 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                         icon: Icon(FluentIcons.delete,
                                             size: 14,
                                             color: AppTheme.error.withValues(alpha: 0.7)),
-                                        onPressed: () =>
-                                            setState(() => _records.remove(r)),
+                                        onPressed: () async {
+                                          await documentsRepo.delete(r['id']);
+                                          await _refreshDocs();
+                                        },
                                       ).withClickCursor,
                                     ),
                                   ],
@@ -705,7 +662,10 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                               message: "Remove",
                                               child: IconButton(
                                                 icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)),
-                                                onPressed: () => setState(() => _records.remove(r)),
+                                                onPressed: () async {
+                                                  await documentsRepo.delete(r['id']);
+                                                  await _refreshDocs();
+                                                },
                                               ).withClickCursor,
                                             ),
                                           ],
@@ -1137,40 +1097,32 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                 style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(AppTheme.primary)),
-                onPressed: () {
+                onPressed: () async {
                   if (carModelCtrl.text.trim().isEmpty ||
                       regNoCtrl.text.trim().isEmpty) {
                     return;
                   }
-                  String? fmt(DateTime? d) => d == null
-                      ? null
-                      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-                  void writeDoc(
-                    String key,
+
+                  Map<String, dynamic> buildDocState(
                     String status,
                     TextEditingController toCtrl,
                     TextEditingController phoneCtrl,
                     DateTime? date,
                   ) {
-                    record[key] ??= {
-                      'status': 'inOffice',
-                      'to': null,
-                      'phone': null,
-                      'date': null,
-                    };
-                    record[key]['status'] = status;
                     if (status == 'handedOver') {
-                      record[key]['to'] = toCtrl.text.trim().isEmpty
-                          ? null
-                          : toCtrl.text.trim();
-                      record[key]['phone'] = phoneCtrl.text.trim().isEmpty
-                          ? null
-                          : phoneCtrl.text.trim();
-                      record[key]['date'] = fmt(date);
+                      return {
+                        'status': status,
+                        'to': toCtrl.text.trim().isEmpty ? null : toCtrl.text.trim(),
+                        'phone': phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                        'date': date?.toIso8601String(),
+                      };
                     } else {
-                      record[key]['to'] = null;
-                      record[key]['phone'] = null;
-                      record[key]['date'] = null;
+                      return {
+                        'status': status,
+                        'to': null,
+                        'phone': null,
+                        'date': null,
+                      };
                     }
                   }
 
@@ -1194,30 +1146,34 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                     remoteKeyPhoneCtrl,
                   ]);
 
-                  setState(() {
-                    record['carName'] = carModelCtrl.text.trim();
-                    record['year'] = int.tryParse(yearCtrl.text.trim()) ??
-                        record['year'];
-                    record['regNo'] = regNoCtrl.text.trim();
-                    record['regName'] = regNameCtrl.text.trim();
-                    record['carColor'] = carColorCtrl.text.trim();
-                    record['chassisNo'] = chassisNoCtrl.text.trim().isEmpty
+                  final updateData = {
+                    'carName': carModelCtrl.text.trim(),
+                    'year': int.tryParse(yearCtrl.text.trim()) ?? record['year'],
+                    'regNo': regNoCtrl.text.trim(),
+                    'regName': regNameCtrl.text.trim(),
+                    'carColor': carColorCtrl.text.trim(),
+                    'chassisNo': chassisNoCtrl.text.trim().isEmpty
                         ? '-'
-                        : chassisNoCtrl.text.trim();
-                    record['engineNo'] = engineNoCtrl.text.trim().isEmpty
+                        : chassisNoCtrl.text.trim(),
+                    'engineNo': engineNoCtrl.text.trim().isEmpty
                         ? '-'
-                        : engineNoCtrl.text.trim();
-                    record['carStatus'] = carStatus;
-                    record['buyer'] = primaryBuyer;
-                    record['buyerPhone'] = primaryPhone ?? '';
-                    record['extraNotes'] = extraNotesCtrl.text.trim();
+                        : engineNoCtrl.text.trim(),
+                    'carStatus': carStatus,
+                    'buyer': primaryBuyer,
+                    'buyerPhone': primaryPhone ?? '',
+                    'extraNotes': extraNotesCtrl.text.trim(),
+                    'file': buildDocState(fileStatus, fileToCtrl, filePhoneCtrl, fileDate),
+                    'smartCard': buildDocState(smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate),
+                    'plate': buildDocState(plateStatus, plateToCtrl, platePhoneCtrl, plateDate),
+                    'remoteKey': buildDocState(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
+                  };
 
-                    writeDoc('file', fileStatus, fileToCtrl, filePhoneCtrl, fileDate);
-                    writeDoc('smartCard', smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate);
-                    writeDoc('plate', plateStatus, plateToCtrl, platePhoneCtrl, plateDate);
-                    writeDoc('remoteKey', remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate);
-                  });
-                  Navigator.pop(ctx);
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                  }
+                  
+                  await documentsRepo.update(record['id'], updateData);
+                  await _refreshDocs();
                 },
                 child: const Text('Save',
                     style: TextStyle(
@@ -1544,27 +1500,26 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
               ).withClickCursor,
               FilledButton(
                 style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-                onPressed: () {
+                onPressed: () async {
                   if (carModelCtrl.text.trim().isEmpty || regNoCtrl.text.trim().isEmpty) return;
-                  String? fmt(DateTime? d) => d == null
-                      ? null
-                      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-                  Map<String, dynamic> docEntry(
+                  
+                  DocItemState buildDocState(
                     String status,
                     TextEditingController toCtrl,
                     TextEditingController phoneCtrl,
                     DateTime? date,
-                  ) =>
-                      {
-                        'status': status,
-                        'to': (status == 'handedOver' && toCtrl.text.trim().isNotEmpty)
-                            ? toCtrl.text.trim()
-                            : null,
-                        'phone': (status == 'handedOver' && phoneCtrl.text.trim().isNotEmpty)
-                            ? phoneCtrl.text.trim()
-                            : null,
-                        'date': status == 'handedOver' ? fmt(date) : null,
-                      };
+                  ) {
+                    return DocItemState(
+                      status: status,
+                      to: (status == 'handedOver' && toCtrl.text.trim().isNotEmpty)
+                          ? toCtrl.text.trim()
+                          : null,
+                      phone: (status == 'handedOver' && phoneCtrl.text.trim().isNotEmpty)
+                          ? phoneCtrl.text.trim()
+                          : null,
+                      date: status == 'handedOver' ? date : null,
+                    );
+                  }
 
                   // Pick the first non-empty buyer/phone to keep the existing
                   // record-level fields in sync (used for table display).
@@ -1588,26 +1543,32 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                     remoteKeyPhoneCtrl,
                   ]);
 
-                  setState(() {
-                    _records.insert(0, {
-                      'carName':   carModelCtrl.text.trim(),
-                      'year':      int.tryParse(yearCtrl.text.trim()) ?? DateTime.now().year,
-                      'regNo':     regNoCtrl.text.trim(),
-                      'chassisNo': chassisNoCtrl.text.trim().isEmpty ? '-' : chassisNoCtrl.text.trim(),
-                      'engineNo':  engineNoCtrl.text.trim().isEmpty  ? '-' : engineNoCtrl.text.trim(),
-                      'carStatus': carStatus,
-                      'buyer':     primaryBuyer,
-                      'regName':   regNameCtrl.text.trim(),
-                      'carColor':  carColorCtrl.text.trim(),
-                      'buyerPhone': primaryPhone ?? '',
-                      'extraNotes': extraNotesCtrl.text.trim(),
-                      'file':      docEntry(fileStatus, fileToCtrl, filePhoneCtrl, fileDate),
-                      'smartCard': docEntry(smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate),
-                      'plate':     docEntry(plateStatus, plateToCtrl, platePhoneCtrl, plateDate),
-                      'remoteKey': docEntry(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
-                    });
-                  });
-                  Navigator.pop(ctx);
+                  final newDoc = DocumentRecord(
+                    id: '',
+                    carId: '',
+                    carName: carModelCtrl.text.trim(),
+                    year: int.tryParse(yearCtrl.text.trim()) ?? DateTime.now().year,
+                    regNo: regNoCtrl.text.trim(),
+                    chassisNo: chassisNoCtrl.text.trim().isEmpty ? '-' : chassisNoCtrl.text.trim(),
+                    engineNo: engineNoCtrl.text.trim().isEmpty  ? '-' : engineNoCtrl.text.trim(),
+                    carStatus: carStatus,
+                    buyer: primaryBuyer,
+                    regName: regNameCtrl.text.trim(),
+                    carColor: carColorCtrl.text.trim(),
+                    buyerPhone: primaryPhone ?? '',
+                    extraNotes: extraNotesCtrl.text.trim(),
+                    file: buildDocState(fileStatus, fileToCtrl, filePhoneCtrl, fileDate),
+                    smartCard: buildDocState(smartCardStatus, smartCardToCtrl, smartCardPhoneCtrl, smartCardDate),
+                    plate: buildDocState(plateStatus, plateToCtrl, platePhoneCtrl, plateDate),
+                    remoteKey: buildDocState(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
+                  );
+
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                  }
+
+                  await documentsRepo.add(newDoc);
+                  await _refreshDocs();
                 },
                 child: const Text('Save', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
               ).withClickCursor,

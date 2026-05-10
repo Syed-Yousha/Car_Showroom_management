@@ -7,6 +7,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
+import '../../main.dart';
+import '../../models/car.dart';
+import '../../models/investor.dart';
 import '../shared/widgets.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -63,18 +66,97 @@ class InventoryScreenState extends State<InventoryScreen> {
     return null;
   }
 
-  static const List<String> _defaultInvestors = [
-    'Faheem Khan',
-    'Inam Khan',
-  ];
-
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isGridView = true;
   String _sortBy = 'Newest';
   int? _expandedIndex;
 
-  final List<Map<String, dynamic>> _cars = [
+  /// Live list of cars, loaded from Firestore via the REST helper
+  /// (`InventoryService.fetchCarsSafe`). Replaces the previous hardcoded
+  /// demo list so the UI reflects real data.
+  List<Map<String, dynamic>> _cars = [];
+  bool _loadingCars = true;
+  String? _carsLoadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshCars();
+  }
+
+  /// Fetch cars via REST and rebuild. Call this on initState, when the
+  /// user taps "Refresh", or after any write that changes inventory.
+  Future<void> _refreshCars() async {
+    if (mounted) {
+      setState(() {
+        _loadingCars = true;
+        _carsLoadError = null;
+      });
+    }
+    try {
+      final cars = await inventoryService.fetchCarsSafe();
+      if (!mounted) return;
+      setState(() {
+        _cars = cars.map(_carToDisplayMap).toList();
+        _loadingCars = false;
+      });
+    } catch (e, s) {
+      print('[Inventory] fetchCarsSafe failed: $e');
+      print('[Inventory] Stack: $s');
+      if (!mounted) return;
+      setState(() {
+        _carsLoadError = e.toString();
+        _loadingCars = false;
+      });
+    }
+  }
+
+  /// Convert a typed `Car` into the `Map<String, dynamic>` shape the
+  /// existing rendering code already consumes — keeps the (large) build
+  /// methods unchanged.
+  Map<String, dynamic> _carToDisplayMap(Car c) => {
+        'id': c.id,
+        'name': c.name,
+        'make': c.make,
+        'model': c.model,
+        'year': c.year,
+        'color': c.color,
+        'price': c.price,
+        'demandPrice': c.demandPrice ?? c.price,
+        'regNo': c.regNo,
+        'status': c.status,
+        'buyer': c.buyerName ?? '',
+        'mileage': c.mileage,
+        'fuel': c.fuel,
+        'transmission': c.transmission,
+        'chassisNo': c.chassisNo,
+        'engineNo': c.engineNo,
+        'investorId': c.investorId,
+        'investor': c.investorName ?? '',
+        'fileHandedOver': c.fileHandedOver,
+        'smartCardHandedOver': c.smartCardHandedOver,
+        'numberPlateHandedOver': c.numberPlateHandedOver,
+        'remoteKeyHandedOver': c.remoteKeyHandedOver,
+        'photos': c.photos,
+        'carExpenses': c.carExpenses
+            .map((e) => {
+                  'title': e.title,
+                  'amount': e.amount,
+                  'date': e.date?.toIso8601String().substring(0, 10) ?? '',
+                })
+            .toList(),
+        'sellerName': c.sellerName ?? '',
+        'sellerPhone': c.sellerPhone ?? '',
+        'sellerCnic': c.sellerCnic ?? '',
+        'notes': c.notes ?? '',
+      };
+
+  // ── Removed hardcoded demo cars below — kept the rest of the screen
+  // unchanged. Old demo data lived inline as a `final List<Map<...>>` and
+  // is now replaced by `_refreshCars()` above.
+  // ignore: unused_field
+  static const _legacyDemoCars = <Map<String, dynamic>>[
     {
       'name': 'Toyota Grande',
       'make': 'Toyota',
@@ -291,16 +373,7 @@ class InventoryScreenState extends State<InventoryScreen> {
   int get _bookedCount => _cars.where((c) => c['status'] == 'Booked').length;
   int get _totalCarExpenses => _cars.fold(0, (s, c) => s + ((c['carExpenses'] as List).fold(0, (ss, e) => (ss) + ((e as Map)['amount'] as int))));
 
-  List<String> get _investorOptions {
-    final options = {
-      ..._defaultInvestors,
-      ..._cars
-          .map((c) => (c['investor'] ?? '').toString().trim())
-          .where((name) => name.isNotEmpty),
-    }.toList();
-    options.sort();
-    return options;
-  }
+
 
   int? _parseAmount(String value) {
     final normalized = value.replaceAll(RegExp(r'[^0-9]'), '');
@@ -470,11 +543,11 @@ class InventoryScreenState extends State<InventoryScreen> {
             pw.Text("Car Photos", style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
             pw.Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 12,
+              runSpacing: 12,
               children: loadedImages.map<pw.Widget>((img) => pw.Container(
-                width: 120,
-                height: 90,
+                width: 220,
+                height: 165,
                 decoration: pw.BoxDecoration(
                   border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
                   borderRadius: pw.BorderRadius.circular(6),
@@ -537,50 +610,6 @@ class InventoryScreenState extends State<InventoryScreen> {
   }
 
 
-  pw.Widget _pdfCheckBox(String label, bool checked) {
-    return pw.Row(children: [
-      pw.Container(
-        width: 14, height: 14,
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: checked ? PdfColors.green : PdfColors.red, width: 1),
-          borderRadius: pw.BorderRadius.circular(3),
-          color: checked ? PdfColors.green50 : PdfColors.red50,
-        ),
-        child: pw.Center(
-          child: checked
-            ? pw.CustomPaint(
-                size: const PdfPoint(10, 10),
-                painter: (PdfGraphics canvas, PdfPoint size) {
-                  canvas
-                    ..setStrokeColor(PdfColors.green)
-                    ..setLineWidth(1.5)
-                    ..moveTo(2, 5)
-                    ..lineTo(4.5, 2.5)
-                    ..lineTo(8.5, 7.5)
-                    ..strokePath();
-                },
-              )
-            : pw.CustomPaint(
-                size: const PdfPoint(10, 10),
-                painter: (PdfGraphics canvas, PdfPoint size) {
-                  canvas
-                    ..setStrokeColor(PdfColors.red)
-                    ..setLineWidth(1.5)
-                    ..moveTo(2.5, 7.5)
-                    ..lineTo(7.5, 2.5)
-                    ..strokePath()
-                    ..moveTo(2.5, 2.5)
-                    ..lineTo(7.5, 7.5)
-                    ..strokePath();
-                },
-              ),
-        ),
-      ),
-      pw.SizedBox(width: 4),
-      pw.Text(label, style: const pw.TextStyle(fontSize: 10)),
-    ]);
-  }
-
   void _showAddCarDialog() {
     final nameCtrl = TextEditingController();
     final makeCtrl = TextEditingController();
@@ -594,7 +623,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     final sellerNameCtrl = TextEditingController();
     final sellerPhoneCtrl = TextEditingController();
     final sellerCnicCtrl = TextEditingController();
-    final investorCtrl = TextEditingController();
     String selectedFuel = 'Petrol';
     String selectedTransmission = 'Automatic';
     bool fileHanded = false;
@@ -604,9 +632,41 @@ class InventoryScreenState extends State<InventoryScreen> {
     final notesCtrl = TextEditingController();
     List<String> selectedImagePaths = [];
 
+    // Investor dropdown state. Loaded async via the REST helper because
+    // the Windows Firestore SDK crashes on reads.
+    List<Investor> investorList = const [];
+    Investor? selectedInvestor;
+    bool investorsLoading = true;
+    String? investorsLoadError;
+    bool loadKicked = false;
+    bool saving = false;
+    String? saveError;
+
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        // First-build only: kick off the REST listAll for the investor
+        // dropdown. Subsequent rebuilds skip via the `loadKicked` flag.
+        if (!loadKicked) {
+          loadKicked = true;
+          Future(() async {
+            try {
+              print('[AddCar] Loading investors via REST...');
+              final list = await investorsRepo.listAll();
+              print('[AddCar] Loaded ${list.length} investor(s) OK');
+              investorList = list;
+            } catch (e, s) {
+              print('[AddCar] Failed to load investors: $e');
+              print('[AddCar] Stack: $s');
+              investorsLoadError = e.toString();
+            } finally {
+              investorsLoading = false;
+              if (ctx.mounted) setDialogState(() {});
+            }
+          });
+        }
+
+        return ContentDialog(
         title: const Text("Add New Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
         constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
         content: ClipRRect(
@@ -768,7 +828,47 @@ class InventoryScreenState extends State<InventoryScreen> {
             ]),
             _editField("Chassis No", chassisCtrl),
             _editField("Engine No", engineCtrl),
-            _editField("Investor", investorCtrl),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: InfoLabel(
+                label: "Investor (optional)",
+                labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                child: investorsLoading
+                    ? Container(
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        alignment: Alignment.centerLeft,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const SizedBox(width: 12, height: 12, child: ProgressRing(strokeWidth: 2)),
+                          const SizedBox(width: 8),
+                          Text("Loading investors…", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                        ]),
+                      )
+                    : investorsLoadError != null
+                        ? Text("Failed to load: $investorsLoadError",
+                            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error))
+                        : ComboBox<Investor?>(
+                            value: selectedInvestor,
+                            isExpanded: true,
+                            placeholder: Text(
+                              investorList.isEmpty ? "No investors available" : "(none) — no investor for this car",
+                              style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                            ),
+                            items: [
+                              const ComboBoxItem<Investor?>(
+                                value: null,
+                                child: Text("(none)", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                              ),
+                              for (final inv in investorList)
+                                ComboBoxItem<Investor?>(
+                                  value: inv,
+                                  child: Text(inv.name, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                                ),
+                            ],
+                            onChanged: (v) => setDialogState(() => selectedInvestor = v),
+                          ),
+              ),
+            ),
             Row(children: [
               Expanded(child: _editField("Seller Name", sellerNameCtrl)),
               const SizedBox(width: 12),
@@ -818,47 +918,95 @@ class InventoryScreenState extends State<InventoryScreen> {
           ),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          if (saveError != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                saveError!,
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error),
+              ),
+            ),
+          Button(
+            onPressed: saving ? null : () => Navigator.pop(ctx),
+            child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          ).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-            onPressed: () {
-              if (nameCtrl.text.isEmpty) return;
-              setState(() {
-                _cars.add({
-                  'name': nameCtrl.text,
-                  'make': makeCtrl.text,
-                  'model': modelCtrl.text,
-                  'year': DateTime.now().year,
-                  'color': colorCtrl.text,
-                  'price': int.tryParse(priceCtrl.text) ?? 0,
-                  'regNo': regNoCtrl.text,
-                  'status': 'Available',
-                  'buyer': '',
-                  'mileage': mileageCtrl.text,
-                  'fuel': selectedFuel,
-                  'transmission': selectedTransmission,
-                  'chassisNo': chassisCtrl.text,
-                  'engineNo': engineCtrl.text,
-                  'investor': investorCtrl.text,
-                  'sellerName': sellerNameCtrl.text,
-                  'sellerPhone': sellerPhoneCtrl.text,
-                  'sellerCnic': sellerCnicCtrl.text,
-                  'fileHandedOver': fileHanded,
-                  'smartCardHandedOver': smartCardHanded,
-                  'numberPlateHandedOver': plateHanded,
-                  'remoteKeyHandedOver': remoteKeyHanded,
-                  'demandPrice': int.tryParse(priceCtrl.text) ?? 0,
-                  'photos': selectedImagePaths,
-                  'carExpenses': <Map<String, dynamic>>[],
-                  'notes': notesCtrl.text,
-                });
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text("Add Car", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            onPressed: saving
+                ? null
+                : () async {
+                    if (nameCtrl.text.trim().isEmpty) {
+                      setDialogState(() => saveError = 'Car name is required.');
+                      return;
+                    }
+                    setDialogState(() {
+                      saving = true;
+                      saveError = null;
+                    });
+
+                    final priceInt = int.tryParse(priceCtrl.text.trim()) ?? 0;
+                    final car = Car(
+                      id: '', // auto-id assigned by InventoryService
+                      name: nameCtrl.text.trim(),
+                      make: makeCtrl.text.trim(),
+                      model: modelCtrl.text.trim(),
+                      year: DateTime.now().year,
+                      color: colorCtrl.text.trim(),
+                      price: priceInt,
+                      demandPrice: priceInt,
+                      regNo: regNoCtrl.text.trim(),
+                      status: 'Available',
+                      mileage: mileageCtrl.text.trim(),
+                      fuel: selectedFuel,
+                      transmission: selectedTransmission,
+                      chassisNo: chassisCtrl.text.trim(),
+                      engineNo: engineCtrl.text.trim(),
+                      fileHandedOver: fileHanded,
+                      smartCardHandedOver: smartCardHanded,
+                      numberPlateHandedOver: plateHanded,
+                      remoteKeyHandedOver: remoteKeyHanded,
+                      photos: selectedImagePaths,
+                      sellerName: sellerNameCtrl.text.trim().isEmpty ? null : sellerNameCtrl.text.trim(),
+                      sellerPhone: sellerPhoneCtrl.text.trim().isEmpty ? null : sellerPhoneCtrl.text.trim(),
+                      sellerCnic: sellerCnicCtrl.text.trim().isEmpty ? null : sellerCnicCtrl.text.trim(),
+                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                    );
+
+                    try {
+                      print('[AddCar] Calling inventoryService.addCar() — investor=${selectedInvestor?.name ?? "(none)"}, price=$priceInt');
+                      final id = await inventoryService.addCar(car, investor: selectedInvestor);
+                      print('[AddCar] Car saved successfully with id=$id');
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!mounted) return;
+                      displayInfoBar(context, builder: (c, close) => InfoBar(
+                        title: Text('Car "${car.name}" added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ));
+                      // Re-fetch the list so the new car appears immediately.
+                      _refreshCars();
+                    } catch (e, s) {
+                      print('[AddCar] FAILED to save car: $e');
+                      print('[AddCar] Stack: $s');
+                      if (!ctx.mounted) return;
+                      setDialogState(() {
+                        saving = false;
+                        saveError = 'Save failed: $e';
+                      });
+                    }
+                  },
+            child: saving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: ProgressRing(strokeWidth: 2),
+                  )
+                : const Text("Add Car", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
-      )),
+      );
+      }),
     );
   }
 
@@ -909,9 +1057,16 @@ class InventoryScreenState extends State<InventoryScreen> {
   }
 
   void _showRemoveCarDialog(Map<String, dynamic> car) {
+    final carId = (car['id'] ?? '').toString();
+    final carPrice = (car['price'] as int?) ?? 0;
+    final previousInvestorId = (car['investorId'] ?? '').toString();
+
+    bool deleting = false;
+    String? deleteError;
+
     showDialog(
       context: context,
-      builder: (ctx) => ContentDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
         title: const Text("Remove Car", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text("Are you sure you want to remove this car from inventory?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
@@ -928,25 +1083,74 @@ class InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text("${car['name']} (${car['year']})", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatFullPrice(car['price'])}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
+                Text("${car['color']} \u2022 ${car['transmission']} \u2022 ${formatFullPrice(carPrice)}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
               ])),
             ]),
           ),
           const SizedBox(height: 8),
           Text("This action cannot be undone.", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+          if (deleteError != null) ...[
+            const SizedBox(height: 8),
+            Text(deleteError!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
+          ],
         ]),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          Button(
+            onPressed: deleting ? null : () => Navigator.pop(ctx),
+            child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          ).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
-            onPressed: () {
-              setState(() => _cars.remove(car));
-              Navigator.pop(ctx);
-            },
-            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            onPressed: deleting
+                ? null
+                : () async {
+                    if (carId.isEmpty) {
+                      setDialogState(() => deleteError = 'Missing car id \u2014 refresh and try again.');
+                      return;
+                    }
+                    setDialogState(() {
+                      deleting = true;
+                      deleteError = null;
+                    });
+                    try {
+                      // Look up the investor (if any) so we can adjust heldAmount.
+                      Investor? prevInvestor;
+                      if (previousInvestorId.isNotEmpty) {
+                        print('[RemoveCar] Fetching previous investor $previousInvestorId via REST...');
+                        prevInvestor = await investorsRepo.getOne(previousInvestorId);
+                      }
+                      print('[RemoveCar] Calling inventoryService.deleteCar(carId=$carId)');
+                      await inventoryService.deleteCar(
+                        carId: carId,
+                        previousInvestor: prevInvestor,
+                        carPrice: carPrice,
+                      );
+                      print('[RemoveCar] Delete OK');
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!mounted) return;
+                      displayInfoBar(context, builder: (c, close) => InfoBar(
+                        title: Text('Car "${car['name']}" removed.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ));
+                      _refreshCars();
+                    } catch (e, s) {
+                      print('[RemoveCar] FAILED: $e');
+                      print('[RemoveCar] Stack: $s');
+                      if (!ctx.mounted) return;
+                      setDialogState(() {
+                        deleting = false;
+                        deleteError = 'Remove failed: $e';
+                      });
+                    }
+                  },
+            child: deleting
+                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
+                : const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
-      ),
+      )),
     );
   }
 
@@ -966,11 +1170,22 @@ class InventoryScreenState extends State<InventoryScreen> {
     final sellerNameCtrl = TextEditingController(text: car['sellerName'] ?? '');
     final sellerPhoneCtrl = TextEditingController(text: car['sellerPhone'] ?? '');
     final sellerCnicCtrl = TextEditingController(text: car['sellerCnic'] ?? '');
-    final investors = _investorOptions;
-    String selectedInvestor = car['investor'];
-    if (!investors.contains(selectedInvestor)) {
-      selectedInvestor = investors.first;
-    }
+    // Investor dropdown is loaded async via REST. We pre-populate
+    // `selectedInvestor` once the list arrives, matching the car's saved
+    // `investorId`. The ORIGINAL investor + price are kept separately so
+    // updateCar() can adjust heldAmount accurately.
+    final originalInvestorId = (car['investorId'] ?? '').toString();
+    final originalPrice = (car['price'] as int?) ?? 0;
+    final originalCarId = (car['id'] ?? '').toString();
+    List<Investor> investorList = const [];
+    Investor? selectedInvestor;
+    Investor? originalInvestor;
+    bool investorsLoading = true;
+    String? investorsLoadError;
+    bool editLoadKicked = false;
+    bool savingEdit = false;
+    String? editSaveError;
+
     final regNoCtrl = TextEditingController(text: car['regNo'] ?? '');
     final buyerCtrl = TextEditingController(text: car['buyer'] ?? '');
     String selectedStatus = car['status'];
@@ -989,7 +1204,39 @@ class InventoryScreenState extends State<InventoryScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        // First-build only: kick off the REST listAll for the investor
+        // dropdown. Pre-select the car's existing investor (if any) so
+        // the dropdown shows the right entry on open.
+        if (!editLoadKicked) {
+          editLoadKicked = true;
+          Future(() async {
+            try {
+              print('[EditCar] Loading investors via REST...');
+              final list = await investorsRepo.listAll();
+              print('[EditCar] Loaded ${list.length} investor(s) OK');
+              investorList = list;
+              if (originalInvestorId.isNotEmpty) {
+                for (final inv in list) {
+                  if (inv.id == originalInvestorId) {
+                    originalInvestor = inv;
+                    selectedInvestor = inv;
+                    break;
+                  }
+                }
+              }
+            } catch (e, s) {
+              print('[EditCar] Failed to load investors: $e');
+              print('[EditCar] Stack: $s');
+              investorsLoadError = e.toString();
+            } finally {
+              investorsLoading = false;
+              if (ctx.mounted) setDialogState(() {});
+            }
+          });
+        }
+
+        return ContentDialog(
         title: const Text("Edit Car Details", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
         constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
         content: ClipRRect(
@@ -1170,21 +1417,42 @@ class InventoryScreenState extends State<InventoryScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: InfoLabel(
-                    label: "Investor",
+                    label: "Investor (optional)",
                     labelStyle: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                    child: ComboBox<String>(
-                      value: selectedInvestor,
-                      isExpanded: true,
-                      items: investors
-                          .map((s) => ComboBoxItem<String>(
-                                value: s,
-                                child: Text(s, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setDialogState(() => selectedInvestor = v);
-                      },
-                    ),
+                    child: investorsLoading
+                        ? Container(
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            alignment: Alignment.centerLeft,
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const SizedBox(width: 12, height: 12, child: ProgressRing(strokeWidth: 2)),
+                              const SizedBox(width: 8),
+                              Text("Loading investors…", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.textMuted)),
+                            ]),
+                          )
+                        : investorsLoadError != null
+                            ? Text("Failed to load: $investorsLoadError",
+                                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error))
+                            : ComboBox<Investor?>(
+                                value: selectedInvestor,
+                                isExpanded: true,
+                                placeholder: Text(
+                                  "(none)",
+                                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted),
+                                ),
+                                items: [
+                                  const ComboBoxItem<Investor?>(
+                                    value: null,
+                                    child: Text("(none)", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                                  ),
+                                  for (final inv in investorList)
+                                    ComboBoxItem<Investor?>(
+                                      value: inv,
+                                      child: Text(inv.name, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)),
+                                    ),
+                                ],
+                                onChanged: (v) => setDialogState(() => selectedInvestor = v),
+                              ),
                   ),
                 ),
               ),
@@ -1293,54 +1561,110 @@ class InventoryScreenState extends State<InventoryScreen> {
           ),
         ),
         actions: [
-          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          if (editSaveError != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                editSaveError!,
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error),
+              ),
+            ),
+          Button(
+            onPressed: savingEdit ? null : () => Navigator.pop(ctx),
+            child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          ).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-            onPressed: () {
-              setState(() {
-                _cars[index] = {
-                  ...car,
-                  'name': nameCtrl.text,
-                  'make': makeCtrl.text,
-                  'model': modelCtrl.text,
-                  'year': int.tryParse(yearCtrl.text) ?? car['year'],
-                  'color': colorCtrl.text,
-                  'price': int.tryParse(priceCtrl.text) ?? car['price'],
-                  'mileage': mileageCtrl.text,
-                  'status': selectedStatus,
-                  'fuel': selectedFuel,
-                  'transmission': selectedTransmission,
-                  'chassisNo': chassisCtrl.text,
-                  'engineNo': engineCtrl.text,
-                  'investor': selectedInvestor,
-                  'sellerName': sellerNameCtrl.text,
-                  'sellerPhone': sellerPhoneCtrl.text,
-                  'sellerCnic': sellerCnicCtrl.text,
-                  'regNo': regNoCtrl.text,
-                  'buyer': buyerCtrl.text,
-                  'fileHandedOver': fileHanded,
-                  'smartCardHandedOver': smartCardHanded,
-                  'numberPlateHandedOver': plateHanded,
-                  'remoteKeyHandedOver': remoteKeyHanded,
-                  'demandPrice': (car['demandPrice'] as int?) ?? (int.tryParse(priceCtrl.text) ?? car['price']),
-                  'photos': selectedImagePaths,
-                  'carExpenses': expenseRows
-                    .where((row) => row['title']!.text.trim().isNotEmpty)
-                    .map((row) => {
-                      'title': row['title']!.text.trim(),
-                      'amount': int.tryParse(row['amount']!.text) ?? 0,
-                      'date': '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
-                    })
-                    .toList(),
-                  'notes': notesCtrl.text,
-                };
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            onPressed: savingEdit
+                ? null
+                : () async {
+                    if (originalCarId.isEmpty) {
+                      setDialogState(() => editSaveError = 'Missing car id — refresh and try again.');
+                      return;
+                    }
+                    setDialogState(() {
+                      savingEdit = true;
+                      editSaveError = null;
+                    });
+
+                    final newPrice = int.tryParse(priceCtrl.text.trim()) ?? originalPrice;
+                    final newCar = Car(
+                      id: originalCarId,
+                      name: nameCtrl.text.trim(),
+                      make: makeCtrl.text.trim(),
+                      model: modelCtrl.text.trim(),
+                      year: int.tryParse(yearCtrl.text.trim()) ?? (car['year'] as int? ?? DateTime.now().year),
+                      color: colorCtrl.text.trim(),
+                      price: newPrice,
+                      demandPrice: (car['demandPrice'] as int?) ?? newPrice,
+                      regNo: regNoCtrl.text.trim(),
+                      status: selectedStatus,
+                      buyerId: car['buyerId'] as String?,
+                      buyerName: buyerCtrl.text.trim().isEmpty ? null : buyerCtrl.text.trim(),
+                      mileage: mileageCtrl.text.trim(),
+                      fuel: selectedFuel,
+                      transmission: selectedTransmission,
+                      chassisNo: chassisCtrl.text.trim(),
+                      engineNo: engineCtrl.text.trim(),
+                      investorId: selectedInvestor?.id,
+                      investorName: selectedInvestor?.name,
+                      fileHandedOver: fileHanded,
+                      smartCardHandedOver: smartCardHanded,
+                      numberPlateHandedOver: plateHanded,
+                      remoteKeyHandedOver: remoteKeyHanded,
+                      photos: selectedImagePaths,
+                      carExpenses: expenseRows
+                          .where((row) => row['title']!.text.trim().isNotEmpty)
+                          .map((row) => CarExpense(
+                                title: row['title']!.text.trim(),
+                                amount: int.tryParse(row['amount']!.text) ?? 0,
+                                date: DateTime.now(),
+                              ))
+                          .toList(),
+                      sellerName: sellerNameCtrl.text.trim().isEmpty ? null : sellerNameCtrl.text.trim(),
+                      sellerPhone: sellerPhoneCtrl.text.trim().isEmpty ? null : sellerPhoneCtrl.text.trim(),
+                      sellerCnic: sellerCnicCtrl.text.trim().isEmpty ? null : sellerCnicCtrl.text.trim(),
+                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                    );
+
+                    try {
+                      print('[EditCar] Calling inventoryService.updateCar() — '
+                          'oldInvestor=${originalInvestor?.name ?? "(none)"}, '
+                          'newInvestor=${selectedInvestor?.name ?? "(none)"}, '
+                          'oldPrice=$originalPrice, newPrice=$newPrice');
+                      await inventoryService.updateCar(
+                        newCar,
+                        oldInvestor: originalInvestor,
+                        oldPrice: originalPrice,
+                        newInvestor: selectedInvestor,
+                      );
+                      print('[EditCar] updateCar OK');
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!mounted) return;
+                      displayInfoBar(context, builder: (c, close) => InfoBar(
+                        title: Text('Car "${newCar.name}" updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ));
+                      _refreshCars();
+                    } catch (e, s) {
+                      print('[EditCar] FAILED to update car: $e');
+                      print('[EditCar] Stack: $s');
+                      if (!ctx.mounted) return;
+                      setDialogState(() {
+                        savingEdit = false;
+                        editSaveError = 'Update failed: $e';
+                      });
+                    }
+                  },
+            child: savingEdit
+                ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
+                : const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
-      )),
+      );
+      }),
     );
   }
 
@@ -1361,6 +1685,45 @@ class InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Initial fetch in flight, no data yet → full-screen spinner.
+    if (_loadingCars && _cars.isEmpty) {
+      return const ScaffoldPage(
+        content: Center(child: ProgressRing()),
+      );
+    }
+    // First fetch failed and we have nothing to show → error + retry.
+    if (_carsLoadError != null && _cars.isEmpty) {
+      return ScaffoldPage(
+        content: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(FluentIcons.error, size: 36, color: AppTheme.error),
+                const SizedBox(height: 12),
+                Text(
+                  'Failed to load inventory',
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _carsLoadError!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: AppTheme.error),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _refreshCars,
+                  child: const Text('Retry', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(builder: (context, constraints) {
       final isNarrow = constraints.maxWidth < 700;
       final isMedium = constraints.maxWidth < 1000;
@@ -1375,6 +1738,16 @@ class InventoryScreenState extends State<InventoryScreen> {
               const SizedBox(height: 4),
               Text("Complete car profiles with documents, expenses & tracking", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: isNarrow ? 12 : 14, color: AppTheme.textSecondary)),
             ])),
+            // Refresh — re-fetches `cars/` via REST. Re-uses the same spinner
+            // overlay shown on first load, but the existing list stays
+            // visible so the screen doesn't flash blank.
+            IconButton(
+              icon: _loadingCars
+                  ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
+                  : Icon(FluentIcons.refresh, size: 16, color: AppTheme.textSecondary),
+              onPressed: _loadingCars ? null : _refreshCars,
+            ).withClickCursor,
+            const SizedBox(width: 8),
             FilledButton(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.primary),
@@ -1514,15 +1887,12 @@ class InventoryScreenState extends State<InventoryScreen> {
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Image placeholder with overlays
-        Container(
+        // Photo carousel — shows real photos, with left/right arrows when 2+.
+        _CarPhotoCarousel(
+          photos: List<String>.from(car['photos'] as List),
           height: 140,
-          decoration: BoxDecoration(
-            color: AppTheme.divider.withValues(alpha: 0.3),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-          ),
-          child: Stack(children: [
-            Center(child: Icon(FluentIcons.car, size: 40, color: AppTheme.textMuted.withValues(alpha: 0.3))),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+          overlays: [
             Positioned(top: 10, left: 10, child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(5)),
@@ -1542,7 +1912,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                 Text("${(car['photos'] as List).length}", style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: Colors.white)),
               ]),
             )),
-          ]),
+          ],
         ),
 
         Padding(
@@ -1585,13 +1955,17 @@ class InventoryScreenState extends State<InventoryScreen> {
 
             const SizedBox(height: 8),
 
-            // Document Tracking
+            // Document Tracking — shows the per-doc receipt state Inam Motors
+            // recorded when the car was added/edited. Short labels keep the
+            // row from wrapping on narrow grid widths.
             Row(children: [
-              _buildDocCheckbox("File", car['fileHandedOver']),
-              const SizedBox(width: 10),
-              _buildDocCheckbox("Smart Card", car['smartCardHandedOver'] ?? false),
-              const SizedBox(width: 10),
-              _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
+              _buildDocCheckbox("F", car['fileHandedOver']),
+              const SizedBox(width: 8),
+              _buildDocCheckbox("SC", car['smartCardHandedOver'] ?? false),
+              const SizedBox(width: 8),
+              _buildDocCheckbox("P", car['numberPlateHandedOver']),
+              const SizedBox(width: 8),
+              _buildDocCheckbox("R/K", car['remoteKeyHandedOver'] ?? false),
             ]),
 
             // Buyer name for Sold cars
@@ -1703,8 +2077,11 @@ class InventoryScreenState extends State<InventoryScreen> {
           child: Row(children: [
             Container(
               width: 50, height: 50,
+              clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(color: AppTheme.divider.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
-              child: Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+              child: (car['photos'] as List).isNotEmpty
+                  ? Image.file(File((car['photos'] as List).first.toString()), fit: BoxFit.cover)
+                  : Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withValues(alpha: 0.5)),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1742,11 +2119,13 @@ class InventoryScreenState extends State<InventoryScreen> {
                 Text(formatFullPrice(car['price']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primary)),
                 const SizedBox(height: 4),
                 Row(mainAxisSize: MainAxisSize.min, children: [
-                  _buildDocCheckbox("File", car['fileHandedOver']),
+                  _buildDocCheckbox("F", car['fileHandedOver']),
                   const SizedBox(width: 6),
-                  _buildDocCheckbox("Card", car['smartCardHandedOver'] ?? false),
+                  _buildDocCheckbox("SC", car['smartCardHandedOver'] ?? false),
                   const SizedBox(width: 6),
-                  _buildDocCheckbox("Plate", car['numberPlateHandedOver']),
+                  _buildDocCheckbox("P", car['numberPlateHandedOver']),
+                  const SizedBox(width: 6),
+                  _buildDocCheckbox("R/K", car['remoteKeyHandedOver'] ?? false),
                 ]),
               ]),
               const SizedBox(width: 8),
@@ -1806,26 +2185,43 @@ class InventoryScreenState extends State<InventoryScreen> {
                 ]),
               const SizedBox(height: 16),
 
-              // Photo Gallery section
+              // Photo Gallery section — render actual image files saved by
+              // `_pickAndSaveImages`. Wraps with errorBuilder so legacy
+              // labels like "Front" or missing files just show a camera
+              // placeholder instead of crashing the card.
               Text("Photo Gallery", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
-              Row(children: [
-                ...(car['photos'] as List).map((photo) => Container(
-                  width: 80, height: 60,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor,
+              Wrap(spacing: 10, runSpacing: 10, children: [
+                ...(car['photos'] as List).map((photo) {
+                  final path = photo.toString();
+                  return ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.divider),
-                  ),
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
-                    const SizedBox(height: 4),
-                    Text(photo, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted)),
-                  ]),
-                )),
+                    child: Container(
+                      width: 100, height: 75,
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardColor,
+                        border: Border.all(color: AppTheme.divider),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.file(
+                        File(path),
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+                            const SizedBox(height: 4),
+                            Text(path.split(RegExp(r'[\\/]')).last,
+                                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted),
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
                 Container(
-                  width: 80, height: 60,
+                  width: 100, height: 75,
                   decoration: BoxDecoration(
                     color: AppTheme.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
@@ -1970,5 +2366,129 @@ class InventoryScreenState extends State<InventoryScreen> {
       case 'Booked': return AppTheme.warning;
       default: return AppTheme.textSecondary;
     }
+  }
+}
+
+/// Inventory card photo carousel: shows the current photo with optional
+/// left/right arrows when 2+ photos are available, plus a small dot indicator.
+/// `overlays` are stacked above the image (year/status/count chips).
+class _CarPhotoCarousel extends StatefulWidget {
+  final List<String> photos;
+  final double height;
+  final BorderRadius borderRadius;
+  final List<Widget> overlays;
+
+  const _CarPhotoCarousel({
+    required this.photos,
+    required this.height,
+    required this.borderRadius,
+    this.overlays = const [],
+  });
+
+  @override
+  State<_CarPhotoCarousel> createState() => _CarPhotoCarouselState();
+}
+
+class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
+  int _index = 0;
+
+  void _prev() => setState(() {
+        _index = (_index - 1 + widget.photos.length) % widget.photos.length;
+      });
+  void _next() => setState(() {
+        _index = (_index + 1) % widget.photos.length;
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhotos = widget.photos.isNotEmpty;
+    final showArrows = widget.photos.length > 1;
+    final safeIndex = hasPhotos ? _index.clamp(0, widget.photos.length - 1) : 0;
+
+    return Container(
+      height: widget.height,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: AppTheme.divider.withValues(alpha: 0.3),
+        borderRadius: widget.borderRadius,
+      ),
+      child: Stack(fit: StackFit.expand, children: [
+        if (hasPhotos)
+          Image.file(
+            File(widget.photos[safeIndex]),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Center(
+              child: Icon(FluentIcons.camera,
+                  size: 36, color: AppTheme.textMuted.withValues(alpha: 0.4)),
+            ),
+          )
+        else
+          Center(
+            child: Icon(FluentIcons.car,
+                size: 40, color: AppTheme.textMuted.withValues(alpha: 0.3)),
+          ),
+        ...widget.overlays,
+        if (showArrows) ...[
+          Positioned(
+            left: 6,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _arrowButton(FluentIcons.chevron_left, _prev),
+            ),
+          ),
+          Positioned(
+            right: 6,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _arrowButton(FluentIcons.chevron_right, _next),
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(widget.photos.length, (i) {
+                  final active = i == safeIndex;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    width: active ? 8 : 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Widget _arrowButton(IconData icon, VoidCallback onTap) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 14, color: Colors.white),
+        ),
+      ),
+    );
   }
 }

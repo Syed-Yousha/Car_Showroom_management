@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
+import '../../services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,13 +41,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyLowStock = true;
 
   // Security
-  String _currentPasswordHash = 'admin123';
   final _currentPwCtrl = TextEditingController();
   final _newPwCtrl = TextEditingController();
   final _confirmPwCtrl = TextEditingController();
   bool _showCurrentPw = false;
   bool _showNewPw = false;
   bool _showConfirmPw = false;
+  bool _busyPassword = false;
+  bool _seeding = false;
 
   int _selectedSection = 0;
 
@@ -70,6 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _currentPwCtrl.dispose();
     _newPwCtrl.dispose();
     _confirmPwCtrl.dispose();
+    _seedStatus.dispose();
     super.dispose();
   }
 
@@ -367,13 +370,152 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                 padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
               ),
-              onPressed: _submitPasswordChange,
-              child: const Text("Update Password", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
+              onPressed: _busyPassword ? null : _submitPasswordChange,
+              child: _busyPassword
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: ProgressRing(strokeWidth: 2),
+                    )
+                  : const Text("Update Password",
+                      style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+            ).withClickCursor,
+          ),
+          const SizedBox(height: 24),
+          Container(height: 1, color: AppTheme.divider),
+          const SizedBox(height: 24),
+          _sectionHeader("Sign Out", "Sign out of this device. You'll need your password to sign back in."),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Button(
+              style: ButtonStyle(
+                shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+              ),
+              onPressed: _confirmSignOut,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(FluentIcons.sign_out, size: 14, color: AppTheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  "Sign Out",
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.error,
+                  ),
+                ),
+              ]),
             ).withClickCursor,
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text('Sign Out',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: const Text(
+          'Are you sure you want to sign out?',
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
+        actions: [
+          Button(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          ).withClickCursor,
+          FilledButton(
+            style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign Out',
+                style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await authService.signOut();
+      // AuthGate's StreamBuilder will route back to LoginScreen.
+    }
+  }
+
+  // Live progress message shown inside the seeding modal.
+  final ValueNotifier<String> _seedStatus =
+      ValueNotifier<String>('Preparing...');
+
+  Future<void> _runSeed() async {
+    if (_seeding) return;
+    print('[Seed] Button pressed — starting seed');
+    setState(() => _seeding = true);
+    _seedStatus.value = 'Preparing...';
+
+    // Show a non-dismissible modal so the user can see progress and the UI
+    // can't be re-entered during the seed.
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ContentDialog(
+        title: Text(
+          'Seeding Sample Data',
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            const ProgressRing(strokeWidth: 3),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ValueListenableBuilder<String>(
+                valueListenable: _seedStatus,
+                builder: (_, msg, _) => Text(
+                  msg,
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ]),
+        ),
+        actions: const [],
+      ),
+    );
+
+    try {
+      print('[Seed] Calling seedService.seedAll()');
+      final result = await seedService.seedAll(
+        onProgress: (msg) {
+          if (mounted) _seedStatus.value = msg;
+        },
+      );
+      print('[Seed] seedAll() returned: ${result.describe()}');
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await dialogFuture;
+      if (!mounted) return;
+      _showSnack(result.describe());
+    } catch (e, stack) {
+      print('[Seed] ERROR: $e');
+      print('[Seed] Stack: $stack');
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        await dialogFuture;
+      }
+      if (!mounted) return;
+      _showError('Seed failed: $e');
+    } finally {
+      print('[Seed] _runSeed() finally block');
+      if (mounted) setState(() => _seeding = false);
+    }
   }
 
   Widget _passwordField(String label, TextEditingController ctrl, bool show, VoidCallback onToggle) {
@@ -406,17 +548,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _submitPasswordChange() {
+  Future<void> _submitPasswordChange() async {
+    if (_busyPassword) return;
     final current = _currentPwCtrl.text;
     final newPw = _newPwCtrl.text;
     final confirm = _confirmPwCtrl.text;
 
     if (current.isEmpty || newPw.isEmpty || confirm.isEmpty) {
       _showError("All password fields are required.");
-      return;
-    }
-    if (current != _currentPasswordHash) {
-      _showError("Current password is incorrect.");
       return;
     }
     if (newPw.length < 6) {
@@ -431,13 +570,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showError("New password must be different from the current one.");
       return;
     }
-    setState(() {
-      _currentPasswordHash = newPw;
+
+    setState(() => _busyPassword = true);
+    try {
+      await authService.changePassword(
+        currentPassword: current,
+        newPassword: newPw,
+      );
+      if (!mounted) return;
       _currentPwCtrl.clear();
       _newPwCtrl.clear();
       _confirmPwCtrl.clear();
-    });
-    _showSnack("Password updated successfully");
+      _showSnack("Password updated successfully");
+    } catch (e) {
+      if (!mounted) return;
+      _showError(AuthService.describeError(e));
+    } finally {
+      if (mounted) setState(() => _busyPassword = false);
+    }
   }
 
   void _showError(String msg) {
@@ -464,6 +614,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _actionBtn("Backup Now", FluentIcons.cloud_upload, AppTheme.primary, () => _showSnack("Backup started")),
             const SizedBox(width: 12),
             _actionBtn("Restore", FluentIcons.cloud_download, AppTheme.info, () => _showSnack("Restore initiated")),
+          ]),
+        ]),
+      ),
+      const SizedBox(height: 20),
+      _card(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _sectionHeader("Sample Data", "Populate Firestore with demo records (skips collections that already have data)"),
+          const SizedBox(height: 20),
+          Row(children: [
+            _actionBtn(
+              _seeding ? "Seeding..." : "Seed Sample Data",
+              FluentIcons.database_source,
+              AppTheme.primary,
+              _seeding ? () {} : _runSeed,
+            ),
           ]),
         ]),
       ),
