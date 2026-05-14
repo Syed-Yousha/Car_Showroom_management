@@ -1,7 +1,9 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
+import '../../models/business_profile.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'notifications_bell.dart';
 import '../inventory/inventory_screen.dart';
 import '../customers/customers_screen.dart';
 import '../investors/investors_screen.dart';
@@ -27,9 +29,18 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
+    // Load the live business profile so the header brand label, dashboards,
+    // and any future invoice/receipt rendering pick up the current values.
+    businessProfileService.fetchSafe().catchError((e) {
+      debugPrint('[MainLayout] BizProfile fetch failed: $e');
+      return const BusinessProfile();
+    });
     // One-time seed of demo data on app launch (if not already seeded).
-    // This runs once after login but before the user navigates.
     _ensureSeedDataLoaded();
+    // Prime the notification list so the bell badge is correct on first paint.
+    notificationsService.refresh().catchError((e) {
+      debugPrint('[MainLayout] Notifications refresh failed: $e');
+    });
   }
 
   /// Automatically populate Firestore with demo data on first run.
@@ -103,13 +114,18 @@ class _MainLayoutState extends State<MainLayout> {
                   child: const Icon(FluentIcons.car, color: Colors.white, size: 16),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  "Inam Motors",
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: AppTheme.textPrimary,
+                ValueListenableBuilder<BusinessProfile>(
+                  valueListenable: businessProfileService.profile,
+                  builder: (_, profile, _) => Text(
+                    profile.businessName.trim().isEmpty
+                        ? 'Inam Motors'
+                        : profile.businessName,
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -120,10 +136,7 @@ class _MainLayoutState extends State<MainLayout> {
         title: Row(
           children: [
             const Spacer(),
-            IconButton(
-              icon: Icon(FluentIcons.ringer, size: 18, color: AppTheme.textSecondary),
-              onPressed: () {},
-            ).withClickCursor,
+            const NotificationsBell(),
             const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -135,21 +148,24 @@ class _MainLayoutState extends State<MainLayout> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "IM",
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 10,
+                  ValueListenableBuilder<BusinessProfile>(
+                    valueListenable: businessProfileService.profile,
+                    builder: (_, profile, _) => Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          profile.initials,
+                          style: const TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ),

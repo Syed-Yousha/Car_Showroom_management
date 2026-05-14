@@ -1,7 +1,10 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
+import '../../models/business_profile.dart';
 import '../../services/auth_service.dart';
+import '../../services/backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,12 +14,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Profile
-  String _businessName = 'Inam Motors';
-  String _ownerName = 'Muhammad Inam';
-  String _phone = '0300-1234567';
-  String _address = '123 GT Road, Lahore';
-  String _email = 'info@inammotors.pk';
+  // Business profile (loaded from Firestore on init). Only [_businessName]
+  // is mirrored to state so the header label updates without re-querying the
+  // controller; the remaining fields live in their TextEditingControllers.
+  String _businessName = '';
+  bool _profileLoading = true;
+  bool _profileSaving = false;
 
   // Persistent controllers for editable fields
   late final TextEditingController _businessNameCtrl;
@@ -24,21 +27,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _addressCtrl;
   late final TextEditingController _emailCtrl;
+  late final TextEditingController _logoUrlCtrl;
 
   // Preferences
   bool get _darkMode => InamMotorsApp.isDarkMode.value;
   bool _notifications = true;
-  bool _emailAlerts = false;
   bool _autoBackup = true;
-  String _currency = 'PKR (Rs)';
-  String _language = 'English';
-  String _dateFormat = 'DD/MM/YYYY';
 
-  // Notification prefs
+  // Notification prefs (persisted in shared_preferences)
   bool _notifySale = true;
   bool _notifyExpense = true;
   bool _notifyInvestor = true;
   bool _notifyLowStock = true;
+
+  static const _prefsNotifications = 'pref_notifications';
+  static const _prefsAutoBackup = 'pref_auto_backup';
+  static const _prefsNotifySale = 'pref_notify_sale';
+  static const _prefsNotifyExpense = 'pref_notify_expense';
+  static const _prefsNotifyInvestor = 'pref_notify_investor';
+  static const _prefsNotifyLowStock = 'pref_notify_low_stock';
 
   // Security
   final _currentPwCtrl = TextEditingController();
@@ -55,11 +62,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _businessNameCtrl = TextEditingController(text: _businessName);
-    _ownerNameCtrl = TextEditingController(text: _ownerName);
-    _phoneCtrl = TextEditingController(text: _phone);
-    _addressCtrl = TextEditingController(text: _address);
-    _emailCtrl = TextEditingController(text: _email);
+    _businessNameCtrl = TextEditingController();
+    _ownerNameCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    _addressCtrl = TextEditingController();
+    _emailCtrl = TextEditingController();
+    _logoUrlCtrl = TextEditingController();
+    _loadProfile();
+    _loadPreferences();
   }
 
   @override
@@ -69,11 +79,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
     _emailCtrl.dispose();
+    _logoUrlCtrl.dispose();
     _currentPwCtrl.dispose();
     _newPwCtrl.dispose();
     _confirmPwCtrl.dispose();
     _seedStatus.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final p = await businessProfileService.fetchSafe();
+      if (!mounted) return;
+      setState(() {
+        _businessName = p.businessName;
+        _businessNameCtrl.text = p.businessName;
+        _ownerNameCtrl.text = p.ownerName;
+        _phoneCtrl.text = p.phone;
+        _emailCtrl.text = p.email;
+        _addressCtrl.text = p.address;
+        _logoUrlCtrl.text = p.logoUrl;
+        _profileLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _profileLoading = false);
+      _showError('Failed to load business profile: $e');
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_profileSaving) return;
+    setState(() => _profileSaving = true);
+    try {
+      final p = BusinessProfile(
+        businessName: _businessNameCtrl.text.trim().isEmpty
+            ? 'Inam Motors'
+            : _businessNameCtrl.text.trim(),
+        ownerName: _ownerNameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        address: _addressCtrl.text.trim(),
+        logoUrl: _logoUrlCtrl.text.trim(),
+      );
+      await businessProfileService.save(p);
+      if (!mounted) return;
+      setState(() {
+        _businessName = p.businessName;
+      });
+      _showSnack('Profile saved');
+    } catch (e) {
+      if (mounted) _showError('Failed to save: $e');
+    } finally {
+      if (mounted) setState(() => _profileSaving = false);
+    }
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _notifications = prefs.getBool(_prefsNotifications) ?? true;
+      _autoBackup = prefs.getBool(_prefsAutoBackup) ?? true;
+      _notifySale = prefs.getBool(_prefsNotifySale) ?? true;
+      _notifyExpense = prefs.getBool(_prefsNotifyExpense) ?? true;
+      _notifyInvestor = prefs.getBool(_prefsNotifyInvestor) ?? true;
+      _notifyLowStock = prefs.getBool(_prefsNotifyLowStock) ?? true;
+    });
+  }
+
+  Future<void> _setPref(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
   }
 
   final _sections = const [
@@ -213,6 +290,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // SECTION 1: Business Profile
   // ═══════════════════════════════════════════════════
   Widget _buildProfileSection() {
+    if (_profileLoading) {
+      return _card(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: ProgressRing()),
+        ),
+      );
+    }
+    final headerName =
+        _businessName.trim().isEmpty ? 'Inam Motors' : _businessName;
+    final initials = BusinessProfile(businessName: headerName).initials;
     return _card(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sectionHeader("Business Profile", "Your showroom details and contact information"),
@@ -222,21 +310,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             width: 72, height: 72,
             decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)),
-            child: const Center(child: Text("IM", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.primary))),
+            child: Center(child: Text(initials, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.primary))),
           ),
           const SizedBox(width: 16),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_businessName, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+            Text(headerName, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
             const SizedBox(height: 4),
             Text("Car Showroom", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.textMuted)),
           ]),
         ]),
         const SizedBox(height: 28),
         _editableFieldCtrl("Business Name", _businessNameCtrl, (v) => setState(() => _businessName = v)),
-        _editableFieldCtrl("Owner Name", _ownerNameCtrl, (v) => setState(() => _ownerName = v)),
-        _editableFieldCtrl("Phone Number", _phoneCtrl, (v) => setState(() => _phone = v)),
-        _editableFieldCtrl("Email Address", _emailCtrl, (v) => setState(() => _email = v)),
-        _editableFieldCtrl("Address", _addressCtrl, (v) => setState(() => _address = v)),
+        _editableFieldCtrl("Owner Name", _ownerNameCtrl, (_) {}),
+        _editableFieldCtrl("Phone Number", _phoneCtrl, (_) {}),
+        _editableFieldCtrl("Email Address", _emailCtrl, (_) {}),
+        _editableFieldCtrl("Address", _addressCtrl, (_) {}),
+        _editableFieldCtrl("Logo URL (optional)", _logoUrlCtrl, (_) {}),
         const SizedBox(height: 16),
         Align(
           alignment: Alignment.centerRight,
@@ -246,8 +335,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
               padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
             ),
-            onPressed: () => _showSnack("Profile saved"),
-            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
+            onPressed: _profileSaving ? null : _saveProfile,
+            child: _profileSaving
+                ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
+                : const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600, color: Colors.white)),
           ).withClickCursor,
         ),
       ]),
@@ -258,30 +349,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // SECTION 2: Preferences
   // ═══════════════════════════════════════════════════
   Widget _buildPreferencesSection() {
-    return Column(children: [
-      _card(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _sectionHeader("Appearance", "Customize how the app looks"),
-          const SizedBox(height: 20),
-          _toggleRow("Dark Mode", "Switch between light and dark theme", _darkMode, (v) {
-            InamMotorsApp.isDarkMode.value = v;
-            setState(() {});
-          }),
-        ]),
-      ),
-      const SizedBox(height: 20),
-      _card(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _sectionHeader("Regional", "Currency, language and date settings"),
-          const SizedBox(height: 20),
-          _dropdownRow("Currency", _currency, ['PKR (Rs)', 'USD (\$)', 'EUR (E)', 'GBP (P)'], (v) => setState(() => _currency = v)),
-          const SizedBox(height: 16),
-          _dropdownRow("Language", _language, ['English', 'Urdu'], (v) => setState(() => _language = v)),
-          const SizedBox(height: 16),
-          _dropdownRow("Date Format", _dateFormat, ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'], (v) => setState(() => _dateFormat = v)),
-        ]),
-      ),
-    ]);
+    return _card(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _sectionHeader("Appearance", "Customize how the app looks"),
+        const SizedBox(height: 20),
+        _toggleRow("Dark Mode", "Switch between light and dark theme", _darkMode, (v) {
+          InamMotorsApp.isDarkMode.value = v;
+          setState(() {});
+        }),
+      ]),
+    );
   }
 
   // ═══════════════════════════════════════════════════
@@ -293,9 +370,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("General Notifications", "Choose what updates you receive"),
           const SizedBox(height: 20),
-          _toggleRow("Push Notifications", "Receive in-app notifications", _notifications, (v) => setState(() => _notifications = v)),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
-          _toggleRow("Email Alerts", "Get important updates via email", _emailAlerts, (v) => setState(() => _emailAlerts = v)),
+          _toggleRow("Push Notifications", "Receive in-app notifications", _notifications, (v) {
+            setState(() => _notifications = v);
+            _setPref(_prefsNotifications, v);
+          }),
         ]),
       ),
       const SizedBox(height: 20),
@@ -303,13 +381,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Event Notifications", "Get notified for specific events"),
           const SizedBox(height: 20),
-          _toggleRow("New Sale", "When a car is sold or booked", _notifySale, (v) => setState(() => _notifySale = v)),
+          _toggleRow("New Sale", "When a car is sold or booked", _notifySale, (v) {
+            setState(() => _notifySale = v);
+            _setPref(_prefsNotifySale, v);
+          }),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
-          _toggleRow("New Expense", "When an expense is added", _notifyExpense, (v) => setState(() => _notifyExpense = v)),
+          _toggleRow("New Expense", "When an expense is added", _notifyExpense, (v) {
+            setState(() => _notifyExpense = v);
+            _setPref(_prefsNotifyExpense, v);
+          }),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
-          _toggleRow("Investor Activity", "Investments and distributions", _notifyInvestor, (v) => setState(() => _notifyInvestor = v)),
+          _toggleRow("Investor Activity", "Investments and distributions", _notifyInvestor, (v) {
+            setState(() => _notifyInvestor = v);
+            _setPref(_prefsNotifyInvestor, v);
+          }),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
-          _toggleRow("Low Stock Alert", "When inventory drops below 5 cars", _notifyLowStock, (v) => setState(() => _notifyLowStock = v)),
+          _toggleRow("Low Stock Alert", "When inventory drops below 5 cars", _notifyLowStock, (v) {
+            setState(() => _notifyLowStock = v);
+            _setPref(_prefsNotifyLowStock, v);
+          }),
         ]),
       ),
     ]);
@@ -441,6 +531,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed == true) {
+      // Force-clear the lock state too — AuthGate.isUnlocked is a static
+      // bool that survives sign-out otherwise, which would skip the lock
+      // screen on next sign-in.
+      AuthGate.isUnlocked = false;
       await authService.signOut();
       // AuthGate's StreamBuilder will route back to LoginScreen.
     }
@@ -608,12 +702,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _sectionHeader("Backup", "Manage your data backups"),
           const SizedBox(height: 20),
-          _toggleRow("Auto Backup", "Automatically back up data daily", _autoBackup, (v) => setState(() => _autoBackup = v)),
+          _toggleRow("Auto Backup", "Automatically back up data daily", _autoBackup, (v) {
+            setState(() => _autoBackup = v);
+            _setPref(_prefsAutoBackup, v);
+          }),
           const SizedBox(height: 20),
           Row(children: [
-            _actionBtn("Backup Now", FluentIcons.cloud_upload, AppTheme.primary, () => _showSnack("Backup started")),
-            const SizedBox(width: 12),
-            _actionBtn("Restore", FluentIcons.cloud_download, AppTheme.info, () => _showSnack("Restore initiated")),
+            _actionBtn(
+              _backingUp ? "Backing up..." : "Backup Now",
+              FluentIcons.cloud_upload,
+              AppTheme.primary,
+              _backingUp ? () {} : _runBackup,
+            ),
           ]),
         ]),
       ),
@@ -635,12 +735,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const SizedBox(height: 20),
       _card(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _sectionHeader("Export", "Export data as files"),
+          _sectionHeader("Export", "Export a section to a .csv file"),
           const SizedBox(height: 20),
           Row(children: [
-            _actionBtn("Export CSV", FluentIcons.table, AppTheme.success, () => _showSnack("CSV exported")),
-            const SizedBox(width: 12),
-            _actionBtn("Export PDF", FluentIcons.pdf, AppTheme.error, () => _showSnack("PDF exported")),
+            _actionBtn(
+              _exporting ? "Exporting..." : "Export CSV",
+              FluentIcons.table,
+              AppTheme.success,
+              _exporting ? () {} : _showExportCsvDialog,
+            ),
           ]),
         ]),
       ),
@@ -666,14 +769,258 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   foregroundColor: WidgetStateProperty.all(AppTheme.error),
                   shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6), side: BorderSide(color: AppTheme.error.withValues(alpha: 0.4)))),
                 ),
-                onPressed: () {},
-                child: const Text("Reset", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600)),
+                onPressed: _resetting ? null : _confirmResetAllData,
+                child: _resetting
+                    ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
+                    : const Text("Reset", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.w600)),
               ).withClickCursor,
             ]),
           ),
         ]),
       ),
     ]);
+  }
+
+  // ── BACKUP / EXPORT / RESET HANDLERS ────────────────────────────────────
+
+  bool _backingUp = false;
+  bool _exporting = false;
+  bool _resetting = false;
+
+  Future<void> _runBackup() async {
+    if (_backingUp) return;
+    setState(() => _backingUp = true);
+    final statusNotifier = ValueNotifier<String>('Preparing...');
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ContentDialog(
+        title: const Text('Backing up data',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            const ProgressRing(strokeWidth: 3),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ValueListenableBuilder<String>(
+                valueListenable: statusNotifier,
+                builder: (_, msg, _) => Text(msg,
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 13,
+                        color: AppTheme.textSecondary)),
+              ),
+            ),
+          ]),
+        ),
+        actions: const [],
+      ),
+    );
+
+    try {
+      final result = await backupService.backupAllToJson(
+        onProgress: (step) {
+          if (mounted) statusNotifier.value = step;
+        },
+      );
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await dialogFuture;
+      if (!mounted) return;
+      if (result.ok) {
+        _showSnack(result.message);
+      } else {
+        _showError(result.message);
+      }
+    } finally {
+      statusNotifier.dispose();
+      if (mounted) setState(() => _backingUp = false);
+    }
+  }
+
+  Future<void> _showExportCsvDialog() async {
+    final selected = await showDialog<BackupSection>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: const Text('Export CSV',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        constraints: const BoxConstraints(maxWidth: 380),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pick a section to export to .csv.',
+                style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 12,
+                    color: AppTheme.textSecondary)),
+            const SizedBox(height: 12),
+            for (final s in BackupSection.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Button(
+                    style: ButtonStyle(
+                      padding: WidgetStateProperty.all(
+                          const EdgeInsets.symmetric(vertical: 10, horizontal: 14)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, s),
+                    child: Row(children: [
+                      Icon(_csvSectionIcon(s), size: 14, color: AppTheme.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(s.label,
+                            style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary)),
+                      ),
+                    ]),
+                  ).withClickCursor,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          Button(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel',
+                  style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+        ],
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await _runCsvExport(selected);
+  }
+
+  IconData _csvSectionIcon(BackupSection s) {
+    switch (s) {
+      case BackupSection.inventory:
+        return FluentIcons.car;
+      case BackupSection.customers:
+        return FluentIcons.people;
+      case BackupSection.expenses:
+        return FluentIcons.calculator_addition;
+      case BackupSection.ledger:
+        return FluentIcons.financial;
+      case BackupSection.investors:
+        return FluentIcons.money;
+      case BackupSection.salesmen:
+        return FluentIcons.contact;
+    }
+  }
+
+  Future<void> _runCsvExport(BackupSection section) async {
+    setState(() => _exporting = true);
+    try {
+      final result = await backupService.exportSectionToCsv(section);
+      if (!mounted) return;
+      if (result.ok) {
+        _showSnack(result.message);
+      } else {
+        _showError(result.message);
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _confirmResetAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => ContentDialog(
+        title: Row(children: [
+          Icon(FluentIcons.warning, size: 18, color: AppTheme.error),
+          const SizedBox(width: 8),
+          const Text('Reset All Data',
+              style: TextStyle(
+                  fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        ]),
+        constraints: const BoxConstraints(maxWidth: 460),
+        content: Text(
+          'Are you absolutely sure you want to permanently delete all data? '
+          'This action cannot be undone.',
+          style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 13,
+              color: AppTheme.textPrimary,
+              height: 1.5),
+        ),
+        actions: [
+          Button(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel',
+                  style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          FilledButton(
+            style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.all(AppTheme.error)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes, wipe everything',
+                style: TextStyle(
+                    fontFamily: AppTheme.fontFamily, color: Colors.white)),
+          ).withClickCursor,
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _runReset();
+  }
+
+  Future<void> _runReset() async {
+    setState(() => _resetting = true);
+    final statusNotifier = ValueNotifier<String>('Counting records...');
+    final dialogFuture = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ContentDialog(
+        title: const Text('Resetting data',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            const ProgressRing(strokeWidth: 3),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ValueListenableBuilder<String>(
+                valueListenable: statusNotifier,
+                builder: (_, msg, _) => Text(msg,
+                    style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 13,
+                        color: AppTheme.textSecondary)),
+              ),
+            ),
+          ]),
+        ),
+        actions: const [],
+      ),
+    );
+
+    try {
+      final result = await backupService.resetAllData(
+        onProgress: (label, done, total) {
+          if (mounted) statusNotifier.value = label;
+        },
+      );
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await dialogFuture;
+      if (!mounted) return;
+      if (result.ok) {
+        _showSnack(result.message);
+        // Refresh the live notifications since the cars/customers list is empty.
+        notificationsService.refresh().ignore();
+      } else {
+        _showError(result.message);
+      }
+    } finally {
+      statusNotifier.dispose();
+      if (mounted) setState(() => _resetting = false);
+    }
   }
 
   // ═══════════════════════════════════════════════════
@@ -769,23 +1116,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ToggleSwitch(
         checked: value,
         onChanged: onChanged,
-      ),
-    ]);
-  }
-
-  Widget _dropdownRow(String label, String value, List<String> options, ValueChanged<String> onChanged) {
-    return Row(children: [
-      Expanded(
-        flex: 2,
-        child: Text(label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-      ),
-      Expanded(
-        flex: 3,
-        child: ComboBox<String>(
-          value: value,
-          items: options.map((o) => ComboBoxItem<String>(value: o, child: Text(o, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13)))).toList(),
-          onChanged: (v) { if (v != null) onChanged(v); },
-        ),
       ),
     ]);
   }

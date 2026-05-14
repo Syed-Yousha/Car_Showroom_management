@@ -28,22 +28,28 @@ class Expense {
     this.updatedAt,
   });
 
-  factory Expense.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> s) {
-    final m = s.data() ?? {};
-    return Expense(
-      id: s.id,
-      title: asString(m['title']),
-      category: asString(m['category']),
-      amount: asInt(m['amount']),
-      date: tsToDate(m['date']) ?? DateTime.now(),
-      paidTo: asString(m['paidTo']),
-      method: asString(m['method']),
-      recurring: asBool(m['recurring']),
-      carId: m['carId'] as String?,
-      createdAt: tsToDate(m['createdAt']),
-      updatedAt: tsToDate(m['updatedAt']),
-    );
-  }
+  factory Expense.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> s) =>
+      Expense.fromMap(s.id, s.data() ?? const {});
+
+  /// Build an [Expense] from a plain map — works for both `cloud_firestore`
+  /// snapshots and the Firestore REST API (whose values arrive already
+  /// unwrapped via `FirestoreRest`).
+  factory Expense.fromMap(String id, Map<String, dynamic> m) => Expense(
+        id: id,
+        title: asString(m['title']),
+        category: asString(m['category']),
+        amount: asInt(m['amount']),
+        date: tsToDate(m['date']) ?? DateTime.now(),
+        paidTo: asString(m['paidTo']),
+        method: asString(m['method']),
+        recurring: asBool(m['recurring']),
+        carId: m['carId'] as String?,
+        createdAt: tsToDate(m['createdAt']),
+        updatedAt: tsToDate(m['updatedAt']),
+      );
+
+  factory Expense.fromJson(String id, Map<String, dynamic> json) =>
+      Expense.fromMap(id, json);
 
   Map<String, dynamic> toMap() => {
         'title': title,

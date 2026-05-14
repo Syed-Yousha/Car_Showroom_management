@@ -10,6 +10,8 @@ import 'features/shared/main_layout.dart';
 import 'firebase_options.dart';
 import 'models/app_user.dart';
 import 'services/auth_service.dart';
+import 'services/backup_service.dart';
+import 'services/business_profile_service.dart';
 import 'services/cars_repo.dart';
 import 'services/customer_service.dart';
 import 'services/customers_repo.dart';
@@ -22,6 +24,7 @@ import 'services/investors_repo.dart';
 import 'services/ledger_repo.dart';
 import 'services/ledger_service.dart';
 import 'services/local_auth_service.dart';
+import 'services/notifications_service.dart';
 import 'services/salesmen_repo.dart';
 import 'services/seed_service.dart';
 import 'services/transaction_service.dart';
@@ -43,6 +46,20 @@ final CustomerService customerService = CustomerService();
 final LedgerService ledgerService = LedgerService();
 final DocumentService documentService = DocumentService();
 final LocalAuthService localAuthService = LocalAuthService();
+final BusinessProfileService businessProfileService = BusinessProfileService();
+final NotificationsService notificationsService = NotificationsService(
+  inventory: inventoryService,
+  customers: customerService,
+);
+final BackupService backupService = BackupService(
+  inventory: inventoryService,
+  customers: customerService,
+  customersRepo: customersRepo,
+  ledger: ledgerService,
+  expenses: expensesRepo,
+  investors: investorsRepo,
+  salesmen: salesmenRepo,
+);
 
 /// REST client for Firestore reads — populated in `main()` after Firebase
 /// has been initialised (needs `Firebase.app().options.projectId`). The
@@ -93,6 +110,9 @@ void main() {
     ledgerService.rest = firestoreRest;
     documentsRepo.rest = firestoreRest;
     documentService.rest = firestoreRest;
+    expensesRepo.rest = firestoreRest;
+    salesmenRepo.rest = firestoreRest;
+    businessProfileService.rest = firestoreRest;
     debugPrint('[Init] FirestoreRest configured for project '
         '${Firebase.app().options.projectId}');
 

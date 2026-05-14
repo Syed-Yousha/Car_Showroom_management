@@ -1,13 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/salesman.dart';
+import 'firestore_rest.dart';
 
 /// Path: salesmen/{salesmanId}
 /// Path: salesmen/{salesmanId}/sales/{saleId}
+///
+/// `listAllSafe` reads via REST (Windows C++ SDK crashes on `.get()`); writes
+/// continue to use the SDK directly.
 class SalesmenRepo {
-  SalesmenRepo({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance;
+  SalesmenRepo({FirebaseFirestore? db, FirestoreRest? rest})
+      : _db = db ?? FirebaseFirestore.instance,
+        _rest = rest;
 
   final FirebaseFirestore _db;
+  FirestoreRest? _rest;
+  set rest(FirestoreRest r) => _rest = r;
+  FirestoreRest get _restClient => _rest ??= FirestoreRest();
+
+  Future<List<Salesman>> listAllSafe() async {
+    final docs = await _restClient.listDocs('salesmen');
+    // Salesman.fromSnapshot wraps a DocumentSnapshot — we need a from-map path.
+    // The Salesman model doesn't have one yet; build the entity by faking the
+    // structure REST returns. Simpler: hand back raw maps for backup, but
+    // existing repos return typed models, so synthesise via toMap fields.
+    return docs.map((d) => Salesman.fromRestMap(d.id, d.data)).toList();
+  }
 
   CollectionReference<Salesman> get _col =>
       _db.collection('salesmen').withConverter<Salesman>(

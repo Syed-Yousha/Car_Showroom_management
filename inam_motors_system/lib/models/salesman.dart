@@ -83,23 +83,25 @@ class Salesman {
     this.updatedAt,
   });
 
-  factory Salesman.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> s) {
-    final m = s.data() ?? {};
-    return Salesman(
-      id: s.id,
-      name: asString(m['name']),
-      phone: asString(m['phone']),
-      role: asString(m['role']),
-      share: asInt(m['share']),
-      joinDate: tsToDate(m['joinDate']),
-      status: asString(m['status'], 'Active'),
-      totalSales: asInt(m['totalSales']),
-      totalRevenue: asInt(m['totalRevenue']),
-      totalProfit: asInt(m['totalProfit']),
-      createdAt: tsToDate(m['createdAt']),
-      updatedAt: tsToDate(m['updatedAt']),
-    );
-  }
+  factory Salesman.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> s) =>
+      Salesman.fromRestMap(s.id, s.data() ?? const {});
+
+  /// Hydrates a [Salesman] from a plain map — works for both Firestore
+  /// snapshots and REST API responses (whose values arrive already unwrapped).
+  factory Salesman.fromRestMap(String id, Map<String, dynamic> m) => Salesman(
+        id: id,
+        name: asString(m['name']),
+        phone: asString(m['phone']),
+        role: asString(m['role']),
+        share: asInt(m['share']),
+        joinDate: tsToDate(m['joinDate']),
+        status: asString(m['status'], 'Active'),
+        totalSales: asInt(m['totalSales']),
+        totalRevenue: asInt(m['totalRevenue']),
+        totalProfit: asInt(m['totalProfit']),
+        createdAt: tsToDate(m['createdAt']),
+        updatedAt: tsToDate(m['updatedAt']),
+      );
 
   Map<String, dynamic> toMap() => {
         'name': name,
