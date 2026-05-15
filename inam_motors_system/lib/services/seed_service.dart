@@ -5,7 +5,6 @@ import '../models/car.dart';
 import '../models/customer.dart';
 import '../models/expense.dart';
 import '../models/investor.dart';
-import '../models/salesman.dart';
 
 /// One-shot helper that populates Firestore with realistic sample data.
 ///
@@ -76,29 +75,24 @@ class SeedService {
     // reads currently crash the Windows C++ SDK on this build. Instead we
     // use fixed document IDs (e.g. `seed_inv_1`) and `set()`, so re-running
     // simply overwrites the same demo docs. This is idempotent and safe.
-    report('Step 1/5: Seeding investors...');
+    report('Step 1/4: Seeding investors...');
     await _seedInvestors(result, report);
-    report('Step 1/5: Investors done (${result.investors})');
+    report('Step 1/4: Investors done (${result.investors})');
     await Future.delayed(_throttle);
 
-    report('Step 2/5: Seeding salesmen...');
-    await _seedSalesmen(result, report);
-    report('Step 2/5: Salesmen done (${result.salesmen})');
-    await Future.delayed(_throttle);
-
-    report('Step 3/5: Seeding cars...');
+    report('Step 2/4: Seeding cars...');
     await _seedCars(result, report);
-    report('Step 3/5: Cars done (${result.cars})');
+    report('Step 2/4: Cars done (${result.cars})');
     await Future.delayed(_throttle);
 
-    report('Step 4/5: Seeding customers...');
+    report('Step 3/4: Seeding customers...');
     await _seedCustomers(result, report);
-    report('Step 4/5: Customers done (${result.customers})');
+    report('Step 3/4: Customers done (${result.customers})');
     await Future.delayed(_throttle);
 
-    report('Step 5/5: Seeding expenses...');
+    report('Step 4/4: Seeding expenses...');
     await _seedExpenses(result, report);
-    report('Step 5/5: Expenses done (${result.expenses})');
+    report('Step 4/4: Expenses done (${result.expenses})');
 
     report('=== seedAll() complete: ${result.describe()} ===');
     return result;
@@ -110,7 +104,6 @@ class SeedService {
       'cars',
       'customers',
       'investors',
-      'salesmen',
       'expenses',
       'documents',
     ]) {
@@ -120,14 +113,6 @@ class SeedService {
           final ledger = await d.reference.collection('ledger').get();
           for (final l in ledger.docs) {
             await l.reference.delete();
-          }
-        }
-      }
-      if (path == 'salesmen') {
-        for (final d in q.docs) {
-          final sales = await d.reference.collection('sales').get();
-          for (final s in sales.docs) {
-            await s.reference.delete();
           }
         }
       }
@@ -185,37 +170,6 @@ class SeedService {
       await Future.delayed(_throttle);
     }
     result.investors = items.length;
-  }
-
-  Future<void> _seedSalesmen(
-      SeedResult result, void Function(String) report) async {
-    final items = [
-      Salesman(
-        id: '',
-        name: 'Bilal Ahmad',
-        phone: '0312-1234567',
-        role: 'Senior Salesman',
-        share: 5,
-        joinDate: DateTime(2023, 5, 10),
-      ),
-      Salesman(
-        id: '',
-        name: 'Hamza Sheikh',
-        phone: '0313-9876543',
-        role: 'Salesman',
-        share: 3,
-        joinDate: DateTime(2024, 2, 4),
-      ),
-    ];
-
-    for (var i = 0; i < items.length; i++) {
-      final docId = 'seed_sm_${i + 1}';
-      report('  Writing salesman ${i + 1}/${items.length}: ${items[i].name} ($docId)');
-      await _db.collection('salesmen').doc(docId).set(items[i].toMap());
-      report('  Salesman ${i + 1} written OK');
-      await Future.delayed(_throttle);
-    }
-    result.salesmen = items.length;
   }
 
   Future<void> _seedCars(
@@ -413,10 +367,9 @@ class SeedResult {
   int cars = 0;
   int customers = 0;
   int investors = 0;
-  int salesmen = 0;
   int expenses = 0;
 
-  bool get any => cars + customers + investors + salesmen + expenses > 0;
+  bool get any => cars + customers + investors + expenses > 0;
 
   String describe() {
     if (!any) return 'Database already populated — nothing seeded.';
@@ -424,7 +377,6 @@ class SeedResult {
     if (cars > 0) parts.add('$cars cars');
     if (customers > 0) parts.add('$customers customers');
     if (investors > 0) parts.add('$investors investors');
-    if (salesmen > 0) parts.add('$salesmen salesmen');
     if (expenses > 0) parts.add('$expenses expenses');
     return 'Seeded ${parts.join(', ')}.';
   }

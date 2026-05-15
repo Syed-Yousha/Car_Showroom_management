@@ -25,7 +25,6 @@ import 'services/ledger_repo.dart';
 import 'services/ledger_service.dart';
 import 'services/local_auth_service.dart';
 import 'services/notifications_service.dart';
-import 'services/salesmen_repo.dart';
 import 'services/seed_service.dart';
 import 'services/transaction_service.dart';
 
@@ -36,7 +35,6 @@ final CarsRepo carsRepo = CarsRepo();
 final CustomersRepo customersRepo = CustomersRepo();
 final LedgerRepo ledgerRepo = LedgerRepo();
 final InvestorsRepo investorsRepo = InvestorsRepo();
-final SalesmenRepo salesmenRepo = SalesmenRepo();
 final ExpensesRepo expensesRepo = ExpensesRepo();
 final DocumentsRepo documentsRepo = DocumentsRepo();
 final TransactionService transactionService = TransactionService();
@@ -58,7 +56,7 @@ final BackupService backupService = BackupService(
   ledger: ledgerService,
   expenses: expensesRepo,
   investors: investorsRepo,
-  salesmen: salesmenRepo,
+  documents: documentsRepo,
 );
 
 /// REST client for Firestore reads — populated in `main()` after Firebase
@@ -111,7 +109,6 @@ void main() {
     documentsRepo.rest = firestoreRest;
     documentService.rest = firestoreRest;
     expensesRepo.rest = firestoreRest;
-    salesmenRepo.rest = firestoreRest;
     businessProfileService.rest = firestoreRest;
     debugPrint('[Init] FirestoreRest configured for project '
         '${Firebase.app().options.projectId}');

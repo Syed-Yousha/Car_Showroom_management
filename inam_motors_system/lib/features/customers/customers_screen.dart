@@ -794,6 +794,41 @@ class CustomersScreenState extends State<CustomersScreen> {
                       if (selectedCar == null) return;
                       detail = selectedCar!['name'] as String;
                       if (amt <= 0) return;
+
+                      // ── Document handover validation ─────────────────────
+                      // The car's *HandedOver flags actually represent
+                      // documents we RECEIVED from the original seller (the
+                      // naming is historical and confusing). You can only
+                      // hand a document to the buyer if the showroom holds
+                      // it in inventory. Block the transaction when any
+                      // ticked handover is not backed by a received doc.
+                      final missing = <String>[];
+                      bool received(String k) => selectedCar![k] == true;
+                      if (fileHandedOver && !received('fileHandedOver')) {
+                        missing.add('File');
+                      }
+                      if (smartCardHandedOver && !received('smartCardHandedOver')) {
+                        missing.add('Smart Card');
+                      }
+                      if (plateHandedOver && !received('numberPlateHandedOver')) {
+                        missing.add('Number Plate');
+                      }
+                      if (remoteKeyHandedOver && !received('remoteKeyHandedOver')) {
+                        missing.add('Remote Key');
+                      }
+                      if (missing.isNotEmpty) {
+                        if (!ctx.mounted) return;
+                        displayInfoBar(ctx, builder: (c, close) => InfoBar(
+                          title: Text(
+                            'Cannot proceed: The ${missing.join(', ')} '
+                            '${missing.length == 1 ? 'was' : 'were'} never received in inventory.',
+                            style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                          ),
+                          severity: InfoBarSeverity.error,
+                          onClose: close,
+                        ));
+                        return;
+                      }
                     }
                     debit = amt;
                     entryData = {

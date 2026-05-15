@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -2192,34 +2193,64 @@ class InventoryScreenState extends State<InventoryScreen> {
               Text("Photo Gallery", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),
               Wrap(spacing: 10, runSpacing: 10, children: [
-                ...(car['photos'] as List).map((photo) {
-                  final path = photo.toString();
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 100, height: 75,
-                      decoration: BoxDecoration(
-                        color: AppTheme.cardColor,
-                        border: Border.all(color: AppTheme.divider),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Image.file(
-                        File(path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
-                            const SizedBox(height: 4),
-                            Text(path.split(RegExp(r'[\\/]')).last,
-                                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted),
-                                overflow: TextOverflow.ellipsis),
-                          ],
+                ...() {
+                  final allPaths = (car['photos'] as List)
+                      .map((p) => p.toString())
+                      .toList();
+                  return allPaths.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final path = entry.value;
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => showFullscreenGallery(
+                          context,
+                          photos: allPaths,
+                          initialIndex: i,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(children: [
+                            Container(
+                              width: 100, height: 75,
+                              decoration: BoxDecoration(
+                                color: AppTheme.cardColor,
+                                border: Border.all(color: AppTheme.divider),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.file(
+                                File(path),
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, stack) => Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(FluentIcons.camera, size: 16, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+                                    const SizedBox(height: 4),
+                                    Text(path.split(RegExp(r'[\\/]')).last,
+                                        style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 9, color: AppTheme.textMuted),
+                                        overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 4, right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(FluentIcons.full_screen,
+                                    size: 10, color: Colors.white),
+                              ),
+                            ),
+                          ]),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  });
+                }(),
                 Container(
                   width: 100, height: 75,
                   decoration: BoxDecoration(
@@ -2428,6 +2459,34 @@ class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
                 size: 40, color: AppTheme.textMuted.withValues(alpha: 0.3)),
           ),
         ...widget.overlays,
+        if (hasPhotos)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Tooltip(
+              message: 'Open fullscreen',
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => showFullscreenGallery(
+                    context,
+                    photos: widget.photos,
+                    initialIndex: safeIndex,
+                  ),
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(FluentIcons.full_screen,
+                        size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (showArrows) ...[
           Positioned(
             left: 6,
@@ -2487,6 +2546,214 @@ class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 14, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens [photos] as a modal fullscreen viewer starting at [initialIndex].
+/// Left/right arrow buttons (and keyboard arrows / Escape) navigate between
+/// images. Use this from any car photo thumbnail or carousel.
+void showFullscreenGallery(
+  BuildContext context, {
+  required List<String> photos,
+  int initialIndex = 0,
+}) {
+  if (photos.isEmpty) return;
+  showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.black.withValues(alpha: 0.92),
+    builder: (_) => _FullscreenGallery(
+      photos: photos,
+      initialIndex: initialIndex.clamp(0, photos.length - 1),
+    ),
+  );
+}
+
+class _FullscreenGallery extends StatefulWidget {
+  final List<String> photos;
+  final int initialIndex;
+  const _FullscreenGallery({required this.photos, required this.initialIndex});
+
+  @override
+  State<_FullscreenGallery> createState() => _FullscreenGalleryState();
+}
+
+class _FullscreenGalleryState extends State<_FullscreenGallery> {
+  late int _index = widget.initialIndex;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _prev() => setState(() {
+        _index = (_index - 1 + widget.photos.length) % widget.photos.length;
+      });
+  void _next() => setState(() {
+        _index = (_index + 1) % widget.photos.length;
+      });
+
+  KeyEventResult _onKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _prev();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _next();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(context).maybePop();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final multi = widget.photos.length > 1;
+    final path = widget.photos[_index];
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _onKey,
+      child: Stack(
+        children: [
+          // Tap empty area to dismiss.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          // Image (clamped — ignores hits on the surrounding empty area).
+          Positioned.fill(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+                child: Image.file(
+                  File(path),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => Icon(
+                    FluentIcons.camera,
+                    size: 80,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Top bar: counter + close.
+          Positioned(
+            top: 16,
+            left: 20,
+            right: 20,
+            child: Row(children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  multi ? '${_index + 1} / ${widget.photos.length}' : '1 / 1',
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              _GalleryButton(
+                icon: FluentIcons.cancel,
+                tooltip: 'Close (Esc)',
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+            ]),
+          ),
+          if (multi) ...[
+            Positioned(
+              left: 16,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _GalleryButton(
+                  icon: FluentIcons.chevron_left,
+                  tooltip: 'Previous (←)',
+                  onTap: _prev,
+                  large: true,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _GalleryButton(
+                  icon: FluentIcons.chevron_right,
+                  tooltip: 'Next (→)',
+                  onTap: _next,
+                  large: true,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GalleryButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool large;
+  const _GalleryButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.large = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dim = large ? 44.0 : 36.0;
+    return Tooltip(
+      message: tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: dim,
+            height: dim,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15), width: 1),
+            ),
+            child: Icon(icon, size: large ? 18 : 14, color: Colors.white),
+          ),
         ),
       ),
     );

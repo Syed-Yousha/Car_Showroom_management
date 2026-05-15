@@ -3,7 +3,6 @@ import '../models/car.dart';
 import '../models/customer.dart';
 import '../models/document_record.dart';
 import '../models/ledger_entry.dart';
-import '../models/salesman.dart';
 
 class TransactionFailure implements Exception {
   TransactionFailure(this.message);
@@ -32,7 +31,6 @@ class TransactionService {
   ///   2. Creates a ledger entry under `customers/{customerId}/ledger/{auto}`
   ///   3. Increments customer balance by [salePrice]
   ///   4. Creates a document tracking record (status: all inOffice)
-  ///   5. (Optional) Increments salesman aggregates + appends sale record
   ///
   /// Throws [TransactionFailure] if the car is already Sold or doesn't exist.
   /// Returns the new ledger entry ID.
@@ -43,22 +41,16 @@ class TransactionService {
     required DateTime date,
     required String details,
     String salesmanName = '',
-    String? salesmanId,
-    int? salesmanProfit,
     bool fullPayment = false,
     DateTime? dueDate,
   }) async {
     final carRef = _db.collection('cars').doc(carId);
     final customerRef = _db.collection('customers').doc(customerId);
     final ledgerRef = customerRef.collection('ledger').doc();
-      
+
     // documents/{carId} is the canonical mapping — InventoryService creates
     // this record on addCar, so we always target it by carId here.
     final docRecordRef = _db.collection('documents').doc(carId);
-
-    final salesmanRef =
-        salesmanId == null ? null : _db.collection('salesmen').doc(salesmanId);
-    final saleRef = salesmanRef?.collection('sales').doc();
 
     return _db.runTransaction<String>((tx) async {
       final carSnap = await tx.get(carRef);
@@ -129,29 +121,6 @@ class TransactionService {
         remoteKey: const DocItemState(status: 'inOffice'),
       );
       tx.set(docRecordRef, docRecord.toMap(), SetOptions(merge: true));
-
-      // 5. Salesman aggregates + sale record (optional)
-      if (salesmanRef != null && saleRef != null) {
-        final profit = salesmanProfit ?? 0;
-        tx.update(salesmanRef, {
-          'totalSales': FieldValue.increment(1),
-          'totalRevenue': FieldValue.increment(salePrice),
-          'totalProfit': FieldValue.increment(profit),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        final sale = SalesmanSale(
-          id: saleRef.id,
-          carId: carId,
-          carName: car.name,
-          buyerId: customerId,
-          buyerName: customer.name,
-          salePrice: salePrice,
-          profit: profit,
-          date: date,
-          type: fullPayment ? 'Cash' : 'Installment',
-        );
-        tx.set(saleRef, sale.toMap());
-      }
 
       return ledgerRef.id;
     });

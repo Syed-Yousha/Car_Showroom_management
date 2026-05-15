@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
 import '../../main.dart'
@@ -676,11 +677,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           FilledButton(
             style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.success)),
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _launchWhatsApp(row.customer.phone, msg);
+            },
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(FluentIcons.chat, size: 14, color: Colors.white),
               SizedBox(width: 6),
-              Text("Copy & Send",
+              Text("Open in WhatsApp",
                   style: TextStyle(
                       fontFamily: AppTheme.fontFamily,
                       fontWeight: FontWeight.w600,
@@ -688,6 +692,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ]),
           ).withClickCursor,
         ],
+      ),
+    );
+  }
+
+  /// Launches the WhatsApp deep link with [message] pre-filled to the chat
+  /// for [phone]. Strips any formatting from the phone, defaults the country
+  /// code to 92 (Pakistan) when missing or when the number starts with `0`.
+  Future<void> _launchWhatsApp(String phone, String message) async {
+    final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+    String normalized;
+    if (digitsOnly.isEmpty) {
+      _showFlash('Customer has no phone number on file.', isError: true);
+      return;
+    }
+    if (digitsOnly.startsWith('92')) {
+      normalized = digitsOnly;
+    } else if (digitsOnly.startsWith('0')) {
+      // Local PK format (03XX...) → drop the leading 0, prefix 92.
+      normalized = '92${digitsOnly.substring(1)}';
+    } else {
+      // Already-international or unknown — best-effort prefix.
+      normalized = '92$digitsOnly';
+    }
+    final uri = Uri.parse(
+        'https://wa.me/$normalized?text=${Uri.encodeComponent(message)}');
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        _showFlash('Could not open WhatsApp.', isError: true);
+      }
+    } catch (e) {
+      _showFlash('Failed to open WhatsApp: $e', isError: true);
+    }
+  }
+
+  void _showFlash(String message, {bool isError = false}) {
+    if (!mounted) return;
+    displayInfoBar(
+      context,
+      builder: (ctx, close) => InfoBar(
+        title: Text(message,
+            style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+        severity: isError ? InfoBarSeverity.error : InfoBarSeverity.success,
+        onClose: close,
       ),
     );
   }

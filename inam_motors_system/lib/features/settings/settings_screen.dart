@@ -908,8 +908,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return FluentIcons.financial;
       case BackupSection.investors:
         return FluentIcons.money;
-      case BackupSection.salesmen:
-        return FluentIcons.contact;
+      case BackupSection.documents:
+        return FluentIcons.document_set;
     }
   }
 

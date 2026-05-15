@@ -1,40 +1,38 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/car.dart';
 import '../models/customer.dart';
+import '../models/document_record.dart';
 import '../models/expense.dart';
 import '../models/investor.dart';
-import '../models/salesman.dart';
 import 'customer_service.dart';
 import 'customers_repo.dart';
+import 'documents_repo.dart';
 import 'expenses_repo.dart';
 import 'inventory_service.dart';
 import 'investors_repo.dart';
 import 'ledger_service.dart';
-import 'salesmen_repo.dart';
 
 /// Sections offered in the CSV export dialog and used as keys in the JSON
-/// backup blob. The string is the user-facing label and the export filename
-/// stem (lower-cased).
+/// backup blob.
 enum BackupSection {
   inventory('Inventory'),
   customers('Customers'),
   expenses('Expenses'),
   ledger('Ledger'),
   investors('Investors'),
-  salesmen('Salesmen');
+  documents('Documents');
 
   final String label;
   const BackupSection(this.label);
-  String get filenameStem => name; // lowercase enum name
+  String get filenameStem => name;
 }
 
-/// Result returned by long-running operations so the UI can show a final
-/// summary message without owning all the counting itself.
 class BackupResult {
   final bool ok;
   final String message;
@@ -44,8 +42,9 @@ class BackupResult {
 
 /// Coordinates whole-system backup (JSON), per-section CSV export, and
 /// factory reset. Every read routes through the REST-safe services/repos to
-/// avoid the Windows C++ SDK read crashes; deletes use the SDK directly
-/// (single-doc `set`/`delete` which the Windows codec handles fine).
+/// avoid the Windows C++ SDK read crashes; deletes go through the SDK
+/// directly as plain single-doc operations (the Windows codec handles those
+/// fine — only `.get()` / `.snapshots()` / `WriteBatch` crash it).
 class BackupService {
   BackupService({
     required this.inventory,
@@ -54,8 +53,9 @@ class BackupService {
     required this.ledger,
     required this.expenses,
     required this.investors,
-    required this.salesmen,
-  });
+    required this.documents,
+    FirebaseFirestore? db,
+  }) : _db = db ?? FirebaseFirestore.instance;
 
   final InventoryService inventory;
   final CustomerService customers;
@@ -63,14 +63,11 @@ class BackupService {
   final LedgerService ledger;
   final ExpensesRepo expenses;
   final InvestorsRepo investors;
-  final SalesmenRepo salesmen;
+  final DocumentsRepo documents;
+  final FirebaseFirestore _db;
 
   // ── BACKUP (JSON) ──────────────────────────────────────────────────────
 
-  /// Fetches every collection used by the app and serialises into a single
-  /// pretty-printed JSON file under the user's Documents folder.
-  ///
-  /// Returns the absolute path of the file written.
   Future<BackupResult> backupAllToJson({
     void Function(String step)? onProgress,
   }) async {
@@ -88,24 +85,22 @@ class BackupService {
       final expensesList = await expenses.listAll();
       onProgress?.call('Fetching investors…');
       final investorsList = await investors.listAll();
-      onProgress?.call('Fetching salesmen…');
-      final salesmenList = await salesmen.listAllSafe();
+      onProgress?.call('Fetching documents…');
+      final documentsList = await documents.listAll();
 
       onProgress?.call('Serialising…');
       final payload = <String, dynamic>{
         'meta': {
           'generatedAt': DateTime.now().toIso8601String(),
           'app': 'inam_motors_system',
-          'version': 1,
+          'version': 2,
         },
         'cars': cars.map(_carToBackupJson).toList(),
         'customers': clients.map(_customerToBackupJson).toList(),
-        'ledger': ledgerByCustomer.map(
-          (cid, entries) => MapEntry(cid, entries),
-        ),
+        'ledger': ledgerByCustomer,
         'expenses': expensesList.map(_expenseToBackupJson).toList(),
         'investors': investorsList.map(_investorToBackupJson).toList(),
-        'salesmen': salesmenList.map(_salesmanToBackupJson).toList(),
+        'documents': documentsList.map(_documentToBackupJson).toList(),
       };
 
       final encoder = const JsonEncoder.withIndent('  ');
@@ -240,17 +235,19 @@ class BackupService {
                   ])
               .toList(),
         );
-      case BackupSection.salesmen:
-        final list = await salesmen.listAllSafe();
+      case BackupSection.documents:
+        final list = await documents.listAll();
         return (
-          ['id', 'name', 'phone', 'role', 'share', 'joinDate', 'status',
-              'totalSales', 'totalRevenue', 'totalProfit',
-              'createdAt', 'updatedAt'],
+          ['id', 'carId', 'carName', 'year', 'regNo', 'chassisNo', 'engineNo',
+              'carStatus', 'buyer', 'buyerPhone', 'regName', 'carColor',
+              'fileStatus', 'smartCardStatus', 'plateStatus', 'remoteKeyStatus'],
           list
-              .map((s) => <dynamic>[
-                    s.id, s.name, s.phone, s.role, s.share,
-                    _iso(s.joinDate), s.status, s.totalSales, s.totalRevenue,
-                    s.totalProfit, _iso(s.createdAt), _iso(s.updatedAt),
+              .map((d) => <dynamic>[
+                    d.id, d.carId ?? '', d.carName, d.year, d.regNo,
+                    d.chassisNo, d.engineNo, d.carStatus, d.buyer ?? '',
+                    d.buyerPhone ?? '', d.regName ?? '', d.carColor ?? '',
+                    d.file.status, d.smartCard.status, d.plate.status,
+                    d.remoteKey.status,
                   ])
               .toList(),
         );
@@ -259,68 +256,127 @@ class BackupService {
 
   // ── FACTORY RESET ─────────────────────────────────────────────────────
 
-  /// Deletes every doc in every app collection via per-doc SDK deletes (the
-  /// Windows codec doesn't tolerate WriteBatch). Reports progress so the UI
-  /// can show a live status string.
+  /// Deletes every doc in every app collection. Each individual delete is
+  /// wrapped so one stuck record can't abort the wipe. Reports progress so
+  /// the UI can show live status.
+  ///
+  /// Notably this does NOT use `WriteBatch` (Windows codec crashes) and does
+  /// not use `customersRepo.deleteWithLedger` (which `.get()`s the ledger
+  /// sub-collection — also crashes on Windows). Instead it enumerates each
+  /// customer's ledger via REST (`ledgerService.fetchLedgerSafe`) and deletes
+  /// entries one-by-one with `_db.collection(...).doc(...).delete()`.
   Future<BackupResult> resetAllData({
     void Function(String step, int done, int total)? onProgress,
   }) async {
     try {
-      // Phase 1: count what we're about to delete (purely to drive a sensible
-      // progress bar; the deletes themselves stream).
-      final cars = await inventory.fetchCarsSafe();
-      final clients = await customers.fetchCustomersSafe();
-      final expensesList = await expenses.listAll();
-      final investorsList = await investors.listAll();
-      final salesmenList = await salesmen.listAllSafe();
+      // Phase 1: pre-fetch everything via REST so we have stable ID lists and
+      // can drive an accurate progress total.
+      onProgress?.call('Counting records…', 0, 0);
+      final cars = await _safeFetch(() => inventory.fetchCarsSafe());
+      final clients =
+          await _safeFetch(() => customers.fetchCustomersSafe());
+      final expensesList = await _safeFetch(() => expenses.listAll());
+      final investorsList = await _safeFetch(() => investors.listAll());
+      final documentsList = await _safeFetch(() => documents.listAll());
+
+      // Also enumerate per-customer ledger ids so each entry can be deleted
+      // individually (no batch, no .get() on the SDK).
+      final ledgerByCustomer = <String, List<String>>{};
+      for (final c in clients) {
+        try {
+          final entries = await ledger.fetchLedgerSafe(c.id);
+          ledgerByCustomer[c.id] =
+              entries.map((e) => (e['id'] ?? '').toString()).toList();
+        } catch (e) {
+          debugPrint('[Reset] ledger fetch failed for ${c.id}: $e');
+          ledgerByCustomer[c.id] = const [];
+        }
+      }
 
       final total = cars.length +
           clients.length +
           expensesList.length +
           investorsList.length +
-          salesmenList.length;
+          documentsList.length +
+          ledgerByCustomer.values.fold<int>(0, (s, l) => s + l.length);
       var done = 0;
-
       void tick(String label) {
         done++;
         onProgress?.call(label, done, total);
       }
 
-      // Phase 2: per-collection deletes. Each per-doc delete is wrapped in
-      // its own try so one stuck record can't block the rest of the wipe.
-      for (final c in cars) {
-        try {
-          await inventory.deleteCar(carId: c.id);
-        } catch (_) {}
-        tick('Deleting cars ($done/$total)');
+      // Phase 2: per-collection deletes. Every per-doc delete is independently
+      // try/catched so one failure can't break the wipe.
+
+      // Ledger entries — must happen before customers so we don't orphan them.
+      for (final entry in ledgerByCustomer.entries) {
+        for (final entryId in entry.value) {
+          if (entryId.isEmpty) {
+            tick('Deleting ledger ($done/$total)');
+            continue;
+          }
+          try {
+            await _db
+                .collection('customers')
+                .doc(entry.key)
+                .collection('ledger')
+                .doc(entryId)
+                .delete();
+          } catch (e) {
+            debugPrint('[Reset] ledger ${entry.key}/$entryId: $e');
+          }
+          tick('Deleting ledger ($done/$total)');
+        }
       }
+
+      // Customers
       for (final c in clients) {
         try {
-          await customersRepo.deleteWithLedger(c.id);
-        } catch (_) {
-          try {
-            await customers.deleteCustomer(c.id);
-          } catch (_) {}
+          await _db.collection('customers').doc(c.id).delete();
+        } catch (e) {
+          debugPrint('[Reset] customer ${c.id}: $e');
         }
         tick('Deleting customers ($done/$total)');
       }
+
+      // Cars
+      for (final c in cars) {
+        try {
+          await _db.collection('cars').doc(c.id).delete();
+        } catch (e) {
+          debugPrint('[Reset] car ${c.id}: $e');
+        }
+        tick('Deleting cars ($done/$total)');
+      }
+
+      // Documents
+      for (final d in documentsList) {
+        try {
+          await documents.delete(d.id);
+        } catch (e) {
+          debugPrint('[Reset] document ${d.id}: $e');
+        }
+        tick('Deleting documents ($done/$total)');
+      }
+
+      // Expenses
       for (final e in expensesList) {
         try {
           await expenses.delete(e.id);
-        } catch (_) {}
+        } catch (err) {
+          debugPrint('[Reset] expense ${e.id}: $err');
+        }
         tick('Deleting expenses ($done/$total)');
       }
+
+      // Investors
       for (final i in investorsList) {
         try {
           await investors.delete(i.id);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[Reset] investor ${i.id}: $e');
+        }
         tick('Deleting investors ($done/$total)');
-      }
-      for (final s in salesmenList) {
-        try {
-          await salesmen.delete(s.id);
-        } catch (_) {}
-        tick('Deleting salesmen ($done/$total)');
       }
 
       return const BackupResult(
@@ -330,6 +386,17 @@ class BackupService {
     } catch (e, s) {
       debugPrint('[Reset] failure: $e\n$s');
       return BackupResult(ok: false, message: 'Reset failed: $e');
+    }
+  }
+
+  /// Wrap a list fetch so a single failed collection doesn't take down the
+  /// whole reset run. Returns an empty list on failure.
+  static Future<List<T>> _safeFetch<T>(Future<List<T>> Function() f) async {
+    try {
+      return await f();
+    } catch (e) {
+      debugPrint('[Reset] pre-fetch failed: $e');
+      return <T>[];
     }
   }
 
@@ -344,8 +411,6 @@ class BackupService {
 
   static String _iso(DateTime? d) => d == null ? '' : d.toIso8601String();
 
-  /// RFC-4180-ish CSV builder: doubles up quotes inside fields, wraps any
-  /// field containing comma/quote/newline in quotes, joins with `\r\n`.
   static String _toCsv(List<String> headers, List<List<dynamic>> rows) {
     final buf = StringBuffer();
     buf.writeln(headers.map(_csvField).join(','));
@@ -363,9 +428,6 @@ class BackupService {
     return '"$escaped"';
   }
 
-  // Per-entity JSON shapers for the full backup. We strip serverTimestamp
-  // sentinels (only meaningful inside `toMap` for writes) and emit ISO strings
-  // for DateTimes.
   static Map<String, dynamic> _carToBackupJson(Car c) => {
         'id': c.id,
         'name': c.name,
@@ -442,18 +504,23 @@ class BackupService {
         'updatedAt': _iso(i.updatedAt),
       };
 
-  static Map<String, dynamic> _salesmanToBackupJson(Salesman s) => {
-        'id': s.id,
-        'name': s.name,
-        'phone': s.phone,
-        'role': s.role,
-        'share': s.share,
-        'joinDate': _iso(s.joinDate),
-        'status': s.status,
-        'totalSales': s.totalSales,
-        'totalRevenue': s.totalRevenue,
-        'totalProfit': s.totalProfit,
-        'createdAt': _iso(s.createdAt),
-        'updatedAt': _iso(s.updatedAt),
+  static Map<String, dynamic> _documentToBackupJson(DocumentRecord d) => {
+        'id': d.id,
+        'carId': d.carId,
+        'carName': d.carName,
+        'year': d.year,
+        'regNo': d.regNo,
+        'chassisNo': d.chassisNo,
+        'engineNo': d.engineNo,
+        'carStatus': d.carStatus,
+        'buyer': d.buyer,
+        'buyerPhone': d.buyerPhone,
+        'regName': d.regName,
+        'carColor': d.carColor,
+        'extraNotes': d.extraNotes,
+        'file': {'status': d.file.status},
+        'smartCard': {'status': d.smartCard.status},
+        'plate': {'status': d.plate.status},
+        'remoteKey': {'status': d.remoteKey.status},
       };
 }
