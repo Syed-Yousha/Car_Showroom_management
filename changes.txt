@@ -1,11 +1,11 @@
--> Salesman sections is no longer needed. so we dont need salesman sections files.
+System:
 
--> reset is not working correctly. its not removing everthing and the system i crashing when I am resetting. and when I reopened the app. it just removed all the cars from inventory. it should also remove all the customers, all the Docs and Files section data, and all data for expenses. and investor data should also be cleared.
+	-> the admin icon on the top right corner of the app should work. when user click on it it should show two options, darkmode toggle and sign out, both options should work.
 
--> Inventor cards should have a Full screen icon like [ ] this, if user click on this then user should be able to view the pictures of car at full screen and also click on left and right arrow to navigate on the other picture of that car.
+Settings:
 
-Customer:
-	-> View statement: Add transaction: Sell car: if the user selected a car from inventory and if that car does not recieved any file in inventory (eg. number plate) and user ticked that box in Add transaction->sell car entry then system should give an error "the particular file is not recieved in inventory" something like this.
+	-> Security: Change password section is not working in the system. when I am trying to change the password it just keep reloading.
 
 
-		
+
+ 

@@ -20,9 +20,9 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
 
   Future<List<Investor>> _futureInvestors = investorsRepo.listAll();
 
-  void _refresh() {
+  void _refresh({bool force = false}) {
     setState(() {
-      _futureInvestors = investorsRepo.listAll();
+      _futureInvestors = investorsRepo.listAll(forceRefresh: force);
     });
   }
 
@@ -174,7 +174,7 @@ class _InvestorsScreenState extends State<InvestorsScreen> {
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: _refresh,
+                      onPressed: () => _refresh(force: true),
                       child: const Text('Retry',
                           style: TextStyle(fontFamily: AppTheme.fontFamily)),
                     ),

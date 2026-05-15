@@ -36,16 +36,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _refresh();
   }
 
-  Future<void> _refresh() async {
+  Future<void> _refresh({bool force = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
       final results = await Future.wait([
-        inventoryService.fetchCarsSafe(),
-        customerService.fetchCustomersSafe(),
-        investorsRepo.listAll(),
+        inventoryService.fetchCarsSafe(forceRefresh: force),
+        customerService.fetchCustomersSafe(forceRefresh: force),
+        investorsRepo.listAll(forceRefresh: force),
       ]);
       final cars = results[0] as List<Car>;
       final customers = results[1] as List<Customer>;
@@ -247,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         IconButton(
           icon: Icon(FluentIcons.refresh,
               size: 16, color: AppTheme.textSecondary),
-          onPressed: _loading ? null : _refresh,
+          onPressed: _loading ? null : () => _refresh(force: true),
         ).withClickCursor,
         const SizedBox(width: 8),
         FilledButton(

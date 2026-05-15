@@ -26,11 +26,11 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
     _refreshDocs();
   }
 
-  Future<void> _refreshDocs() async {
+  Future<void> _refreshDocs({bool force = false}) async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final docs = await documentsRepo.listAll();
+      final docs = await documentsRepo.listAll(forceRefresh: force);
       final mapped = docs.map((doc) => {
         'id': doc.id,
         'carId': doc.carId,

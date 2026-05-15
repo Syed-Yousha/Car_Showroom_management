@@ -19,25 +19,36 @@ class DocumentsRepo {
   set rest(FirestoreRest r) => _rest = r;
   FirestoreRest get _restClient => _rest ??= FirestoreRest();
 
-  CollectionReference<Map<String, dynamic>> get _rawCol =>
-      _db.collection('documents');
+  static const _collection = 'documents';
 
-  Future<List<DocumentRecord>> listAll() async {
-    final docs = await _restClient.listDocs('documents');
+  CollectionReference<Map<String, dynamic>> get _rawCol =>
+      _db.collection(_collection);
+
+  Future<List<DocumentRecord>> listAll({bool forceRefresh = false}) async {
+    final docs = await _restClient.listDocs(
+      _collection,
+      forceRefresh: forceRefresh,
+    );
     return docs.map((d) => DocumentRecord.fromMap(d.id, d.data)).toList();
   }
 
   Future<String> add(DocumentRecord r) async {
     final ref = _rawCol.doc();
     await ref.set(r.toMap());
+    _restClient.clearCache(_collection);
     return ref.id;
   }
 
-  Future<void> update(String id, Map<String, dynamic> partial) =>
-      _rawCol.doc(id).set({
-        ...partial,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+  Future<void> update(String id, Map<String, dynamic> partial) async {
+    await _rawCol.doc(id).set({
+      ...partial,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    _restClient.clearCache(_collection);
+  }
 
-  Future<void> delete(String id) => _rawCol.doc(id).delete();
+  Future<void> delete(String id) async {
+    await _rawCol.doc(id).delete();
+    _restClient.clearCache(_collection);
+  }
 }

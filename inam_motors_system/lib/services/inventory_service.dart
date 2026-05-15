@@ -35,9 +35,10 @@ class InventoryService {
   /// CRITICAL: this is the ONLY way to read cars on Windows. Do not call
   /// `FirebaseFirestore.instance.collection('cars').get()` or `.snapshots()`
   /// — those crash the C++ SDK with no catchable exception.
-  Future<List<Car>> fetchCarsSafe() async {
-    print('[Inventory] fetchCarsSafe: GET /cars via REST...');
-    final docs = await _restClient.listDocs('cars');
+  Future<List<Car>> fetchCarsSafe({bool forceRefresh = false}) async {
+    print('[Inventory] fetchCarsSafe: GET /cars via REST '
+        '(forceRefresh=$forceRefresh)...');
+    final docs = await _restClient.listDocs('cars', forceRefresh: forceRefresh);
     print('[Inventory] fetchCarsSafe: got ${docs.length} car(s)');
     final cars = docs.map((d) => Car.fromMap(d.id, d.data)).toList();
     // Newest first. Cars without a createdAt (legacy seed data) sort to the
@@ -75,6 +76,7 @@ class InventoryService {
     };
     print('[Inventory] addCar: writing cars/${carRef.id} (price=${car.price})...');
     await carRef.set(carData);
+    _restClient.clearCache('cars');
     print('[Inventory] addCar: car write OK');
 
     if (investor != null && investor.id.isNotEmpty) {
@@ -86,11 +88,13 @@ class InventoryService {
           .collection('investors')
           .doc(investor.id)
           .set(updated.toMap());
+      _restClient.clearCache('investors');
       print('[Inventory] addCar: investor heldAmount updated OK');
     }
 
     // Mirror into Docs & Files. Best-effort — if it fails, inventory write
-    // already succeeded so we don't roll anything back.
+    // already succeeded so we don't roll anything back. DocumentService
+    // handles its own cache invalidation.
     try {
       await _docService.upsertFromCar(
         car,
@@ -128,6 +132,7 @@ class InventoryService {
       'investorId': newInvestor?.id,
       'investorName': newInvestor?.name,
     });
+    _restClient.clearCache('cars');
     print('[Inventory] updateCar: car write OK');
 
     final oldId = oldInvestor?.id ?? '';
@@ -141,6 +146,7 @@ class InventoryService {
             '${oldInvestor.heldAmount} → $newHeld (delta $delta)');
         final updated = oldInvestor.copyWith(heldAmount: newHeld);
         await _db.collection('investors').doc(oldId).set(updated.toMap());
+        _restClient.clearCache('investors');
       }
     } else {
       if (oldInvestor != null && oldId.isNotEmpty && oldPrice > 0) {
@@ -150,6 +156,7 @@ class InventoryService {
             '${oldInvestor.heldAmount} → $newHeld');
         final updated = oldInvestor.copyWith(heldAmount: newHeld);
         await _db.collection('investors').doc(oldId).set(updated.toMap());
+        _restClient.clearCache('investors');
       }
       if (newInvestor != null && newId.isNotEmpty && newCar.price > 0) {
         final newHeld = newInvestor.heldAmount + newCar.price;
@@ -196,6 +203,7 @@ class InventoryService {
       'buyerName': buyerName,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    _restClient.clearCache('cars');
     print('[Inventory] markCarSold: OK');
 
     try {
@@ -222,6 +230,7 @@ class InventoryService {
 
     print('[Inventory] deleteCar: deleting cars/$carId...');
     await _db.collection('cars').doc(carId).delete();
+    _restClient.clearCache('cars');
     print('[Inventory] deleteCar: car deleted OK');
 
     if (previousInvestor != null &&
@@ -236,6 +245,7 @@ class InventoryService {
           .collection('investors')
           .doc(previousInvestor.id)
           .set(updated.toMap());
+      _restClient.clearCache('investors');
       print('[Inventory] deleteCar: investor heldAmount updated OK');
     }
 

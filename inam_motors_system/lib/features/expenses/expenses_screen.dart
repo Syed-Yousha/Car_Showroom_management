@@ -29,13 +29,13 @@ class ExpensesScreenState extends State<ExpensesScreen> {
     _refresh();
   }
 
-  Future<void> _refresh() async {
+  Future<void> _refresh({bool force = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
-      final list = await expensesRepo.listAll();
+      final list = await expensesRepo.listAll(forceRefresh: force);
       if (!mounted) return;
       setState(() {
         _expenses = list;
@@ -478,7 +478,7 @@ class ExpensesScreenState extends State<ExpensesScreen> {
             ])),
             IconButton(
               icon: Icon(FluentIcons.refresh, size: 16, color: AppTheme.textSecondary),
-              onPressed: _loading ? null : _refresh,
+              onPressed: _loading ? null : () => _refresh(force: true),
             ).withClickCursor,
             const SizedBox(width: 8),
             FilledButton(

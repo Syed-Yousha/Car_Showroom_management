@@ -164,7 +164,7 @@ class CustomersScreenState extends State<CustomersScreen> {
 
   /// Fetch customers via REST and rebuild. Call on initState, on the
   /// Refresh button, and after every successful Add/Edit/Delete.
-  Future<void> _refreshCustomers() async {
+  Future<void> _refreshCustomers({bool force = false}) async {
     if (mounted) {
       setState(() {
         _loadingCustomers = true;
@@ -172,7 +172,8 @@ class CustomersScreenState extends State<CustomersScreen> {
       });
     }
     try {
-      final customers = await customerService.fetchCustomersSafe();
+      final customers =
+          await customerService.fetchCustomersSafe(forceRefresh: force);
       if (!mounted) return;
       setState(() {
         _customers = customers.map(_customerToDisplayMap).toList();
@@ -3272,7 +3273,9 @@ class CustomersScreenState extends State<CustomersScreen> {
                         )
                       : Icon(FluentIcons.refresh,
                           size: 16, color: AppTheme.textSecondary),
-                  onPressed: _loadingCustomers ? null : _refreshCustomers,
+                  onPressed: _loadingCustomers
+                      ? null
+                      : () => _refreshCustomers(force: true),
                 ).withClickCursor,
                 const SizedBox(width: 8),
                 FilledButton(

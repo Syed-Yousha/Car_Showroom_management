@@ -21,33 +21,48 @@ class ExpensesRepo {
 
   FirestoreRest get _restClient => _rest ??= FirestoreRest();
 
-  // ── Reads (REST) ─────────────────────────────────────────────────────────
+  static const _collection = 'expenses';
 
-  Future<List<Expense>> listAll() async {
-    final docs = await _restClient.listDocs('expenses');
+  // ── Reads (REST + cache) ────────────────────────────────────────────────
+
+  Future<List<Expense>> listAll({bool forceRefresh = false}) async {
+    final docs = await _restClient.listDocs(
+      _collection,
+      forceRefresh: forceRefresh,
+    );
     final list = docs.map((d) => Expense.fromMap(d.id, d.data)).toList();
     list.sort((a, b) => b.date.compareTo(a.date));
     return list;
   }
 
-  Future<Expense?> getOne(String id) async {
-    final doc = await _restClient.getDoc('expenses', id);
+  Future<Expense?> getOne(String id, {bool forceRefresh = false}) async {
+    final doc = await _restClient.getDoc(
+      _collection,
+      id,
+      forceRefresh: forceRefresh,
+    );
     return doc == null ? null : Expense.fromMap(doc.id, doc.data);
   }
 
-  // ── Writes (SDK — plain set/delete, Windows-safe) ───────────────────────
+  // ── Writes (SDK; invalidate cache afterwards) ───────────────────────────
 
   Future<String> add(Expense e) async {
-    final ref = _db.collection('expenses').doc();
+    final ref = _db.collection(_collection).doc();
     await ref.set(e.toMap());
+    _restClient.clearCache(_collection);
     return ref.id;
   }
 
-  Future<void> update(String id, Map<String, dynamic> partial) =>
-      _db.collection('expenses').doc(id).set({
-        ...partial,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+  Future<void> update(String id, Map<String, dynamic> partial) async {
+    await _db.collection(_collection).doc(id).set({
+      ...partial,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    _restClient.clearCache(_collection);
+  }
 
-  Future<void> delete(String id) => _db.collection('expenses').doc(id).delete();
+  Future<void> delete(String id) async {
+    await _db.collection(_collection).doc(id).delete();
+    _restClient.clearCache(_collection);
+  }
 }

@@ -29,11 +29,15 @@ class LedgerService {
   /// `List<Map<String, dynamic>>` (raw doc data + injected `id` field) so
   /// the existing rendering code, which already consumes maps, keeps working
   /// without translation.
-  Future<List<Map<String, dynamic>>> fetchLedgerSafe(String customerId) async {
+  Future<List<Map<String, dynamic>>> fetchLedgerSafe(
+    String customerId, {
+    bool forceRefresh = false,
+  }) async {
     if (customerId.isEmpty) return const [];
     final path = 'customers/$customerId/ledger';
-    print('[Ledger] fetchLedgerSafe: GET /$path via REST...');
-    final docs = await _restClient.listDocs(path);
+    print('[Ledger] fetchLedgerSafe: GET /$path via REST '
+        '(forceRefresh=$forceRefresh)...');
+    final docs = await _restClient.listDocs(path, forceRefresh: forceRefresh);
     print('[Ledger] fetchLedgerSafe: got ${docs.length} entry/entries');
     return docs.map((d) => {'id': d.id, ...d.data}).toList();
   }
@@ -58,6 +62,7 @@ class LedgerService {
       'credit': credit,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    _restClient.clearCache('customers/${customer.id}/ledger');
     print('[Ledger] addEntry: entry write OK');
 
     final delta = debit - credit;
@@ -66,6 +71,7 @@ class LedgerService {
       print('[Ledger] addEntry: customer.balance ${customer.balance} → $newBalance');
       final updated = customer.copyWith(balance: newBalance);
       await _db.collection('customers').doc(customer.id).set(updated.toMap());
+      _restClient.clearCache('customers');
       print('[Ledger] addEntry: customer balance updated OK');
     }
 
@@ -97,6 +103,7 @@ class LedgerService {
       'debit': newDebit,
       'credit': newCredit,
     });
+    _restClient.clearCache('customers/${customer.id}/ledger');
     print('[Ledger] updateEntry: entry write OK');
 
     final oldDelta = oldDebit - oldCredit;
@@ -107,6 +114,7 @@ class LedgerService {
       print('[Ledger] updateEntry: customer.balance ${customer.balance} → $newBalance');
       final updated = customer.copyWith(balance: newBalance);
       await _db.collection('customers').doc(customer.id).set(updated.toMap());
+      _restClient.clearCache('customers');
       print('[Ledger] updateEntry: customer balance updated OK');
     }
   }
@@ -128,6 +136,7 @@ class LedgerService {
         .doc(entryId);
     print('[Ledger] deleteEntry: deleting ${entryRef.path}...');
     await entryRef.delete();
+    _restClient.clearCache('customers/${customer.id}/ledger');
     print('[Ledger] deleteEntry: entry delete OK');
 
     final oldDelta = oldDebit - oldCredit;
@@ -136,6 +145,7 @@ class LedgerService {
       print('[Ledger] deleteEntry: customer.balance ${customer.balance} → $newBalance');
       final updated = customer.copyWith(balance: newBalance);
       await _db.collection('customers').doc(customer.id).set(updated.toMap());
+      _restClient.clearCache('customers');
       print('[Ledger] deleteEntry: customer balance updated OK');
     }
   }

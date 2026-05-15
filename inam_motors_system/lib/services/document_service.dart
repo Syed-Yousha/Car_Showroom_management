@@ -27,9 +27,15 @@ class DocumentService {
   /// Returns every doc record (car-linked + manual) as raw maps with `id`
   /// injected. The Docs screen consumes maps directly so we keep the same
   /// shape it already expects.
-  Future<List<Map<String, dynamic>>> fetchAllSafe() async {
-    print('[Docs] fetchAllSafe: GET /documents via REST...');
-    final docs = await _restClient.listDocs('documents');
+  Future<List<Map<String, dynamic>>> fetchAllSafe({
+    bool forceRefresh = false,
+  }) async {
+    print('[Docs] fetchAllSafe: GET /documents via REST '
+        '(forceRefresh=$forceRefresh)...');
+    final docs = await _restClient.listDocs(
+      'documents',
+      forceRefresh: forceRefresh,
+    );
     print('[Docs] fetchAllSafe: got ${docs.length} record(s)');
     return docs.map((d) => {'id': d.id, ...d.data}).toList();
   }
@@ -90,6 +96,7 @@ class DocumentService {
 
     print('[Docs] upsertFromCar: writing documents/$id (new=$isNewRecord)');
     await ref.set(base, SetOptions(merge: true));
+    _restClient.clearCache('documents');
     print('[Docs] upsertFromCar: OK');
   }
 
@@ -110,6 +117,7 @@ class DocumentService {
       'carStatus': 'Sold',
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    _restClient.clearCache('documents');
     print('[Docs] markBuyerOnSell: OK');
   }
 
@@ -126,6 +134,7 @@ class DocumentService {
       ...partial,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    _restClient.clearCache('documents');
     print('[Docs] savePartial: OK');
   }
 
@@ -142,6 +151,7 @@ class DocumentService {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    _restClient.clearCache('documents');
     print('[Docs] addManual: OK');
     return ref.id;
   }
@@ -155,6 +165,7 @@ class DocumentService {
     }
     print('[Docs] delete: documents/$docId');
     await _db.collection('documents').doc(docId).delete();
+    _restClient.clearCache('documents');
     print('[Docs] delete: OK');
   }
 }

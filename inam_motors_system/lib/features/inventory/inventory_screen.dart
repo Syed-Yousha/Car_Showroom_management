@@ -88,7 +88,7 @@ class InventoryScreenState extends State<InventoryScreen> {
 
   /// Fetch cars via REST and rebuild. Call this on initState, when the
   /// user taps "Refresh", or after any write that changes inventory.
-  Future<void> _refreshCars() async {
+  Future<void> _refreshCars({bool force = false}) async {
     if (mounted) {
       setState(() {
         _loadingCars = true;
@@ -96,7 +96,7 @@ class InventoryScreenState extends State<InventoryScreen> {
       });
     }
     try {
-      final cars = await inventoryService.fetchCarsSafe();
+      final cars = await inventoryService.fetchCarsSafe(forceRefresh: force);
       if (!mounted) return;
       setState(() {
         _cars = cars.map(_carToDisplayMap).toList();
@@ -1746,7 +1746,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               icon: _loadingCars
                   ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
                   : Icon(FluentIcons.refresh, size: 16, color: AppTheme.textSecondary),
-              onPressed: _loadingCars ? null : _refreshCars,
+              onPressed: _loadingCars ? null : () => _refreshCars(force: true),
             ).withClickCursor,
             const SizedBox(width: 8),
             FilledButton(
@@ -2461,8 +2461,8 @@ class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
         ...widget.overlays,
         if (hasPhotos)
           Positioned(
-            top: 8,
-            right: 8,
+            bottom: 10,
+            left: 10,
             child: Tooltip(
               message: 'Open fullscreen',
               child: MouseRegion(
@@ -2477,11 +2477,11 @@ class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(6),
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(5),
                     ),
                     child: const Icon(FluentIcons.full_screen,
-                        size: 14, color: Colors.white),
+                        size: 12, color: Colors.white),
                   ),
                 ),
               ),

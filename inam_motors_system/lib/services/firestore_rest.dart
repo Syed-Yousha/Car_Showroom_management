@@ -24,8 +24,38 @@ class FirestoreRest {
   final String _databaseId;
   final http.Client _http;
 
+  /// In-memory cache for `listDocs` results, keyed by collection path. Each
+  /// list entry preserves the same `RestDoc` shape the REST decoder produces
+  /// (id + unwrapped fields), so the cache layer is transparent to callers.
+  ///
+  /// Cache is invalidated explicitly via [clearCache] (called after every
+  /// write in the corresponding repo) — there's no TTL. The user-driven
+  /// "refresh" button on each screen calls the fetch with `forceRefresh:
+  /// true`, which bypasses the cache and refills it from the live response.
+  final Map<String, List<RestDoc>> _listCache = {};
+
+  /// In-memory cache for `getDoc` results, keyed by `'collection/id'`. Stores
+  /// the `RestDoc` directly; a `null` value means the doc was confirmed
+  /// missing (404) so we can avoid re-fetching deleted docs in tight loops.
+  final Map<String, RestDoc?> _docCache = {};
+
   String get _base =>
       'https://firestore.googleapis.com/v1/projects/$_projectId/databases/$_databaseId/documents';
+
+  /// Drop every cached entry for [collection] (both the `listDocs` result and
+  /// every `getDoc` entry under that collection). Call this from the repo
+  /// after any add/update/delete so the next read returns fresh data.
+  void clearCache(String collection) {
+    _listCache.remove(collection);
+    _docCache.removeWhere((k, _) => k.startsWith('$collection/'));
+  }
+
+  /// Drop everything — useful on sign-out so a new user can't see another's
+  /// cached data.
+  void clearAllCache() {
+    _listCache.clear();
+    _docCache.clear();
+  }
 
   Future<String> _token() async {
     final user = fb_auth.FirebaseAuth.instance.currentUser;
@@ -44,7 +74,14 @@ class FirestoreRest {
   ///
   /// Pages internally — Firestore returns up to 100 docs per page by
   /// default; we follow `nextPageToken` until exhausted.
-  Future<List<RestDoc>> listDocs(String collection) async {
+  Future<List<RestDoc>> listDocs(
+    String collection, {
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh) {
+      final cached = _listCache[collection];
+      if (cached != null) return cached;
+    }
     final token = await _token();
     final results = <RestDoc>[];
     String? pageToken;
@@ -77,18 +114,30 @@ class FirestoreRest {
       pageToken = body['nextPageToken'] as String?;
     } while (pageToken != null);
 
+    _listCache[collection] = results;
     return results;
   }
 
   /// Get a single document by [collection] + [id]. Returns `null` on 404.
-  Future<RestDoc?> getDoc(String collection, String id) async {
+  Future<RestDoc?> getDoc(
+    String collection,
+    String id, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = '$collection/$id';
+    if (!forceRefresh && _docCache.containsKey(cacheKey)) {
+      return _docCache[cacheKey];
+    }
     final token = await _token();
     final url = Uri.parse('$_base/$collection/$id');
     final res = await _http.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
     );
-    if (res.statusCode == 404) return null;
+    if (res.statusCode == 404) {
+      _docCache[cacheKey] = null;
+      return null;
+    }
     if (res.statusCode != 200) {
       throw FirestoreRestException(
         method: 'GET',
@@ -100,7 +149,9 @@ class FirestoreRest {
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final fields =
         (body['fields'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
-    return RestDoc(id: id, data: _unwrapFields(fields));
+    final doc = RestDoc(id: id, data: _unwrapFields(fields));
+    _docCache[cacheKey] = doc;
+    return doc;
   }
 
   /// Convert Firestore's value-tagged field map into plain Dart values.

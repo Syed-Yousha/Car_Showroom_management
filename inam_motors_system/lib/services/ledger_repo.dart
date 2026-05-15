@@ -1,11 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/ledger_entry.dart';
+import 'firestore_rest.dart';
 
 /// Path: customers/{customerId}/ledger/{entryId}
+///
+/// Writes invalidate the REST cache so [LedgerService.fetchLedgerSafe] returns
+/// fresh data on next read.
 class LedgerRepo {
-  LedgerRepo({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  LedgerRepo({FirebaseFirestore? db, FirestoreRest? rest})
+      : _db = db ?? FirebaseFirestore.instance,
+        _rest = rest;
 
   final FirebaseFirestore _db;
+  FirestoreRest? _rest;
+
+  set rest(FirestoreRest r) => _rest = r;
+  FirestoreRest? get _restClient => _rest;
+
+  String _path(String customerId) => 'customers/$customerId/ledger';
 
   CollectionReference<Map<String, dynamic>> _rawCol(String customerId) =>
       _db.collection('customers').doc(customerId).collection('ledger');
@@ -26,9 +38,13 @@ class LedgerRepo {
     String customerId,
     String entryId,
     Map<String, dynamic> partial,
-  ) =>
-      _rawCol(customerId).doc(entryId).update(partial);
+  ) async {
+    await _rawCol(customerId).doc(entryId).update(partial);
+    _restClient?.clearCache(_path(customerId));
+  }
 
-  Future<void> delete(String customerId, String entryId) =>
-      _rawCol(customerId).doc(entryId).delete();
+  Future<void> delete(String customerId, String entryId) async {
+    await _rawCol(customerId).doc(entryId).delete();
+    _restClient?.clearCache(_path(customerId));
+  }
 }

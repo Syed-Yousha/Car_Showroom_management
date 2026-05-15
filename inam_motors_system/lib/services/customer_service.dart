@@ -25,10 +25,15 @@ class CustomerService {
   // ── READS (REST — safe on Windows) ─────────────────────────────────────
 
   /// Fetches every customer doc via REST. CRITICAL: this is the ONLY way
-  /// to read customers on Windows.
-  Future<List<Customer>> fetchCustomersSafe() async {
-    debugPrint('[Customer] fetchCustomersSafe: GET /customers via REST...');
-    final docs = await _restClient.listDocs('customers');
+  /// to read customers on Windows. Hits the in-memory REST cache by default;
+  /// pass `forceRefresh: true` to bypass it (e.g. manual refresh button).
+  Future<List<Customer>> fetchCustomersSafe({bool forceRefresh = false}) async {
+    debugPrint('[Customer] fetchCustomersSafe: GET /customers via REST '
+        '(forceRefresh=$forceRefresh)...');
+    final docs = await _restClient.listDocs(
+      'customers',
+      forceRefresh: forceRefresh,
+    );
     debugPrint('[Customer] fetchCustomersSafe: got ${docs.length} customer(s)');
     return docs.map((d) => Customer.fromMap(d.id, d.data)).toList();
   }
@@ -41,6 +46,7 @@ class CustomerService {
     debugPrint('[Customer] addCustomer: writing customers/${ref.id}...');
     await ref.set(customer.toMap());
     debugPrint('[Customer] addCustomer: write OK');
+    _restClient.clearCache('customers');
     return ref.id;
   }
 
@@ -52,6 +58,7 @@ class CustomerService {
     debugPrint('[Customer] updateCustomer: writing customers/${customer.id}...');
     await _db.collection('customers').doc(customer.id).set(customer.toMap());
     debugPrint('[Customer] updateCustomer: write OK');
+    _restClient.clearCache('customers');
   }
 
   /// Deletes a customer doc. NOTE: ledger sub-collection docs are NOT
@@ -64,14 +71,23 @@ class CustomerService {
     debugPrint('[Customer] deleteCustomer: deleting customers/$customerId...');
     await _db.collection('customers').doc(customerId).delete();
     debugPrint('[Customer] deleteCustomer: delete OK');
+    _restClient.clearCache('customers');
+    _restClient.clearCache('customers/$customerId/ledger');
   }
 
   // ── LAYER 2: LEDGER (Transactions) ─────────────────────────────────────
 
   /// Fetches ledger entries for a customer via REST to avoid Windows crash.
-  Future<List<Map<String, dynamic>>> fetchLedgerSafe(String customerId) async {
-    debugPrint('[Customer] fetchLedgerSafe: GET /customers/$customerId/ledger...');
-    final docs = await _restClient.listDocs('customers/$customerId/ledger');
+  Future<List<Map<String, dynamic>>> fetchLedgerSafe(
+    String customerId, {
+    bool forceRefresh = false,
+  }) async {
+    debugPrint('[Customer] fetchLedgerSafe: GET /customers/$customerId/ledger '
+        '(forceRefresh=$forceRefresh)...');
+    final docs = await _restClient.listDocs(
+      'customers/$customerId/ledger',
+      forceRefresh: forceRefresh,
+    );
     // Sort by date manually as we aren't using a query here.
     docs.sort((a, b) {
       final da = DateTime.tryParse(a.data['date']?.toString() ?? '') ?? DateTime(2000);
@@ -93,13 +109,15 @@ class CustomerService {
 
     // Direct write to sub-collection
     await entryRef.set(data);
+    _restClient.clearCache('customers/$customerId/ledger');
 
     // Calculate effect on balance.
     final debit = (data['debit'] as int?) ?? 0;
     final credit = (data['credit'] as int?) ?? 0;
     final int newBalance = currentCustomer.balance + debit - credit;
 
-    // Apply back using updateCustomer
+    // Apply back using updateCustomer (which itself invalidates the
+    // customers cache).
     await updateCustomer(currentCustomer.copyWith(balance: newBalance));
   }
 
@@ -109,6 +127,7 @@ class CustomerService {
     final entryRef = _db.collection('customers').doc(customerId).collection('ledger').doc(entryId);
 
     await entryRef.set(newEntry);
+    _restClient.clearCache('customers/$customerId/ledger');
 
     // Old impact vs new impact
     final oldDebit = (oldEntry['debit'] as int?) ?? 0;
@@ -130,6 +149,7 @@ class CustomerService {
     final entryRef = _db.collection('customers').doc(customerId).collection('ledger').doc(entryId);
 
     await entryRef.delete();
+    _restClient.clearCache('customers/$customerId/ledger');
 
     // Reverse effect on balance.
     final debit = (entry['debit'] as int?) ?? 0;

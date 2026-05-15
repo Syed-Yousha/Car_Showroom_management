@@ -109,6 +109,8 @@ void main() {
     documentsRepo.rest = firestoreRest;
     documentService.rest = firestoreRest;
     expensesRepo.rest = firestoreRest;
+    customersRepo.rest = firestoreRest;
+    ledgerRepo.rest = firestoreRest;
     businessProfileService.rest = firestoreRest;
     debugPrint('[Init] FirestoreRest configured for project '
         '${Firebase.app().options.projectId}');
