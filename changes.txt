@@ -1,9 +1,11 @@
-Inventory:
-	-> the new entry should alway be showed on the above row. right now I had done a new entry and I had to scroll down to find its card.
-	-> when I edit the tick boxed of file, smart card, number plate, remote/key in inventory, eg first I had checked all boxes and then  edited and unchecked the smart card box. so the status in docs & file should also change to not recieved.
-	-> inventory card should show all the tick boxes on the card of File, Smart card, plate, Remote and key. as F, SC, P, R/K and checkboxed as entered.
+-> Salesman sections is no longer needed. so we dont need salesman sections files.
 
-Docs & file:
-	-> right now I had make an entry of a car in inventory and I had did not check the boxes of File and number plate(which mean inam motors did not received them), but in docs and files the system is showing that File and number plate of that car is at office which is wrong.
-	
+-> reset is not working correctly. its not removing everthing and the system i crashing when I am resetting. and when I reopened the app. it just removed all the cars from inventory. it should also remove all the customers, all the Docs and Files section data, and all data for expenses. and investor data should also be cleared.
 
+-> Inventor cards should have a Full screen icon like [ ] this, if user click on this then user should be able to view the pictures of car at full screen and also click on left and right arrow to navigate on the other picture of that car.
+
+Customer:
+	-> View statement: Add transaction: Sell car: if the user selected a car from inventory and if that car does not recieved any file in inventory (eg. number plate) and user ticked that box in Add transaction->sell car entry then system should give an error "the particular file is not recieved in inventory" something like this.
+
+
+		
