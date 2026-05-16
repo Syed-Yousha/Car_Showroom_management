@@ -25,6 +25,64 @@ class _MainLayoutState extends State<MainLayout> {
   final _inventoryKey = GlobalKey<InventoryScreenState>();
   final _customersKey = GlobalKey<CustomersScreenState>();
   final _expensesKey = GlobalKey<ExpensesScreenState>();
+  final _adminFlyout = FlyoutController();
+
+  @override
+  void dispose() {
+    _adminFlyout.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignOut() async {
+    try {
+      AuthGate.isUnlocked = false;
+      await authService.signOut();
+    } catch (e) {
+      debugPrint('[MainLayout] Sign-out failed: $e');
+    }
+  }
+
+  void _openAdminMenu() {
+    _adminFlyout.showFlyout(
+      autoModeConfiguration: FlyoutAutoConfiguration(
+        preferredMode: FlyoutPlacementMode.bottomRight,
+      ),
+      builder: (ctx) => MenuFlyout(items: [
+        MenuFlyoutItem(
+          leading: ValueListenableBuilder<bool>(
+            valueListenable: InamMotorsApp.isDarkMode,
+            builder: (_, dark, _)=> Icon(
+              dark ? FluentIcons.sunny : FluentIcons.clear_night,
+              size: 14,
+            ),
+          ),
+          text: ValueListenableBuilder<bool>(
+            valueListenable: InamMotorsApp.isDarkMode,
+            builder: (_, dark, _)=> Text(
+              dark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+              style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13),
+            ),
+          ),
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            InamMotorsApp.isDarkMode.value = !InamMotorsApp.isDarkMode.value;
+          },
+        ),
+        const MenuFlyoutSeparator(),
+        MenuFlyoutItem(
+          leading: Icon(FluentIcons.sign_out, size: 14, color: AppTheme.error),
+          text: Text(
+            'Sign Out',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, color: AppTheme.error),
+          ),
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            _handleSignOut();
+          },
+        ),
+      ]),
+    );
+  }
 
   @override
   void initState() {
@@ -138,7 +196,13 @@ class _MainLayoutState extends State<MainLayout> {
             const Spacer(),
             const NotificationsBell(),
             const SizedBox(width: 4),
-            Container(
+            FlyoutTarget(
+              controller: _adminFlyout,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: _openAdminMenu,
+                  child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: AppTheme.background,
@@ -183,6 +247,9 @@ class _MainLayoutState extends State<MainLayout> {
                   const SizedBox(width: 4),
                   Icon(FluentIcons.chevron_down, size: 10, color: AppTheme.textSecondary),
                 ],
+              ),
+            ),
+                ),
               ),
             ),
             const SizedBox(width: 16),

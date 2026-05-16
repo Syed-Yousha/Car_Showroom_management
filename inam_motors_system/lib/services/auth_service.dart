@@ -50,6 +50,26 @@ class AuthService {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Re-authenticates the current user with [password]. Returns true if the
+  /// password matches; false on any auth error (wrong password, no user,
+  /// network failure). Use this to gate destructive operations.
+  Future<bool> verifyPassword(String password) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) return false;
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(cred);
+      return true;
+    } on FirebaseAuthException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Re-authenticates with the current password, then updates to the new one.
   /// Throws FirebaseAuthException on any failure (caller maps to UI message).
   Future<void> changePassword({

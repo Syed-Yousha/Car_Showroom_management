@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
@@ -667,18 +668,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setState(() => _busyPassword = true);
     try {
-      await authService.changePassword(
-        currentPassword: current,
-        newPassword: newPw,
-      );
+      try {
+        await authService.changePassword(
+          currentPassword: current,
+          newPassword: newPw,
+        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          await authService.changePassword(
+            currentPassword: current,
+            newPassword: newPw,
+          );
+        } else {
+          rethrow;
+        }
+      }
       if (!mounted) return;
       _currentPwCtrl.clear();
       _newPwCtrl.clear();
       _confirmPwCtrl.clear();
       _showSnack("Password updated successfully");
     } catch (e) {
-      if (!mounted) return;
-      _showError(AuthService.describeError(e));
+      if (mounted) _showError(AuthService.describeError(e));
     } finally {
       if (mounted) setState(() => _busyPassword = false);
     }
@@ -967,7 +978,133 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final passwordOk = await _promptForAdminPassword();
+    if (!passwordOk || !mounted) return;
     await _runReset();
+  }
+
+  /// Asks the admin to re-enter their password before wiping all data.
+  /// Validates via Firebase re-authentication; falls back to
+  /// [LocalAuthService.verify] for any stored local credential. Returns
+  /// true only on a successful match.
+  Future<bool> _promptForAdminPassword() async {
+    final pwCtrl = TextEditingController();
+    final errorNotifier = ValueNotifier<String?>(null);
+    final busyNotifier = ValueNotifier<bool>(false);
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          Future<void> submit() async {
+            final entered = pwCtrl.text;
+            if (entered.isEmpty) {
+              errorNotifier.value = 'Password is required.';
+              return;
+            }
+            busyNotifier.value = true;
+            errorNotifier.value = null;
+            bool ok = false;
+            try {
+              ok = await authService.verifyPassword(entered);
+              if (!ok) {
+                final username =
+                    (authService.currentUser?.usernameFromEmail ?? '').trim();
+                if (username.isNotEmpty) {
+                  ok = await localAuthService.verify(
+                    username: username,
+                    password: entered,
+                  );
+                }
+              }
+            } catch (_) {
+              ok = false;
+            }
+            busyNotifier.value = false;
+            if (!ok) {
+              errorNotifier.value = 'Incorrect Password';
+              return;
+            }
+            if (ctx.mounted) Navigator.pop(ctx, true);
+          }
+
+          return ContentDialog(
+            title: Row(children: [
+              Icon(FluentIcons.lock, size: 16, color: AppTheme.error),
+              const SizedBox(width: 8),
+              const Text('Confirm Admin Password',
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w700)),
+            ]),
+            constraints: const BoxConstraints(maxWidth: 420),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Re-enter your admin password to permanently wipe all data.',
+                  style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                      height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                TextBox(
+                  controller: pwCtrl,
+                  obscureText: true,
+                  placeholder: 'Admin password',
+                  autofocus: true,
+                  onSubmitted: (_) => submit(),
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder<String?>(
+                  valueListenable: errorNotifier,
+                  builder: (_, err, _) => err == null
+                      ? const SizedBox.shrink()
+                      : Text(err,
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 12,
+                              color: AppTheme.error)),
+                ),
+              ],
+            ),
+            actions: [
+              Button(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel',
+                      style: TextStyle(fontFamily: AppTheme.fontFamily))),
+              ValueListenableBuilder<bool>(
+                valueListenable: busyNotifier,
+                builder: (_, busy, _) => FilledButton(
+                  style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.all(AppTheme.error)),
+                  onPressed: busy ? null : submit,
+                  child: busy
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: ProgressRing(strokeWidth: 2))
+                      : const Text('Verify & Continue',
+                          style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              color: Colors.white)),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    pwCtrl.dispose();
+    errorNotifier.dispose();
+    busyNotifier.dispose();
+    return result == true;
   }
 
   Future<void> _runReset() async {

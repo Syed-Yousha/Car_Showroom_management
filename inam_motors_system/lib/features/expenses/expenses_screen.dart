@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
@@ -181,7 +182,6 @@ class ExpensesScreenState extends State<ExpensesScreen> {
     String selectedCategory = 'Miscellaneous';
     String selectedMethod = 'Cash';
     bool isRecurring = false;
-    bool busy = false;
 
     showDialog(
       context: context,
@@ -237,15 +237,15 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: busy ? null : () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-            onPressed: busy ? null : () async {
+            onPressed: () {
               final title = titleCtrl.text.trim();
               if (title.isEmpty) return;
-              setDialogState(() => busy = true);
-              final expense = Expense(
-                id: '',
+              final tempId = 'tmp_${DateTime.now().microsecondsSinceEpoch}';
+              final optimistic = Expense(
+                id: tempId,
                 title: title,
                 category: selectedCategory,
                 amount: int.tryParse(amountCtrl.text.trim()) ?? 0,
@@ -254,20 +254,37 @@ class ExpensesScreenState extends State<ExpensesScreen> {
                 method: selectedMethod,
                 recurring: isRecurring,
               );
-              try {
-                await expensesRepo.add(expense);
-                if (!ctx.mounted) return;
-                Navigator.pop(ctx);
-                await _refresh();
-                await _showFlash("Expense added.");
-              } catch (e) {
-                setDialogState(() => busy = false);
-                await _showFlash("Failed to add: $e", isError: true);
-              }
+              // 1. Insert locally + close the dialog instantly.
+              setState(() => _expenses = [optimistic, ..._expenses]);
+              Navigator.pop(ctx);
+              // 2. Background-fire the SDK write. Don't block the UI.
+              unawaited(() async {
+                try {
+                  await expensesRepo.add(
+                    Expense(
+                      id: '',
+                      title: optimistic.title,
+                      category: optimistic.category,
+                      amount: optimistic.amount,
+                      date: optimistic.date,
+                      paidTo: optimistic.paidTo,
+                      method: optimistic.method,
+                      recurring: optimistic.recurring,
+                    ),
+                  );
+                  if (!mounted) return;
+                  await _refresh(force: true);
+                  await _showFlash("Background sync complete");
+                } catch (e) {
+                  if (!mounted) return;
+                  // Roll back the optimistic insert.
+                  setState(() =>
+                      _expenses = _expenses.where((x) => x.id != tempId).toList());
+                  await _showFlash("Sync failed: $e", isError: true);
+                }
+              }());
             },
-            child: busy
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            child: const Text("Add Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
       )),

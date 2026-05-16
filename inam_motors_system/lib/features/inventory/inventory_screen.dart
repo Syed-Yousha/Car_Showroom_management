@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -12,6 +13,36 @@ import '../../main.dart';
 import '../../models/car.dart';
 import '../../models/investor.dart';
 import '../shared/widgets.dart';
+
+/// Renders a car photo from either a Firebase Storage download URL
+/// (`http(s)://...`) or a local Windows file path picked just now.
+/// Remote URLs survive sync across machines; local paths only exist during
+/// the upload preview stage before saving.
+Widget _carImage(
+  String path, {
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.cover,
+  Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+}) {
+  final isRemote = path.startsWith('http://') || path.startsWith('https://');
+  final fallback = errorBuilder ??
+      (_, __, ___) => Container(
+            width: width,
+            height: height,
+            color: AppTheme.background,
+            child: Center(
+              child: Icon(FluentIcons.camera,
+                  size: 18, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+            ),
+          );
+  if (isRemote) {
+    return Image.network(path,
+        width: width, height: height, fit: fit, errorBuilder: fallback);
+  }
+  return Image.file(File(path),
+      width: width, height: height, fit: fit, errorBuilder: fallback);
+}
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -726,11 +757,10 @@ class InventoryScreenState extends State<InventoryScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(4),
-                                    child: Image.file(
-                                      File(path), 
-                                      width: 90, 
-                                      height: 70, 
-                                      fit: BoxFit.cover,
+                                    child: _carImage(
+                                      path,
+                                      width: 90,
+                                      height: 70,
                                       errorBuilder: (ctx, err, stack) => Container(
                                         width: 90, height: 70, color: AppTheme.background,
                                         child: const Center(child: Icon(FluentIcons.error, size: 16, color: AppTheme.error)),
@@ -946,6 +976,19 @@ class InventoryScreenState extends State<InventoryScreen> {
                     });
 
                     final priceInt = int.tryParse(priceCtrl.text.trim()) ?? 0;
+                    List<String> uploadedPhotos;
+                    try {
+                      uploadedPhotos = await storageService.uploadCarPhotos(
+                        selectedImagePaths,
+                        carId: 'pending_${DateTime.now().millisecondsSinceEpoch}',
+                      );
+                    } catch (e) {
+                      setDialogState(() {
+                        saving = false;
+                        saveError = 'Photo upload failed: $e';
+                      });
+                      return;
+                    }
                     final car = Car(
                       id: '', // auto-id assigned by InventoryService
                       name: nameCtrl.text.trim(),
@@ -966,36 +1009,46 @@ class InventoryScreenState extends State<InventoryScreen> {
                       smartCardHandedOver: smartCardHanded,
                       numberPlateHandedOver: plateHanded,
                       remoteKeyHandedOver: remoteKeyHanded,
-                      photos: selectedImagePaths,
+                      photos: uploadedPhotos,
                       sellerName: sellerNameCtrl.text.trim().isEmpty ? null : sellerNameCtrl.text.trim(),
                       sellerPhone: sellerPhoneCtrl.text.trim().isEmpty ? null : sellerPhoneCtrl.text.trim(),
                       sellerCnic: sellerCnicCtrl.text.trim().isEmpty ? null : sellerCnicCtrl.text.trim(),
                       notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
                     );
 
-                    try {
-                      print('[AddCar] Calling inventoryService.addCar() — investor=${selectedInvestor?.name ?? "(none)"}, price=$priceInt');
-                      final id = await inventoryService.addCar(car, investor: selectedInvestor);
-                      print('[AddCar] Car saved successfully with id=$id');
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      if (!mounted) return;
-                      displayInfoBar(context, builder: (c, close) => InfoBar(
-                        title: Text('Car "${car.name}" added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                        severity: InfoBarSeverity.success,
-                        onClose: close,
-                      ));
-                      // Re-fetch the list so the new car appears immediately.
-                      _refreshCars();
-                    } catch (e, s) {
-                      print('[AddCar] FAILED to save car: $e');
-                      print('[AddCar] Stack: $s');
-                      if (!ctx.mounted) return;
-                      setDialogState(() {
-                        saving = false;
-                        saveError = 'Save failed: $e';
-                      });
-                    }
+                    // Optimistic: insert a placeholder card and close the
+                    // dialog immediately. Background-fire the Firestore write.
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    final tempId = 'tmp_${DateTime.now().microsecondsSinceEpoch}';
+                    setState(() {
+                      final display = _carToDisplayMap(car);
+                      display['id'] = tempId;
+                      _cars = [display, ..._cars];
+                    });
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Car "${car.name}" added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.success,
+                      onClose: close,
+                    ));
+                    unawaited(() async {
+                      try {
+                        await inventoryService.addCar(car, investor: selectedInvestor);
+                        if (!mounted) return;
+                        await _refreshCars(force: true);
+                      } catch (e) {
+                        if (!mounted) return;
+                        setState(() {
+                          _cars = _cars.where((c) => c['id'] != tempId).toList();
+                        });
+                        displayInfoBar(context, builder: (c, close) => InfoBar(
+                          title: Text('Sync failed: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                          severity: InfoBarSeverity.error,
+                          onClose: close,
+                        ));
+                      }
+                    }());
                   },
             child: saving
                 ? const SizedBox(
@@ -1296,11 +1349,10 @@ class InventoryScreenState extends State<InventoryScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(4),
-                                    child: Image.file(
-                                      File(path), 
-                                      width: 90, 
-                                      height: 70, 
-                                      fit: BoxFit.cover,
+                                    child: _carImage(
+                                      path,
+                                      width: 90,
+                                      height: 70,
                                       errorBuilder: (ctx, err, stack) => Container(
                                         width: 90, height: 70, color: AppTheme.background,
                                         child: const Center(child: Icon(FluentIcons.error, size: 16, color: AppTheme.error)),
@@ -1589,6 +1641,19 @@ class InventoryScreenState extends State<InventoryScreen> {
                     });
 
                     final newPrice = int.tryParse(priceCtrl.text.trim()) ?? originalPrice;
+                    List<String> uploadedPhotos;
+                    try {
+                      uploadedPhotos = await storageService.uploadCarPhotos(
+                        selectedImagePaths,
+                        carId: originalCarId,
+                      );
+                    } catch (e) {
+                      setDialogState(() {
+                        savingEdit = false;
+                        editSaveError = 'Photo upload failed: $e';
+                      });
+                      return;
+                    }
                     final newCar = Car(
                       id: originalCarId,
                       name: nameCtrl.text.trim(),
@@ -1613,7 +1678,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                       smartCardHandedOver: smartCardHanded,
                       numberPlateHandedOver: plateHanded,
                       remoteKeyHandedOver: remoteKeyHanded,
-                      photos: selectedImagePaths,
+                      photos: uploadedPhotos,
                       carExpenses: expenseRows
                           .where((row) => row['title']!.text.trim().isNotEmpty)
                           .map((row) => CarExpense(
@@ -1881,7 +1946,9 @@ class InventoryScreenState extends State<InventoryScreen> {
     final carExpenses = car['carExpenses'] as List;
     final totalExpense = carExpenses.fold(0, (s, e) => (s) + ((e as Map)['amount'] as int));
 
-    return Container(
+    return SizedBox(
+      height: 470,
+      child: Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
@@ -1916,10 +1983,10 @@ class InventoryScreenState extends State<InventoryScreen> {
           ],
         ),
 
-        Padding(
+        Expanded(child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(car['name'], style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+            Text(car['name'], maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
             const SizedBox(height: 4),
             Text("${car['model']} \u2022 ${car['color']} \u2022 ${car['transmission']}", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.textMuted)),
             const SizedBox(height: 8),
@@ -1998,7 +2065,7 @@ class InventoryScreenState extends State<InventoryScreen> {
                 ),
             ]),
 
-            const SizedBox(height: 12),
+            const Spacer(),
 
             // Action buttons
             Row(children: [
@@ -2053,8 +2120,9 @@ class InventoryScreenState extends State<InventoryScreen> {
               ).withClickCursor),
             ]),
           ]),
-        ),
+        )),
       ]),
+    ),
     );
   }
 
@@ -2081,7 +2149,7 @@ class InventoryScreenState extends State<InventoryScreen> {
               clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(color: AppTheme.divider.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
               child: (car['photos'] as List).isNotEmpty
-                  ? Image.file(File((car['photos'] as List).first.toString()), fit: BoxFit.cover)
+                  ? _carImage((car['photos'] as List).first.toString(), fit: BoxFit.cover)
                   : Icon(FluentIcons.car, size: 22, color: AppTheme.textMuted.withValues(alpha: 0.5)),
             ),
             const SizedBox(width: 14),
@@ -2218,8 +2286,8 @@ class InventoryScreenState extends State<InventoryScreen> {
                                 border: Border.all(color: AppTheme.divider),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Image.file(
-                                File(path),
+                              child: _carImage(
+                                path,
                                 fit: BoxFit.cover,
                                 errorBuilder: (ctx, err, stack) => Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -2445,10 +2513,10 @@ class _CarPhotoCarouselState extends State<_CarPhotoCarousel> {
       ),
       child: Stack(fit: StackFit.expand, children: [
         if (hasPhotos)
-          Image.file(
-            File(widget.photos[safeIndex]),
+          _carImage(
+            widget.photos[safeIndex],
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Center(
+            errorBuilder: (_, _, _) => Center(
               child: Icon(FluentIcons.camera,
                   size: 36, color: AppTheme.textMuted.withValues(alpha: 0.4)),
             ),
@@ -2645,8 +2713,8 @@ class _FullscreenGalleryState extends State<_FullscreenGallery> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                child: Image.file(
-                  File(path),
+                child: _carImage(
+                  path,
                   fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => Icon(
                     FluentIcons.camera,

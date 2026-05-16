@@ -26,6 +26,7 @@ import 'services/ledger_service.dart';
 import 'services/local_auth_service.dart';
 import 'services/notifications_service.dart';
 import 'services/seed_service.dart';
+import 'services/storage_service.dart';
 import 'services/transaction_service.dart';
 
 /// Global service handles. A simple, deliberate alternative to a DI framework
@@ -44,6 +45,7 @@ final CustomerService customerService = CustomerService();
 final LedgerService ledgerService = LedgerService();
 final DocumentService documentService = DocumentService();
 final LocalAuthService localAuthService = LocalAuthService();
+final StorageService storageService = StorageService();
 final BusinessProfileService businessProfileService = BusinessProfileService();
 final NotificationsService notificationsService = NotificationsService(
   inventory: inventoryService,

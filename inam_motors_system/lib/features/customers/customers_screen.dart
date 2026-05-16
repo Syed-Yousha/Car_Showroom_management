@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+﻿import 'dart:async';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:path_provider/path_provider.dart';
@@ -64,12 +65,16 @@ class CustomersScreenState extends State<CustomersScreen> {
     print('[AddTxn] Loading available cars via REST...');
     final cars = await inventoryService.fetchCarsSafe();
     final available = cars
-        .where((c) => c.status == 'Available')
+        .where((c) => c.status.trim().toLowerCase() == 'available')
         .map((c) => {
               'id': c.id,
               'name': c.name,
               'price': c.price,
               'regNo': c.regNo,
+              'fileHandedOver': c.fileHandedOver,
+              'smartCardHandedOver': c.smartCardHandedOver,
+              'numberPlateHandedOver': c.numberPlateHandedOver,
+              'remoteKeyHandedOver': c.remoteKeyHandedOver,
             })
         .toList();
     // ignore: avoid_print
@@ -208,18 +213,25 @@ class CustomersScreenState extends State<CustomersScreen> {
       };
 
   // ───── Computed helpers ─────
+  // Outstanding balance = sum(debits) - sum(credits) over the ledger.
+  // We deliberately do NOT trust the stored `customer.balance` field — it
+  // drifts when ledger entries are added/edited/deleted and the running
+  // delta is applied to BOTH the entry and the customer doc, which has
+  // historically produced doubled values.
   int _getBalance(Map<String, dynamic> c) {
-    return c['balance'] as int? ?? 0;
+    return _getTotalDebit(c) - _getTotalCredit(c);
   }
 
   int _getTotalDebit(Map<String, dynamic> c) {
     final ledger = (c['ledger'] as List<dynamic>?) ?? [];
-    return ledger.fold(0, (s, e) => s + ((e as Map)['debit'] as int? ?? 0));
+    return ledger.fold<int>(
+        0, (s, e) => s + ((e as Map)['debit'] as int? ?? 0));
   }
 
   int _getTotalCredit(Map<String, dynamic> c) {
     final ledger = (c['ledger'] as List<dynamic>?) ?? [];
-    return ledger.fold(0, (s, e) => s + ((e as Map)['credit'] as int? ?? 0));
+    return ledger.fold<int>(
+        0, (s, e) => s + ((e as Map)['credit'] as int? ?? 0));
   }
 
   int _getCarCount(Map<String, dynamic> c) {
@@ -804,7 +816,19 @@ class CustomersScreenState extends State<CustomersScreen> {
                       // it in inventory. Block the transaction when any
                       // ticked handover is not backed by a received doc.
                       final missing = <String>[];
-                      bool received(String k) => selectedCar![k] == true;
+                      bool received(String k) {
+                        final v = selectedCar![k];
+                        if (v is bool) return v;
+                        if (v is String) {
+                          final s = v.trim().toLowerCase();
+                          return s == 'true' ||
+                              s == 'yes' ||
+                              s == 'inoffice' ||
+                              s == 'in office' ||
+                              s == 'received';
+                        }
+                        return false;
+                      }
                       if (fileHandedOver && !received('fileHandedOver')) {
                         missing.add('File');
                       }
@@ -932,22 +956,57 @@ class CustomersScreenState extends State<CustomersScreen> {
                     balance: (customer['balance'] as int?) ?? 0,
                     notes: customer['notes'] as String?,
                   );
+                  // Optimistic ledger insert: stamp the entry locally so the
+                  // statement updates instantly, then close the dialog and
+                  // background-fire the SDK writes.
+                  final tempEntryId = 'tmp_${DateTime.now().microsecondsSinceEpoch}';
+                  final optimisticEntry = <String, dynamic>{
+                    ...entryData,
+                    'id': tempEntryId,
+                    'debit': debit,
+                    'credit': credit,
+                    'createdAt': DateTime.now().toIso8601String(),
+                  };
+                  final existingLedger = (customer['ledger'] as List?)
+                          ?.cast<Map<String, dynamic>>() ??
+                      <Map<String, dynamic>>[];
+                  customer['ledger'] = [...existingLedger, optimisticEntry];
+                  setState(() {});
+                  Navigator.pop(ctx);
+                  if (!mounted) return;
+                  final entryDataFinal = entryData;
+                  unawaited(() async {
+                    try {
+                      await ledgerService.addEntry(
+                        customer: customerObj,
+                        entryData: entryDataFinal,
+                        debit: debit,
+                        credit: credit,
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      // Roll back the optimistic entry.
+                      final updated = (customer['ledger'] as List?)
+                              ?.cast<Map<String, dynamic>>() ??
+                          <Map<String, dynamic>>[];
+                      customer['ledger'] =
+                          updated.where((m) => m['id'] != tempEntryId).toList();
+                      setState(() {});
+                      displayInfoBar(context, builder: (c, close) => InfoBar(
+                        title: Text('Sync failed: $e',
+                            style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.error,
+                        onClose: close,
+                      ));
+                      return;
+                    }
+                    // Pull authoritative ledger from server.
+                    if (mounted) await _refreshLedgerFor(customerId);
+                  }());
+                  // Below: cross-domain side-effects (Sell Car / Trade-In)
+                  // run in the original try/catch but are now also moved off
+                  // the UI critical path.
                   try {
-                    // ignore: avoid_print
-                    print('[AddTxn] type=$txnType debit=$debit credit=$credit customerId=$customerId');
-                    final id = await ledgerService.addEntry(
-                      customer: customerObj,
-                      entryData: entryData,
-                      debit: debit,
-                      credit: credit,
-                    );
-                    // ignore: avoid_print
-                    print('[AddTxn] entry written id=$id');
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                    if (!mounted) return;
-                    // Update local customer.balance + reload ledger.
-                    customer['balance'] = customerObj.balance + (debit - credit);
                     // ── Inventory side-effects ─────────────────────────
                     // Sell Car (with a real inventory pick) → mark Sold.
                     if (txnType == 'Sell Car' &&

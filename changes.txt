@@ -1,11 +1,3 @@
-System:
+Customers:
+	-> Add transaction: sell car: remove the warning of handover checkboxes. even if any document is not added in inventory it should still be acceptable in add transaction.
 
-	-> the admin icon on the top right corner of the app should work. when user click on it it should show two options, darkmode toggle and sign out, both options should work.
-
-Settings:
-
-	-> Security: Change password section is not working in the system. when I am trying to change the password it just keep reloading.
-
-
-
- 
