@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -24,6 +25,50 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
   void initState() {
     super.initState();
     _refreshDocs();
+  }
+
+  /// Flattens a DocumentRecord into the row Map shape this screen renders.
+  /// Used for optimistic local-cache inserts before the SDK write lands.
+  Map<String, dynamic> _docRecordToMap(DocumentRecord doc, {String? id}) {
+    return {
+      'id': id ?? doc.id,
+      'carId': doc.carId,
+      'carName': doc.carName,
+      'year': doc.year,
+      'regNo': doc.regNo,
+      'chassisNo': doc.chassisNo,
+      'engineNo': doc.engineNo,
+      'carStatus': doc.carStatus,
+      'buyer': doc.buyer,
+      'buyerPhone': doc.buyerPhone,
+      'regName': doc.regName,
+      'carColor': doc.carColor,
+      'extraNotes': doc.extraNotes,
+      'file': {
+        'status': doc.file.status,
+        'to': doc.file.to,
+        'phone': doc.file.phone,
+        'date': doc.file.date?.toIso8601String(),
+      },
+      'smartCard': {
+        'status': doc.smartCard.status,
+        'to': doc.smartCard.to,
+        'phone': doc.smartCard.phone,
+        'date': doc.smartCard.date?.toIso8601String(),
+      },
+      'plate': {
+        'status': doc.plate.status,
+        'to': doc.plate.to,
+        'phone': doc.plate.phone,
+        'date': doc.plate.date?.toIso8601String(),
+      },
+      'remoteKey': {
+        'status': doc.remoteKey.status,
+        'to': doc.remoteKey.to,
+        'phone': doc.remoteKey.phone,
+        'date': doc.remoteKey.date?.toIso8601String(),
+      },
+    };
   }
 
   Future<void> _refreshDocs({bool force = false}) async {
@@ -440,9 +485,24 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                         icon: Icon(FluentIcons.delete,
                                             size: 14,
                                             color: AppTheme.error.withValues(alpha: 0.7)),
-                                        onPressed: () async {
-                                          await documentsRepo.delete(r['id']);
-                                          await _refreshDocs();
+                                        onPressed: () {
+                                          final docId = r['id'];
+                                          final snapshot =
+                                              Map<String, dynamic>.from(r);
+                                          setState(() {
+                                            _records = _records
+                                                .where((x) => x['id'] != docId)
+                                                .toList();
+                                          });
+                                          unawaited(documentsRepo
+                                              .delete(docId)
+                                              .catchError((e) {
+                                            if (!mounted) return;
+                                            setState(() => _records =
+                                                [snapshot, ..._records]);
+                                            debugPrint(
+                                                '[DeleteDoc] Sync failed: $e');
+                                          }));
                                         },
                                       ).withClickCursor,
                                     ),
@@ -662,9 +722,24 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                                               message: "Remove",
                                               child: IconButton(
                                                 icon: Icon(FluentIcons.delete, size: 14, color: AppTheme.error.withValues(alpha: 0.7)),
-                                                onPressed: () async {
-                                                  await documentsRepo.delete(r['id']);
-                                                  await _refreshDocs();
+                                                onPressed: () {
+                                                  final docId = r['id'];
+                                                  final snapshot =
+                                                      Map<String, dynamic>.from(r);
+                                                  setState(() {
+                                                    _records = _records
+                                                        .where((x) => x['id'] != docId)
+                                                        .toList();
+                                                  });
+                                                  unawaited(documentsRepo
+                                                      .delete(docId)
+                                                      .catchError((e) {
+                                                    if (!mounted) return;
+                                                    setState(() => _records =
+                                                        [snapshot, ..._records]);
+                                                    debugPrint(
+                                                        '[DeleteDoc] Sync failed: $e');
+                                                  }));
                                                 },
                                               ).withClickCursor,
                                             ),
@@ -1168,12 +1243,22 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                     'remoteKey': buildDocState(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
                   };
 
-                  if (mounted) {
-                    Navigator.pop(ctx);
-                  }
-                  
-                  await documentsRepo.update(record['id'], updateData);
-                  await _refreshDocs();
+                  // Optimistic: merge updateData into the cached row and
+                  // close the dialog. SDK update + reconcile run in the
+                  // background.
+                  final docId = record['id'];
+                  setState(() {
+                    _records = _records.map((r) {
+                      if (r['id'] != docId) return r;
+                      return {...r, ...updateData};
+                    }).toList();
+                  });
+                  if (mounted) Navigator.pop(ctx);
+                  // No forced refresh after the write — the cached row
+                  // is already updated. We just surface any failure.
+                  unawaited(documentsRepo.update(docId, updateData).catchError((e) {
+                    debugPrint('[EditDoc] Sync failed: $e');
+                  }));
                 },
                 child: const Text('Save',
                     style: TextStyle(
@@ -1563,12 +1648,29 @@ class _DocumentTrackingScreenState extends State<DocumentTrackingScreen> {
                     remoteKey: buildDocState(remoteKeyStatus, remoteKeyToCtrl, remoteKeyPhoneCtrl, remoteKeyDate),
                   );
 
-                  if (mounted) {
-                    Navigator.pop(ctx);
-                  }
-
-                  await documentsRepo.add(newDoc);
-                  await _refreshDocs();
+                  // Optimistic insert: stamp the new record into the
+                  // local list with a temp id and close the dialog. The
+                  // SDK write runs in the background and we reconcile via
+                  // a forced refresh.
+                  final tempId = 'tmp_${DateTime.now().microsecondsSinceEpoch}';
+                  setState(() {
+                    _records = [_docRecordToMap(newDoc, id: tempId), ..._records];
+                  });
+                  if (mounted) Navigator.pop(ctx);
+                  // Fire-and-forget the SDK write. The optimistic row is
+                  // already on screen; we don't trigger a full refresh,
+                  // which would flash the loading state on every save.
+                  unawaited(() async {
+                    try {
+                      await documentsRepo.add(newDoc);
+                    } catch (e) {
+                      if (!mounted) return;
+                      setState(() {
+                        _records = _records.where((r) => r['id'] != tempId).toList();
+                      });
+                      debugPrint('[AddDoc] Sync failed: $e');
+                    }
+                  }());
                 },
                 child: const Text('Save', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
               ).withClickCursor,

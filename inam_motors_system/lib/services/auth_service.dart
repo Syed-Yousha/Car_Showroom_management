@@ -55,13 +55,19 @@ class AuthService {
   /// network failure). Use this to gate destructive operations.
   Future<bool> verifyPassword(String password) async {
     final user = _auth.currentUser;
-    if (user == null || user.email == null) return false;
+    final email = user?.email;
+    if (email == null) return false;
+    // `reauthenticateWithCredential` is the canonical Firebase call here,
+    // but the Windows C++ Auth plugin can falsely reject correct passwords
+    // and sometimes hang. Re-running `signInWithEmailAndPassword` on the
+    // same user is a reliable verifier on this platform: Firebase throws
+    // `wrong-password`/`invalid-credential` on a bad password, and on a
+    // good password it simply replaces the current session with an
+    // equivalent one for the same user — no UI side effects.
     try {
-      final cred = EmailAuthProvider.credential(
-        email: user.email!,
-        password: password,
-      );
-      await user.reauthenticateWithCredential(cred);
+      await _auth
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 12));
       return true;
     } on FirebaseAuthException {
       return false;

@@ -1008,7 +1008,6 @@ class CustomersScreenState extends State<CustomersScreen> {
     final addressCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     String selectedType = 'New';
-    bool savingAdd = false;
     String? addError;
 
     showDialog(
@@ -1093,7 +1092,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                 ),
               ),
             Button(
-              onPressed: savingAdd ? null : () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text(
                 "Cancel",
                 style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1103,59 +1102,68 @@ class CustomersScreenState extends State<CustomersScreen> {
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.primary),
               ),
-              onPressed: savingAdd
-                  ? null
-                  : () async {
-                      if (nameCtrl.text.trim().isEmpty) {
-                        setDialogState(() => addError = 'Customer name is required.');
-                        return;
-                      }
-                      setDialogState(() {
-                        savingAdd = true;
-                        addError = null;
-                      });
-                      final newCustomer = Customer(
-                        id: '', // Firestore generates
-                        name: nameCtrl.text.trim(),
-                        phone: phoneCtrl.text.trim(),
-                        cnic: cnicCtrl.text.trim(),
-                        city: cityCtrl.text.trim(),
-                        address: addressCtrl.text.trim(),
-                        type: selectedType,
-                        notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
-                      );
-                      try {
-                        debugPrint('[AddCustomer] Calling customerService.addCustomer() — name=${newCustomer.name}');
-                        final id = await customerService.addCustomer(newCustomer);
-                        debugPrint('[AddCustomer] Customer saved with id=$id');
-                        if (!ctx.mounted) return;
-                        Navigator.pop(ctx);
-                        if (!mounted) return;
-                        displayInfoBar(context, builder: (c, close) => InfoBar(
-                          title: Text('Customer "${newCustomer.name}" added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                          severity: InfoBarSeverity.success,
-                          onClose: close,
-                        ));
-                        _refreshCustomers();
-                      } catch (e, s) {
-                        debugPrint('[AddCustomer] FAILED: $e');
-                        debugPrint('[AddCustomer] Stack: $s');
-                        if (!ctx.mounted) return;
-                        setDialogState(() {
-                          savingAdd = false;
-                          addError = 'Save failed: $e';
-                        });
-                      }
-                    },
-              child: savingAdd
-                  ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
-                  : const Text(
-                      "Add Customer",
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        color: Colors.white,
+              onPressed: () {
+                if (nameCtrl.text.trim().isEmpty) {
+                  setDialogState(() => addError = 'Customer name is required.');
+                  return;
+                }
+                final tempId = 'tmp_${DateTime.now().microsecondsSinceEpoch}';
+                final newCustomer = Customer(
+                  id: tempId,
+                  name: nameCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim(),
+                  cnic: cnicCtrl.text.trim(),
+                  city: cityCtrl.text.trim(),
+                  address: addressCtrl.text.trim(),
+                  type: selectedType,
+                  notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                );
+                // Optimistic: insert into the list + close instantly.
+                setState(() {
+                  _customers = [
+                    _customerToDisplayMap(newCustomer),
+                    ..._customers,
+                  ];
+                });
+                Navigator.pop(ctx);
+                unawaited(() async {
+                  try {
+                    await customerService.addCustomer(
+                      Customer(
+                        id: '',
+                        name: newCustomer.name,
+                        phone: newCustomer.phone,
+                        cnic: newCustomer.cnic,
+                        city: newCustomer.city,
+                        address: newCustomer.address,
+                        type: newCustomer.type,
+                        notes: newCustomer.notes,
                       ),
-                    ),
+                    );
+                    if (!mounted) return;
+                    await _refreshCustomers(force: true);
+                  } catch (e) {
+                    if (!mounted) return;
+                    setState(() {
+                      _customers =
+                          _customers.where((c) => c['id'] != tempId).toList();
+                    });
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Sync failed: $e',
+                          style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.error,
+                      onClose: close,
+                    ));
+                  }
+                }());
+              },
+              child: const Text(
+                "Add Customer",
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  color: Colors.white,
+                ),
+              ),
             ).withClickCursor,
           ],
         ),
@@ -1174,7 +1182,6 @@ class CustomersScreenState extends State<CustomersScreen> {
     final addressCtrl = TextEditingController(text: c['address'] ?? '');
     final customerNotesCtrl = TextEditingController(text: c['notes'] as String? ?? '');
     String selectedType = c['type'];
-    bool savingEdit = false;
     String? editError;
 
     showDialog(
@@ -1259,7 +1266,7 @@ class CustomersScreenState extends State<CustomersScreen> {
                 ),
               ),
             Button(
-              onPressed: savingEdit ? null : () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text(
                 "Cancel",
                 style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1269,60 +1276,53 @@ class CustomersScreenState extends State<CustomersScreen> {
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.all(AppTheme.primary),
               ),
-              onPressed: savingEdit
-                  ? null
-                  : () async {
-                      if (nameCtrl.text.trim().isEmpty) {
-                        setDialogState(() => editError = 'Customer name is required.');
-                        return;
-                      }
-                      setDialogState(() {
-                        savingEdit = true;
-                        editError = null;
-                      });
-                      final updated = Customer(
-                        id: customerId,
-                        name: nameCtrl.text.trim(),
-                        phone: phoneCtrl.text.trim(),
-                        cnic: cnicCtrl.text.trim(),
-                        city: cityCtrl.text.trim(),
-                        address: addressCtrl.text.trim(),
-                        type: selectedType,
-                        balance: (c['balance'] as int?) ?? 0,
-                        notes: customerNotesCtrl.text.trim().isEmpty ? null : customerNotesCtrl.text.trim(),
-                      );
-                      try {
-                        debugPrint('[EditCustomer] Calling customerService.updateCustomer() — id=$customerId');
-                        await customerService.updateCustomer(updated);
-                        debugPrint('[EditCustomer] updateCustomer OK');
-                        if (!ctx.mounted) return;
-                        Navigator.pop(ctx);
-                        if (!mounted) return;
-                        displayInfoBar(context, builder: (c, close) => InfoBar(
-                          title: Text('Customer "${updated.name}" updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                          severity: InfoBarSeverity.success,
-                          onClose: close,
-                        ));
-                        _refreshCustomers();
-                      } catch (e, s) {
-                        debugPrint('[EditCustomer] FAILED: $e');
-                        debugPrint('[EditCustomer] Stack: $s');
-                        if (!ctx.mounted) return;
-                        setDialogState(() {
-                          savingEdit = false;
-                          editError = 'Update failed: $e';
-                        });
-                      }
-                    },
-              child: savingEdit
-                  ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))
-                  : const Text(
-                      "Save Changes",
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        color: Colors.white,
-                      ),
-                    ),
+              onPressed: () {
+                if (nameCtrl.text.trim().isEmpty) {
+                  setDialogState(() => editError = 'Customer name is required.');
+                  return;
+                }
+                final updated = Customer(
+                  id: customerId,
+                  name: nameCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim(),
+                  cnic: cnicCtrl.text.trim(),
+                  city: cityCtrl.text.trim(),
+                  address: addressCtrl.text.trim(),
+                  type: selectedType,
+                  balance: (c['balance'] as int?) ?? 0,
+                  notes: customerNotesCtrl.text.trim().isEmpty ? null : customerNotesCtrl.text.trim(),
+                );
+                // Optimistic merge into the live list.
+                final display = _customerToDisplayMap(updated);
+                // Preserve the in-memory ledger we already loaded.
+                if (c['ledger'] is List) display['ledger'] = c['ledger'];
+                setState(() {
+                  _customers = _customers
+                      .map((m) => m['id'] == customerId ? display : m)
+                      .toList();
+                  if (_selectedCustomer != null &&
+                      _selectedCustomer!['id'] == customerId) {
+                    _selectedCustomer = display;
+                  }
+                });
+                Navigator.pop(ctx);
+                unawaited(customerService.updateCustomer(updated).catchError((e) {
+                  if (!mounted) return;
+                  displayInfoBar(context, builder: (c, close) => InfoBar(
+                    title: Text('Sync failed: $e',
+                        style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                    severity: InfoBarSeverity.error,
+                    onClose: close,
+                  ));
+                }));
+              },
+              child: const Text(
+                "Save Changes",
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  color: Colors.white,
+                ),
+              ),
             ).withClickCursor,
           ],
         ),
@@ -1333,12 +1333,10 @@ class CustomersScreenState extends State<CustomersScreen> {
   void _showRemoveCustomerDialog(Map<String, dynamic> c) {
     final customerId = (c['id'] ?? '').toString();
     if (customerId.isEmpty) return;
-    bool deleting = false;
-    String? deleteError;
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+      builder: (ctx) => ContentDialog(
         title: const Text(
           "Remove Customer",
           style: TextStyle(
@@ -1356,14 +1354,10 @@ class CustomersScreenState extends State<CustomersScreen> {
               height: 1.5,
             ),
           ),
-          if (deleteError != null) ...[
-            const SizedBox(height: 8),
-            Text(deleteError!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
-          ],
         ]),
         actions: [
           Button(
-            onPressed: deleting ? null : () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text(
               "Cancel",
               style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -1373,53 +1367,49 @@ class CustomersScreenState extends State<CustomersScreen> {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(AppTheme.error),
             ),
-            onPressed: deleting
-                ? null
-                : () async {
-                    setDialogState(() {
-                      deleting = true;
-                      deleteError = null;
-                    });
-                    try {
-                      debugPrint('[RemoveCustomer] Calling customerService.deleteCustomer() — id=$customerId');
-                      await customerService.deleteCustomer(customerId);
-                      debugPrint('[RemoveCustomer] Delete OK');
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      if (!mounted) return;
-                      // Clear detail view if the removed customer was selected.
-                      if (_selectedCustomer != null &&
-                          (_selectedCustomer!['id'] ?? '') == customerId) {
-                        setState(() => _selectedCustomer = null);
-                      }
-                      displayInfoBar(context, builder: (c2, close) => InfoBar(
-                        title: Text('Customer "${c['name']}" removed.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                        severity: InfoBarSeverity.success,
-                        onClose: close,
-                      ));
-                      _refreshCustomers();
-                    } catch (e, s) {
-                      debugPrint('[RemoveCustomer] FAILED: $e');
-                      debugPrint('[RemoveCustomer] Stack: $s');
-                      if (!ctx.mounted) return;
-                      setDialogState(() {
-                        deleting = false;
-                        deleteError = 'Remove failed: $e';
-                      });
-                    }
-                  },
-            child: deleting
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text(
-                    "Remove",
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      color: Colors.white,
-                    ),
-                  ),
+            onPressed: () {
+              // Snapshot for rollback.
+              final snapshot = _customers
+                  .firstWhere((m) => m['id'] == customerId,
+                      orElse: () => const {});
+              setState(() {
+                _customers =
+                    _customers.where((m) => m['id'] != customerId).toList();
+                if (_selectedCustomer != null &&
+                    (_selectedCustomer!['id'] ?? '') == customerId) {
+                  _selectedCustomer = null;
+                }
+              });
+              Navigator.pop(ctx);
+              unawaited(customerService.deleteCustomer(customerId).catchError((e) {
+                if (!mounted) return;
+                // Roll back the optimistic delete.
+                if (snapshot.isNotEmpty) {
+                  setState(() {
+                    _customers = [
+                      Map<String, dynamic>.from(snapshot),
+                      ..._customers,
+                    ];
+                  });
+                }
+                displayInfoBar(context, builder: (c2, close) => InfoBar(
+                  title: Text('Sync failed: $e',
+                      style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                  severity: InfoBarSeverity.error,
+                  onClose: close,
+                ));
+              }));
+            },
+            child: const Text(
+              "Remove",
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                color: Colors.white,
+              ),
+            ),
           ).withClickCursor,
         ],
-      )),
+      ),
     );
   }
 
@@ -1934,42 +1924,42 @@ class CustomersScreenState extends State<CustomersScreen> {
                     balance: (customer['balance'] as int?) ?? 0,
                     notes: customer['notes'] as String?,
                   );
-                  try {
-                    // ignore: avoid_print
-                    print('[EditTxn] entryId=$entryId oldDebit=$oldDebit oldCredit=$oldCredit newDebit=$newDebit newCredit=$newCredit');
-                    await ledgerService.updateEntry(
-                      customer: customerObj,
-                      entryId: entryId,
-                      entryData: newEntryData,
-                      oldDebit: oldDebit,
-                      oldCredit: oldCredit,
-                      newDebit: newDebit,
-                      newCredit: newCredit,
-                    );
-                    // ignore: avoid_print
-                    print('[EditTxn] updateEntry OK');
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
+                  // Optimistic update: rewrite the cached entry in-place
+                  // and close the dialog immediately. Background-fire the
+                  // ledger write.
+                  final ledgerList =
+                      (customer['ledger'] as List<dynamic>? ?? [])
+                          .cast<Map<String, dynamic>>();
+                  final updatedEntry = <String, dynamic>{
+                    ...entry,
+                    ...newEntryData,
+                    'debit': newDebit,
+                    'credit': newCredit,
+                  };
+                  customer['ledger'] = ledgerList
+                      .map((e) => e['id'] == entryId ? updatedEntry : e)
+                      .toList();
+                  setState(() {});
+                  Navigator.pop(ctx);
+                  unawaited(ledgerService
+                      .updateEntry(
+                    customer: customerObj,
+                    entryId: entryId,
+                    entryData: newEntryData,
+                    oldDebit: oldDebit,
+                    oldCredit: oldCredit,
+                    newDebit: newDebit,
+                    newCredit: newCredit,
+                  )
+                      .catchError((e) {
                     if (!mounted) return;
-                    customer['balance'] = customerObj.balance + ((newDebit - newCredit) - (oldDebit - oldCredit));
                     displayInfoBar(context, builder: (c, close) => InfoBar(
-                      title: Text('Transaction updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                      severity: InfoBarSeverity.success,
-                      onClose: close,
-                    ));
-                    _refreshLedgerFor(customerId);
-                  } catch (e, s) {
-                    // ignore: avoid_print
-                    print('[EditTxn] FAILED: $e');
-                    // ignore: avoid_print
-                    print('[EditTxn] Stack: $s');
-                    if (!mounted) return;
-                    displayInfoBar(context, builder: (c, close) => InfoBar(
-                      title: Text('Failed to update transaction: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      title: Text('Sync failed: $e',
+                          style: const TextStyle(fontFamily: AppTheme.fontFamily)),
                       severity: InfoBarSeverity.error,
                       onClose: close,
                     ));
-                  }
+                  }));
                 },
                 child: const Text(
                   "Save Changes",
@@ -1994,12 +1984,10 @@ class CustomersScreenState extends State<CustomersScreen> {
         (customer['ledger'] as List<Map<String, dynamic>>)[entryIndex];
     final entryId = (entry['id'] ?? '').toString();
     final customerId = (customer['id'] ?? '').toString();
-    bool deleting = false;
-    String? deleteError;
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+      builder: (ctx) => ContentDialog(
         title: const Text(
           "Delete Entry",
           style: TextStyle(
@@ -2017,14 +2005,10 @@ class CustomersScreenState extends State<CustomersScreen> {
               height: 1.5,
             ),
           ),
-          if (deleteError != null) ...[
-            const SizedBox(height: 8),
-            Text(deleteError!, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, color: AppTheme.error)),
-          ],
         ]),
         actions: [
           Button(
-            onPressed: deleting ? null : () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text(
               "Cancel",
               style: TextStyle(fontFamily: AppTheme.fontFamily),
@@ -2034,75 +2018,59 @@ class CustomersScreenState extends State<CustomersScreen> {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(AppTheme.error),
             ),
-            onPressed: deleting
-                ? null
-                : () async {
-                    if (entryId.isEmpty || customerId.isEmpty) {
-                      setDialogState(() => deleteError = 'Missing entry/customer id — refresh and try again.');
-                      return;
-                    }
-                    setDialogState(() {
-                      deleting = true;
-                      deleteError = null;
-                    });
-                    final oldDebit = (entry['debit'] as int?) ?? 0;
-                    final oldCredit = (entry['credit'] as int?) ?? 0;
-                    final customerObj = Customer(
-                      id: customerId,
-                      name: (customer['name'] ?? '').toString(),
-                      phone: (customer['phone'] ?? '').toString(),
-                      cnic: (customer['cnic'] ?? '').toString(),
-                      city: (customer['city'] ?? '').toString(),
-                      address: (customer['address'] ?? '').toString(),
-                      type: (customer['type'] ?? 'Regular').toString(),
-                      balance: (customer['balance'] as int?) ?? 0,
-                      notes: customer['notes'] as String?,
-                    );
-                    try {
-                      // ignore: avoid_print
-                      print('[DeleteTxn] entryId=$entryId customerId=$customerId oldDebit=$oldDebit oldCredit=$oldCredit');
-                      await ledgerService.deleteEntry(
-                        customer: customerObj,
-                        entryId: entryId,
-                        oldDebit: oldDebit,
-                        oldCredit: oldCredit,
-                      );
-                      // ignore: avoid_print
-                      print('[DeleteTxn] deleteEntry OK');
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      if (!mounted) return;
-                      customer['balance'] = customerObj.balance - (oldDebit - oldCredit);
-                      displayInfoBar(context, builder: (c2, close) => InfoBar(
-                        title: const Text('Transaction deleted.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                        severity: InfoBarSeverity.success,
-                        onClose: close,
-                      ));
-                      _refreshLedgerFor(customerId);
-                    } catch (e, s) {
-                      // ignore: avoid_print
-                      print('[DeleteTxn] FAILED: $e');
-                      // ignore: avoid_print
-                      print('[DeleteTxn] Stack: $s');
-                      if (!ctx.mounted) return;
-                      setDialogState(() {
-                        deleting = false;
-                        deleteError = 'Delete failed: $e';
-                      });
-                    }
-                  },
-            child: deleting
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text(
-                    "Delete",
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      color: Colors.white,
-                    ),
-                  ),
+            onPressed: () {
+              if (entryId.isEmpty || customerId.isEmpty) return;
+              final oldDebit = (entry['debit'] as int?) ?? 0;
+              final oldCredit = (entry['credit'] as int?) ?? 0;
+              final customerObj = Customer(
+                id: customerId,
+                name: (customer['name'] ?? '').toString(),
+                phone: (customer['phone'] ?? '').toString(),
+                cnic: (customer['cnic'] ?? '').toString(),
+                city: (customer['city'] ?? '').toString(),
+                address: (customer['address'] ?? '').toString(),
+                type: (customer['type'] ?? 'Regular').toString(),
+                balance: (customer['balance'] as int?) ?? 0,
+                notes: customer['notes'] as String?,
+              );
+              // Optimistic remove from cached ledger.
+              final ledgerList =
+                  (customer['ledger'] as List<dynamic>? ?? [])
+                      .cast<Map<String, dynamic>>();
+              final snapshot = List<Map<String, dynamic>>.from(ledgerList);
+              customer['ledger'] =
+                  ledgerList.where((e) => e['id'] != entryId).toList();
+              setState(() {});
+              Navigator.pop(ctx);
+              unawaited(ledgerService
+                  .deleteEntry(
+                customer: customerObj,
+                entryId: entryId,
+                oldDebit: oldDebit,
+                oldCredit: oldCredit,
+              )
+                  .catchError((e) {
+                if (!mounted) return;
+                customer['ledger'] = snapshot;
+                setState(() {});
+                displayInfoBar(context, builder: (c2, close) => InfoBar(
+                  title: Text('Sync failed: $e',
+                      style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                  severity: InfoBarSeverity.error,
+                  onClose: close,
+                ));
+              }));
+            },
+            child: const Text(
+              "Delete",
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                color: Colors.white,
+              ),
+            ),
           ).withClickCursor,
         ],
-      )),
+      ),
     );
   }
 

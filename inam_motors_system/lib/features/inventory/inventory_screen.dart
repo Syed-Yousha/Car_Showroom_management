@@ -1115,7 +1115,6 @@ class InventoryScreenState extends State<InventoryScreen> {
     final carPrice = (car['price'] as int?) ?? 0;
     final previousInvestorId = (car['investorId'] ?? '').toString();
 
-    bool deleting = false;
     String? deleteError;
 
     showDialog(
@@ -1150,58 +1149,59 @@ class InventoryScreenState extends State<InventoryScreen> {
         ]),
         actions: [
           Button(
-            onPressed: deleting ? null : () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily)),
           ).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
-            onPressed: deleting
-                ? null
-                : () async {
+            onPressed: () {
                     if (carId.isEmpty) {
                       setDialogState(() => deleteError = 'Missing car id \u2014 refresh and try again.');
                       return;
                     }
-                    setDialogState(() {
-                      deleting = true;
-                      deleteError = null;
+                    final snapshot = _cars.firstWhere(
+                        (c) => c['id'] == carId,
+                        orElse: () => const {});
+                    setState(() {
+                      _cars = _cars.where((c) => c['id'] != carId).toList();
                     });
-                    try {
-                      // Look up the investor (if any) so we can adjust heldAmount.
-                      Investor? prevInvestor;
-                      if (previousInvestorId.isNotEmpty) {
-                        print('[RemoveCar] Fetching previous investor $previousInvestorId via REST...');
-                        prevInvestor = await investorsRepo.getOne(previousInvestorId);
+                    Navigator.pop(ctx);
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Car "${car['name']}" removed.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.success,
+                      onClose: close,
+                    ));
+                    unawaited(() async {
+                      try {
+                        Investor? prevInvestor;
+                        if (previousInvestorId.isNotEmpty) {
+                          prevInvestor = await investorsRepo.getOne(previousInvestorId);
+                        }
+                        await inventoryService.deleteCar(
+                          carId: carId,
+                          previousInvestor: prevInvestor,
+                          carPrice: carPrice,
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        if (snapshot.isNotEmpty) {
+                          setState(() {
+                            _cars = [
+                              Map<String, dynamic>.from(snapshot),
+                              ..._cars,
+                            ];
+                          });
+                        }
+                        displayInfoBar(context, builder: (c, close) => InfoBar(
+                          title: Text('Sync failed: $e',
+                              style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                          severity: InfoBarSeverity.error,
+                          onClose: close,
+                        ));
                       }
-                      print('[RemoveCar] Calling inventoryService.deleteCar(carId=$carId)');
-                      await inventoryService.deleteCar(
-                        carId: carId,
-                        previousInvestor: prevInvestor,
-                        carPrice: carPrice,
-                      );
-                      print('[RemoveCar] Delete OK');
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      if (!mounted) return;
-                      displayInfoBar(context, builder: (c, close) => InfoBar(
-                        title: Text('Car "${car['name']}" removed.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                        severity: InfoBarSeverity.success,
-                        onClose: close,
-                      ));
-                      _refreshCars();
-                    } catch (e, s) {
-                      print('[RemoveCar] FAILED: $e');
-                      print('[RemoveCar] Stack: $s');
-                      if (!ctx.mounted) return;
-                      setDialogState(() {
-                        deleting = false;
-                        deleteError = 'Remove failed: $e';
-                      });
-                    }
+                    }());
                   },
-            child: deleting
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
       )),
@@ -1693,36 +1693,38 @@ class InventoryScreenState extends State<InventoryScreen> {
                       notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
                     );
 
-                    try {
-                      print('[EditCar] Calling inventoryService.updateCar() — '
-                          'oldInvestor=${originalInvestor?.name ?? "(none)"}, '
-                          'newInvestor=${selectedInvestor?.name ?? "(none)"}, '
-                          'oldPrice=$originalPrice, newPrice=$newPrice');
-                      await inventoryService.updateCar(
-                        newCar,
-                        oldInvestor: originalInvestor,
-                        oldPrice: originalPrice,
-                        newInvestor: selectedInvestor,
-                      );
-                      print('[EditCar] updateCar OK');
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
+                    // Optimistic: merge the edited car into the live list
+                    // and close the dialog. Background-fire the SDK write.
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    setState(() {
+                      final display = _carToDisplayMap(newCar);
+                      _cars = _cars
+                          .map((c) => c['id'] == newCar.id ? display : c)
+                          .toList();
+                    });
+                    displayInfoBar(context, builder: (c, close) => InfoBar(
+                      title: Text('Car "${newCar.name}" updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      severity: InfoBarSeverity.success,
+                      onClose: close,
+                    ));
+                    unawaited(inventoryService
+                        .updateCar(
+                      newCar,
+                      oldInvestor: originalInvestor,
+                      oldPrice: originalPrice,
+                      newInvestor: selectedInvestor,
+                    )
+                        .catchError((e) {
                       if (!mounted) return;
                       displayInfoBar(context, builder: (c, close) => InfoBar(
-                        title: Text('Car "${newCar.name}" updated.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                        severity: InfoBarSeverity.success,
+                        title: Text('Sync failed: $e',
+                            style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                        severity: InfoBarSeverity.error,
                         onClose: close,
                       ));
-                      _refreshCars();
-                    } catch (e, s) {
-                      print('[EditCar] FAILED to update car: $e');
-                      print('[EditCar] Stack: $s');
-                      if (!ctx.mounted) return;
-                      setDialogState(() {
-                        savingEdit = false;
-                        editSaveError = 'Update failed: $e';
-                      });
-                    }
+                    }));
                   },
             child: savingEdit
                 ? const SizedBox(width: 16, height: 16, child: ProgressRing(strokeWidth: 2))

@@ -299,7 +299,6 @@ class ExpensesScreenState extends State<ExpensesScreen> {
     String selectedCategory = e.category;
     String selectedMethod = e.method;
     bool isRecurring = e.recurring;
-    bool busy = false;
 
     showDialog(
       context: context,
@@ -355,33 +354,39 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           ]),
         ),
         actions: [
-          Button(onPressed: busy ? null : () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.primary)),
-            onPressed: busy ? null : () async {
-              setDialogState(() => busy = true);
-              try {
-                await expensesRepo.update(e.id, {
-                  'title': titleCtrl.text.trim(),
-                  'amount': int.tryParse(amountCtrl.text.trim()) ?? e.amount,
-                  'paidTo': paidToCtrl.text.trim(),
-                  'date': dateToTs(_parseDateOrNow(dateCtrl.text.trim())),
-                  'category': selectedCategory,
-                  'method': selectedMethod,
-                  'recurring': isRecurring,
-                });
-                if (!ctx.mounted) return;
-                Navigator.pop(ctx);
-                await _refresh();
-                await _showFlash("Expense updated.");
-              } catch (err) {
-                setDialogState(() => busy = false);
-                await _showFlash("Failed to update: $err", isError: true);
-              }
+            onPressed: () {
+              final updated = Expense(
+                id: e.id,
+                title: titleCtrl.text.trim(),
+                category: selectedCategory,
+                amount: int.tryParse(amountCtrl.text.trim()) ?? e.amount,
+                date: _parseDateOrNow(dateCtrl.text.trim()),
+                paidTo: paidToCtrl.text.trim(),
+                method: selectedMethod,
+                recurring: isRecurring,
+              );
+              setState(() {
+                _expenses =
+                    _expenses.map((x) => x.id == e.id ? updated : x).toList();
+              });
+              Navigator.pop(ctx);
+              unawaited(expensesRepo.update(e.id, {
+                'title': updated.title,
+                'amount': updated.amount,
+                'paidTo': updated.paidTo,
+                'date': dateToTs(updated.date),
+                'category': updated.category,
+                'method': updated.method,
+                'recurring': updated.recurring,
+              }).catchError((err) async {
+                if (!mounted) return;
+                await _showFlash("Sync failed: $err", isError: true);
+              }));
             },
-            child: busy
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            child: const Text("Save Changes", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
       )),
@@ -404,10 +409,9 @@ class ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   void _showRemoveExpenseDialog(Expense e) {
-    bool busy = false;
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) => ContentDialog(
+      builder: (ctx) => ContentDialog(
         title: const Text("Remove Expense", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text("Are you sure you want to remove this expense?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: AppTheme.textPrimary)),
@@ -426,28 +430,28 @@ class ExpensesScreenState extends State<ExpensesScreen> {
           ),
         ]),
         actions: [
-          Button(onPressed: busy ? null : () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
+          Button(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel", style: TextStyle(fontFamily: AppTheme.fontFamily))).withClickCursor,
           FilledButton(
             style: ButtonStyle(backgroundColor: WidgetStateProperty.all(AppTheme.error)),
-            onPressed: busy ? null : () async {
-              setDialogState(() => busy = true);
-              try {
-                await expensesRepo.delete(e.id);
-                if (!ctx.mounted) return;
-                Navigator.pop(ctx);
-                await _refresh();
-                await _showFlash("Expense removed.");
-              } catch (err) {
-                setDialogState(() => busy = false);
-                await _showFlash("Failed to delete: $err", isError: true);
-              }
+            onPressed: () {
+              final snapshot = _expenses.firstWhere(
+                (x) => x.id == e.id,
+                orElse: () => e,
+              );
+              setState(() {
+                _expenses = _expenses.where((x) => x.id != e.id).toList();
+              });
+              Navigator.pop(ctx);
+              unawaited(expensesRepo.delete(e.id).catchError((err) async {
+                if (!mounted) return;
+                setState(() => _expenses = [snapshot, ..._expenses]);
+                await _showFlash("Sync failed: $err", isError: true);
+              }));
             },
-            child: busy
-                ? const SizedBox(width: 14, height: 14, child: ProgressRing(strokeWidth: 2))
-                : const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
+            child: const Text("Remove", style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
           ).withClickCursor,
         ],
-      )),
+      ),
     );
   }
 

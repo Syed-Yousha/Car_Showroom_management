@@ -991,6 +991,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pwCtrl = TextEditingController();
     final errorNotifier = ValueNotifier<String?>(null);
     final busyNotifier = ValueNotifier<bool>(false);
+    final obscureNotifier = ValueNotifier<bool>(true);
 
     final result = await showDialog<bool>(
       context: context,
@@ -1052,12 +1053,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 1.4),
                 ),
                 const SizedBox(height: 12),
-                TextBox(
-                  controller: pwCtrl,
-                  obscureText: true,
-                  placeholder: 'Admin password',
-                  autofocus: true,
-                  onSubmitted: (_) => submit(),
+                ValueListenableBuilder<bool>(
+                  valueListenable: obscureNotifier,
+                  builder: (_, obscure, _) => TextBox(
+                    controller: pwCtrl,
+                    obscureText: obscure,
+                    placeholder: 'Admin password',
+                    autofocus: true,
+                    onSubmitted: (_) => submit(),
+                    suffix: IconButton(
+                      icon: Icon(
+                        obscure ? FluentIcons.red_eye : FluentIcons.hide3,
+                        size: 14,
+                        color: AppTheme.textMuted,
+                      ),
+                      onPressed: () =>
+                          obscureNotifier.value = !obscureNotifier.value,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ValueListenableBuilder<String?>(
@@ -1104,6 +1117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     pwCtrl.dispose();
     errorNotifier.dispose();
     busyNotifier.dispose();
+    obscureNotifier.dispose();
     return result == true;
   }
 
@@ -1137,26 +1151,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
+    BackupResult? result;
+    Object? failure;
     try {
-      final result = await backupService.resetAllData(
+      result = await backupService.resetAllData(
         onProgress: (label, done, total) {
           if (mounted) statusNotifier.value = label;
         },
       );
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      await dialogFuture;
-      if (!mounted) return;
-      if (result.ok) {
-        _showSnack(result.message);
-        // Refresh the live notifications since the cars/customers list is empty.
-        notificationsService.refresh().ignore();
-      } else {
-        _showError(result.message);
-      }
+    } catch (e) {
+      failure = e;
     } finally {
+      // Always tear down the progress dialog so the UI can never get
+      // stuck on the spinner — even if the screen was disposed mid-wipe.
+      if (mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+      }
+      await dialogFuture;
       statusNotifier.dispose();
       if (mounted) setState(() => _resetting = false);
+    }
+
+    if (!mounted) return;
+    if (failure != null) {
+      _showError('Reset failed: $failure');
+      return;
+    }
+    if (result != null && result.ok) {
+      _showSnack(result.message);
+      notificationsService.refresh().ignore();
+    } else {
+      _showError(result?.message ?? 'Reset failed.');
     }
   }
 
