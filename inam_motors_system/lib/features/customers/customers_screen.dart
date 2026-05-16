@@ -9,7 +9,6 @@ import 'package:printing/printing.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
 import '../../main.dart';
-import '../../models/car.dart';
 import '../../models/customer.dart';
 import '../shared/widgets.dart';
 
@@ -807,53 +806,9 @@ class CustomersScreenState extends State<CustomersScreen> {
                       if (selectedCar == null) return;
                       detail = selectedCar!['name'] as String;
                       if (amt <= 0) return;
-
-                      // ── Document handover validation ─────────────────────
-                      // The car's *HandedOver flags actually represent
-                      // documents we RECEIVED from the original seller (the
-                      // naming is historical and confusing). You can only
-                      // hand a document to the buyer if the showroom holds
-                      // it in inventory. Block the transaction when any
-                      // ticked handover is not backed by a received doc.
-                      final missing = <String>[];
-                      bool received(String k) {
-                        final v = selectedCar![k];
-                        if (v is bool) return v;
-                        if (v is String) {
-                          final s = v.trim().toLowerCase();
-                          return s == 'true' ||
-                              s == 'yes' ||
-                              s == 'inoffice' ||
-                              s == 'in office' ||
-                              s == 'received';
-                        }
-                        return false;
-                      }
-                      if (fileHandedOver && !received('fileHandedOver')) {
-                        missing.add('File');
-                      }
-                      if (smartCardHandedOver && !received('smartCardHandedOver')) {
-                        missing.add('Smart Card');
-                      }
-                      if (plateHandedOver && !received('numberPlateHandedOver')) {
-                        missing.add('Number Plate');
-                      }
-                      if (remoteKeyHandedOver && !received('remoteKeyHandedOver')) {
-                        missing.add('Remote Key');
-                      }
-                      if (missing.isNotEmpty) {
-                        if (!ctx.mounted) return;
-                        displayInfoBar(ctx, builder: (c, close) => InfoBar(
-                          title: Text(
-                            'Cannot proceed: The ${missing.join(', ')} '
-                            '${missing.length == 1 ? 'was' : 'were'} never received in inventory.',
-                            style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                          ),
-                          severity: InfoBarSeverity.error,
-                          onClose: close,
-                        ));
-                        return;
-                      }
+                      // Handover checkboxes are treated as optional sale
+                      // metadata; the customer/inventory domains are
+                      // decoupled and we no longer block on inventory state.
                     }
                     debit = amt;
                     entryData = {
@@ -1006,120 +961,35 @@ class CustomersScreenState extends State<CustomersScreen> {
                   // Below: cross-domain side-effects (Sell Car / Trade-In)
                   // run in the original try/catch but are now also moved off
                   // the UI critical path.
-                  try {
-                    // ── Inventory side-effects ─────────────────────────
-                    // Sell Car (with a real inventory pick) → mark Sold.
-                    if (txnType == 'Sell Car' &&
-                        !isManualEntry &&
-                        selectedCar != null) {
-                      final soldCarId = (selectedCar!['id'] ?? '').toString();
-                      if (soldCarId.isNotEmpty) {
-                        try {
-                          await inventoryService.markCarSold(
+                  // Sell Car still updates the matching inventory car's
+                  // status to "Sold" so it disappears from Available, but
+                  // we no longer mirror anything into Docs & Files — that
+                  // module is independent and only mutated from its own
+                  // screen. Trade-In stays inside the customer/ledger
+                  // domain and does NOT create a new inventory car.
+                  if (txnType == 'Sell Car' &&
+                      !isManualEntry &&
+                      selectedCar != null) {
+                    final soldCarId = (selectedCar!['id'] ?? '').toString();
+                    if (soldCarId.isNotEmpty) {
+                      unawaited(inventoryService
+                          .markCarSold(
                             soldCarId,
                             buyerId: customerId,
                             buyerName: customerObj.name,
                             buyerPhone: customerObj.phone,
-                          );
-                        } catch (e, s) {
-                          // ignore: avoid_print
-                          print('[AddTxn] markCarSold failed (ledger entry already saved): $e');
-                          // ignore: avoid_print
-                          print('[AddTxn] Stack: $s');
-                        }
-                        // Mirror this dialog's handover checkboxes onto the
-                        // matching documents/{carId} record so the Docs &
-                        // Files screen reflects what was handed to the buyer.
-                        final today = DateTime.now();
-                        final todayStr = '${today.year}-'
-                            '${today.month.toString().padLeft(2, '0')}-'
-                            '${today.day.toString().padLeft(2, '0')}';
-                        Map<String, dynamic> docState(bool given) => given
-                            ? {
-                                'status': 'handedOver',
-                                'to': customerObj.name,
-                                'phone': customerObj.phone,
-                                'date': todayStr,
-                              }
-                            : {
-                                'status': 'inOffice',
-                                'to': null,
-                                'phone': null,
-                                'date': null,
-                              };
-                        try {
-                          await documentService.savePartial(soldCarId, {
-                            'carStatus': 'Sold',
-                            'buyer': customerObj.name,
-                            'buyerPhone': customerObj.phone,
-                            if (fileHandedOver)
-                              'file': docState(true),
-                            if (smartCardHandedOver)
-                              'smartCard': docState(true),
-                            if (plateHandedOver)
-                              'plate': docState(true),
-                            if (remoteKeyHandedOver)
-                              'remoteKey': docState(true),
-                          });
-                        } catch (e, s) {
-                          // ignore: avoid_print
-                          print('[AddTxn] docs handover sync failed: $e\n$s');
-                        }
-                      }
-                    }
-                    // Trade-In → add the customer's car as new Available
-                    // inventory so it shows up on the Inventory screen.
-                    if (txnType == 'Trade-In') {
-                      try {
-                        final tradeCar = Car(
-                          id: '', // auto-id
-                          name: tradeCarNameCtrl.text.trim().isNotEmpty
-                              ? tradeCarNameCtrl.text.trim()
-                              : '${tradeMakeCtrl.text.trim()} ${tradeModelCtrl.text.trim()}'.trim(),
-                          make: tradeMakeCtrl.text.trim(),
-                          model: tradeModelCtrl.text.trim(),
-                          year: DateTime.now().year,
-                          color: tradeColorCtrl.text.trim(),
-                          price: int.tryParse(tradeAmountCtrl.text.replaceAll(',', '')) ?? 0,
-                          regNo: tradeRegNoCtrl.text.trim(),
-                          status: 'Available',
-                          mileage: tradeMileageCtrl.text.trim(),
-                          fuel: tradeFuelType,
-                          transmission: tradeTransmission,
-                          chassisNo: tradeChassisCtrl.text.trim(),
-                          engineNo: tradeEngineCtrl.text.trim(),
-                          photos: List<String>.from(tradeImagePaths),
-                          sellerName: customerObj.name,
-                          sellerPhone: customerObj.phone,
-                          sellerCnic: customerObj.cnic,
-                          notes: 'Acquired via Trade-In from ${customerObj.name}',
-                        );
-                        await inventoryService.addCar(tradeCar);
-                      } catch (e, s) {
+                          )
+                          .catchError((e) {
                         // ignore: avoid_print
-                        print('[AddTxn] addCar (trade-in) failed (ledger entry already saved): $e');
-                        // ignore: avoid_print
-                        print('[AddTxn] Stack: $s');
-                      }
+                        print('[AddTxn] markCarSold failed: $e');
+                      }));
                     }
-                    displayInfoBar(context, builder: (c, close) => InfoBar(
-                      title: Text('$txnType added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                      severity: InfoBarSeverity.success,
-                      onClose: close,
-                    ));
-                    _refreshLedgerFor(customerId);
-                  } catch (e, s) {
-                    // ignore: avoid_print
-                    print('[AddTxn] FAILED: $e');
-                    // ignore: avoid_print
-                    print('[AddTxn] Stack: $s');
-                    if (!mounted) return;
-                    displayInfoBar(context, builder: (c, close) => InfoBar(
-                      title: Text('Failed to add transaction: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                      severity: InfoBarSeverity.error,
-                      onClose: close,
-                    ));
                   }
+                  displayInfoBar(context, builder: (c, close) => InfoBar(
+                    title: Text('$txnType added.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                    severity: InfoBarSeverity.success,
+                    onClose: close,
+                  ));
                 },
                 child: const Text('Add Transaction', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white)),
               ).withClickCursor,
